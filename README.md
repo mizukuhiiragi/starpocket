@@ -9,6 +9,10 @@
 
 > **StarPocket** is a high-speed, non-custodial smart wallet, 5.0% APY auto-compounding yield vault, and low-slippage DEX built natively as a Telegram Mini App for the 900M+ users of Telegram on the Stellar Network & Soroban.
 
+<p align="center">
+  <img src="./demo.gif" alt="StarPocket Live Demo" width="360" style="border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+</p>
+
 ---
 
 ## 🚀 Key Features
