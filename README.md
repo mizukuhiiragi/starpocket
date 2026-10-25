@@ -103,9 +103,10 @@ Open `http://localhost:3000` for hot-reload development.
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/status/:address` | Get daily claim count, remaining claims, and cooldown timer |
+| `GET` | `/api/user-status/:address` | Get daily claim count, remaining claims, and cooldown timer |
 | `POST` | `/api/claim` | Execute daily drop (activates new account or pays 0.05 XLM) |
-| `GET` | `/api/pool` | Retrieve current faucet pool address, balance, and recycled totals |
+| `GET` | `/api/faucet` | Retrieve current faucet pool address, balance, and network info |
+| `GET` | `/api/balance/:address` | Fetch on-chain balances for XLM, USDC, yXLM, and yUSDC |
 | `GET` | `/api/vault/:address` | Fetch user's Star Vault deposit balances & estimated daily yield |
 | `POST` | `/api/vault/deposit` | Deposit assets into Star Vault (converts to y-assets) |
 | `POST` | `/api/vault/withdraw` | Withdraw assets from Star Vault |
