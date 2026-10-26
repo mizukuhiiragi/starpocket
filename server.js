@@ -519,8 +519,16 @@ app.post('/api/claim', async (req, res) => {
       });
     }
 
+    // Fetch live base fee from network (Stellar Raven / Protocol 28 Best Practice)
+    let dynamicFee = StellarSdk.BASE_FEE;
+    try {
+      dynamicFee = await server.fetchBaseFee();
+    } catch (e) {
+      console.warn('Failed to fetch dynamic base fee, fallback to default BASE_FEE:', e.message);
+    }
+
     const tx = new StellarSdk.TransactionBuilder(faucetAcc, {
-      fee: StellarSdk.BASE_FEE,
+      fee: dynamicFee,
       networkPassphrase: StellarSdk.Networks.TESTNET
     })
     .addOperation(operation)

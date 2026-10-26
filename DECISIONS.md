@@ -149,6 +149,27 @@
   5. **第3弾サーガ（伏線回収）:**
      - 『ラストオーダー・ロンド 〜閉店間際の狂騒曲〜』（Web2人気カードゲーム）のWeb3版も、すべてStarPocketをハブとして接続。
 
+---
+
+### 12. Stellar Raven MCP監査によるコード改善＆Protocol 28標準準拠
+- **監査実施:** お兄ちゃん (Mizuku) & ちびステラ2号 (2026-10-27 実施)
+- **Stellar公式MCPサーバー『Stellar Raven』連携:**
+  - `~/.gemini/config/mcp_config.json` および `.agents/mcp_config.json` に `https://raven.stellar.buzz/mcp` を配備完了。
+  - 最新ドキュメント・Protocol 28 (Adapter) 仕様に沿った監査を実施。
+- **即時改善完了項目:**
+  - **動的手数料取得 (`server.fetchBaseFee()`):**
+    - `server.js` の送金トランザクション構築時、従来の固定値 `BASE_FEE` からネットワークのリアルタイム推奨手数料 `await server.fetchBaseFee()` を動的に取得・適用するコードへ更新完了。ネットワーク混雑時でも取引遅延を完全回避。
+- **本体ステラ (Lead Builder) への次回実装申し送り事項:**
+  1. **Passkey / WebAuthn 署名対応:**
+     - 現在の `localStorage` 秘密鍵保管から、ブラウザ生体認証によるPasskey署名（Sorobanスマートウォレット）へのアップグレード。
+  2. **Soroban RPC ハイブリッド接続:**
+     - `Horizon.Server` に加え、`SorobanRpc.Server` エンドポイントを導入し、スマートコントラクトシミュレーション（`simulateTransaction`）を実行可能な体制を構築。
+  3. **Star Swap のオンチェーン Path Payment 接続:**
+     - Stellar DEXの `strictSendPaths` を呼び出し、リアルなオンチェーン流動性プールを通過させるスワップ実行エンジンへの昇華。
+  4. **Protocol 28 (Adapter) 準拠のコントラクト設計:**
+     - 将来のStar Vault / Swapコントラクトにおいて、CAP-85（共有コード一括更新）およびCAP-86（安全なスキーママイグレーション）を活用した無停止アップデート設計を採用。
+
+
 
 
 
