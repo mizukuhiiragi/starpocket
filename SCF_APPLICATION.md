@@ -79,8 +79,9 @@ StarPocket solves the single biggest flaw of crypto faucets and onboarding apps:
 5. **Star Swap with Automated Protocol Recycling & Monthly Volume Bonus:**
    - 0.3% fee collected on all token swaps automatically credits the Faucet reward reserve.
    - **Monthly Swap Bonus (Volume Share Pool):** 30% of collected swap fees are pooled into an end-of-month dividend pool, shared proportionally with active traders based on their monthly volume. This drives industry-leading user retention (preventing end-of-month churn) and organic community volume without ongoing developer subsidies.
-6. **Global Regulatory Compliance:**
+6. **Global Regulatory Compliance & Frictionless Fiat On-Ramp:**
    - English default (`en`), USD denominated (`$`), strictly decentralized non-custodial structure with localized language support (`🌐 EN / JA`), ensuring full compliance across all jurisdictions without specific regional solicitation.
+   - **Direct Fiat On-Ramp (Milestone 2/3):** Integration with licensed global on-ramp providers (MoonPay, Transak, and Stellar Anchor SEP-24 / MoneyGram Access), allowing users who start with free ad drops to seamlessly purchase XLM/USDC using credit cards, Apple Pay, or local payment methods with zero platform custody burden.
 
 ---
 
@@ -114,9 +115,10 @@ StarPocket solves the single biggest flaw of crypto faucets and onboarding apps:
   - Initial Faucet liquidity buffer allocation (ensuring 100,000 initial user onboarding claims).
 - **Budget Requested:** $20,000 USD (in XLM)
 
-### 📈 Milestone 3: Global Growth, Gamification & Ecosystem Quests (Months 5–6)
+### 📈 Milestone 3: Global Growth, Fiat On-Ramp & Ecosystem Quests (Months 5–6)
 - **Deliverables:**
   - Multi-tier viral referral program ("Invite a friend, earn 10% of their ad drop bonus").
+  - **Global Fiat On-Ramp Widget Integration:** Embedded MoonPay / Transak / Stellar Anchor widget for instant credit card / bank purchases of XLM and USDC.
   - Gamified Stellar Quests (e.g., "Make your first swap", "Hold 10 USDC", "Deposit in Star Vault").
   - Multilingual localized support expanded to Spanish, Russian, Indonesian, and Vietnamese.
   - Target: 100,000+ monthly active wallets on Stellar.
