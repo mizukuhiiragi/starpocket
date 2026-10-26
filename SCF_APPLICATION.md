@@ -76,8 +76,9 @@ StarPocket solves the single biggest flaw of crypto faucets and onboarding apps:
    - Real-time USD portfolio valuation and interactive send/receive modals with QR codes.
 4. **Star Vault (5.0% APY):**
    - Simple deposit/withdraw interface enabling everyday users to compound rewards effortlessly into UltraStellar interest-bearing assets.
-5. **Star Swap with Automated Protocol Recycling:**
-   - 0.3% fee collected on all token swaps automatically credits the Faucet reward reserve. As trading volume grows, the community drop pool grows autonomously with zero developer out-of-pocket costs.
+5. **Star Swap with Automated Protocol Recycling & Monthly Volume Bonus:**
+   - 0.3% fee collected on all token swaps automatically credits the Faucet reward reserve.
+   - **Monthly Swap Bonus (Volume Share Pool):** 30% of collected swap fees are pooled into an end-of-month dividend pool, shared proportionally with active traders based on their monthly volume. This drives industry-leading user retention (preventing end-of-month churn) and organic community volume without ongoing developer subsidies.
 6. **Global Regulatory Compliance:**
    - English default (`en`), USD denominated (`$`), strictly decentralized non-custodial structure with localized language support (`🌐 EN / JA`), ensuring full compliance across all jurisdictions without specific regional solicitation.
 
