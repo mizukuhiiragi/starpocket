@@ -30,7 +30,8 @@ import {
   ArrowRightLeft,
   ArrowDownUp,
   Repeat,
-  Globe
+  Globe,
+  Gift
 } from 'lucide-react';
 import { Keypair, StrKey, Horizon, Networks, TransactionBuilder, Operation, Asset, Memo } from '@stellar/stellar-sdk';
 import { translations } from './i18n.js';
@@ -151,6 +152,15 @@ export default function App() {
   const [swapLoading, setSwapLoading] = useState(false);
   const [swapResult, setSwapResult] = useState(null);
   const [swapError, setSwapError] = useState('');
+  const [swapBonusInfo, setSwapBonusInfo] = useState({
+    monthlyPoolTotalXlm: '125.4000',
+    monthlyPoolTotalUsd: '16.93',
+    totalMonthlyVolumeUsd: '12540.00',
+    userVolumeUsd: '0.00',
+    userSharePercent: '0.00',
+    userEstBonusXlm: '0.0000',
+    daysRemaining: 5
+  });
 
   // Star Vault State
   const [vaultInfo, setVaultInfo] = useState({
@@ -244,6 +254,7 @@ export default function App() {
     fetchBalance(addr);
     fetchUserStatus(addr);
     fetchVaultInfo(addr);
+    fetchSwapBonus(addr);
   };
 
   // Cooldown local tick
@@ -291,6 +302,19 @@ export default function App() {
       }
     } catch (e) {
       console.error('Vault fetch failed:', e);
+    }
+  };
+
+  const fetchSwapBonus = async (addr) => {
+    try {
+      const url = addr ? `/api/swap/bonus/${addr}` : '/api/swap/bonus';
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setSwapBonusInfo(data);
+      }
+    } catch (e) {
+      console.error('Swap bonus fetch failed:', e);
     }
   };
 
@@ -937,12 +961,51 @@ export default function App() {
                 </span>
               </div>
 
-              {/* AUTONOMOUS FLYWHEEL BANNER */}
-              <div className="bg-gradient-to-r from-purple-950/40 to-slate-900 border border-purple-500/30 rounded-xl p-2.5 text-[11px] text-purple-200 flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>
-                  {t('flywheelBanner')}
-                </span>
+              {/* 🎁 MONTHLY TRADER DIVIDEND POOL (三方よし 1:1:1) */}
+              <div className="bg-gradient-to-r from-amber-950/40 via-purple-950/40 to-slate-900 border border-amber-500/30 rounded-xl p-3 mb-3 shadow-lg">
+                <div className="flex items-center justify-between pb-2 border-b border-amber-500/20 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Gift className="w-4 h-4 text-amber-400" />
+                    <span className="font-bold text-xs text-amber-200">{t('monthlyBonusTitle')}</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                    ⏳ {swapBonusInfo.daysRemaining} {t('daysLeftLabel')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-slate-950/60 rounded-lg p-1.5 border border-slate-800">
+                    <p className="text-[9px] text-slate-400 uppercase font-semibold">{t('poolTotalLabel')}</p>
+                    <p className="font-extrabold text-[12px] text-amber-300 font-mono mt-0.5">
+                      {swapBonusInfo.monthlyPoolTotalXlm} <span className="text-[9px] text-slate-400">XLM</span>
+                    </p>
+                    <p className="text-[9px] text-slate-500">~${swapBonusInfo.monthlyPoolTotalUsd}</p>
+                  </div>
+                  <div className="bg-slate-950/60 rounded-lg p-1.5 border border-slate-800">
+                    <p className="text-[9px] text-slate-400 uppercase font-semibold">{t('yourVolumeLabel')}</p>
+                    <p className="font-extrabold text-[12px] text-white font-mono mt-0.5">
+                      ${swapBonusInfo.userVolumeUsd}
+                    </p>
+                    <p className="text-[9px] text-emerald-400">{swapBonusInfo.userSharePercent}% share</p>
+                  </div>
+                  <div className="bg-slate-950/60 rounded-lg p-1.5 border border-amber-500/30 bg-amber-500/5">
+                    <p className="text-[9px] text-amber-300 uppercase font-semibold">{t('yourEstBonusLabel')}</p>
+                    <p className="font-extrabold text-[12px] text-amber-400 font-mono mt-0.5">
+                      ~{swapBonusInfo.userEstBonusXlm} <span className="text-[9px]">XLM</span>
+                    </p>
+                    <p className="text-[9px] text-amber-300/70">auto-claim</p>
+                  </div>
+                </div>
+
+                <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+                  <span className="flex items-center gap-1 text-[9px] text-purple-300 font-semibold">
+                    <Sparkles className="w-3 h-3 text-purple-400" />
+                    {t('feeSplitBadge')}: 0.10% 💰 | 0.10% 🎁 | 0.10% 🌟
+                  </span>
+                  <span className="text-[9px] text-slate-400 text-right truncate ml-2">
+                    {t('flywheelBanner')}
+                  </span>
+                </div>
               </div>
 
               <form onSubmit={handleExecuteSwap} className="space-y-3">

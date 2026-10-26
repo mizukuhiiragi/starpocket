@@ -287,10 +287,24 @@ app.post('/api/vault/withdraw', async (req, res) => {
 });
 
 // =========================================================
-// 🔄 星の交換所 (Star Swap) & 自動フライホイール還元システム
-// 0.3%のプロトコル手数料を徴収し、全額を「星集めプール」に還元！
 // =========================================================
-const SWAP_FEE_RATE = 0.003; // 0.3%
+// 🔄 星の交換所 (Star Swap) & 三方よし (1:1:1) 手数料分配システム
+// 0.30% のプロトコル手数料を 3 等分 (各 0.10%):
+// - 0.10%: 運営利益 (Owner Profit) - 現代版両替商のお兄ちゃんの正当な事業収益
+// - 0.10%: 月末山分けボーナスプール (Monthly Volume Share Pool)
+// - 0.10%: 無料星ドロッププール還元 (Daily Drop Pool)
+// =========================================================
+const SWAP_FEE_TOTAL = 0.003; // 0.30%
+const SWAP_FEE_OWNER = 0.001; // 0.10%
+const SWAP_FEE_MONTHLY_BONUS = 0.001; // 0.10%
+const SWAP_FEE_DROP_POOL = 0.001; // 0.10%
+
+// Monthly Volume & Bonus Pool State
+let monthlyBonusPoolXlm = 125.40; // Initial simulated seed pool
+let totalMonthlyVolumeUsd = 12540.0; // Total volume in USD
+const userMonthlyVolumes = new Map(); // address -> volume in USD
+let ownerAccumulatedProfitXlm = 42.15; // Accumulated owner profit in XLM
+let dropPoolAccumulatedRefillXlm = 42.15; // Accumulated drop pool refill in XLM
 
 // Standard conversion rates (1 XLM ≈ 0.135 USDC)
 const BASE_RATES = {
@@ -315,16 +329,57 @@ function getSwapRate(from, to) {
   return 1.0;
 }
 
-// GET /api/swap/rates - get swap quotes and current protocol fee
+// Helper: Calculate days remaining until end of current month
+function getDaysRemainingInMonth() {
+  const now = new Date();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  const diffMs = endOfMonth.getTime() - now.getTime();
+  return Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+}
+
+// GET /api/swap/rates - get swap quotes and current protocol fee breakdown
 app.get('/api/swap/rates', (req, res) => {
   res.json({
-    feeRate: '0.3%',
+    feeRate: '0.30%',
+    split: {
+      ownerProfit: '0.10%',
+      monthlyBonusPool: '0.10%',
+      dropPoolRefill: '0.10%'
+    },
     rates: BASE_RATES,
-    description: 'スワップ手数料の100%が星集めプールへ自動還元されます（自己資金ゼロ永久機関）'
+    description: '三方よし (1:1:1): 0.10% 運営利益 / 0.10% 月末山分けボーナス / 0.10% 星プール還元'
   });
 });
 
-// POST /api/swap - execute token swap
+// Helper: Build swap bonus response
+function getSwapBonusResponse(address) {
+  const userVol = address ? (userMonthlyVolumes.get(address) || 0) : 0;
+  const userShareRatio = totalMonthlyVolumeUsd > 0 ? (userVol / totalMonthlyVolumeUsd) : 0;
+  const userEstBonusXlm = monthlyBonusPoolXlm * userShareRatio;
+
+  return {
+    monthlyPoolTotalXlm: monthlyBonusPoolXlm.toFixed(4),
+    monthlyPoolTotalUsd: (monthlyBonusPoolXlm * BASE_RATES['XLM_USDC']).toFixed(2),
+    totalMonthlyVolumeUsd: totalMonthlyVolumeUsd.toFixed(2),
+    userVolumeUsd: userVol.toFixed(2),
+    userSharePercent: (userShareRatio * 100).toFixed(2),
+    userEstBonusXlm: userEstBonusXlm.toFixed(4),
+    daysRemaining: getDaysRemainingInMonth(),
+    splitRule: '0.10% Owner Profit | 0.10% Monthly Bonus Pool | 0.10% Free Drop Pool'
+  };
+}
+
+// GET /api/swap/bonus and /api/swap/bonus/:address
+app.get('/api/swap/bonus', (req, res) => {
+  res.json(getSwapBonusResponse(null));
+});
+
+app.get('/api/swap/bonus/:address', (req, res) => {
+  const { address } = req.params;
+  res.json(getSwapBonusResponse(address));
+});
+
+// POST /api/swap - execute token swap with 1:1:1 fee split
 app.post('/api/swap', async (req, res) => {
   const { address, fromAsset, toAsset, amount } = req.body;
   if (!address || !StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
@@ -339,21 +394,43 @@ app.post('/api/swap', async (req, res) => {
   }
 
   const rate = getSwapRate(fromAsset, toAsset);
-  const grossOutput = amt * rate;
   
-  // Calculate 0.3% protocol fee
-  const feeInFromAsset = amt * SWAP_FEE_RATE;
+  // Total 0.30% fee
+  const feeInFromAsset = amt * SWAP_FEE_TOTAL;
   const netInput = amt - feeInFromAsset;
   const netOutput = netInput * rate;
 
-  // Calculate equivalent XLM fee to contribute to the Faucet pool
+  // Equivalent fee in XLM
   const feeInXlm = fromAsset === 'XLM' ? feeInFromAsset : feeInFromAsset * getSwapRate(fromAsset, 'XLM');
+  
+  // Equivalent trade volume in USD
+  const volumeUsd = fromAsset === 'USDC' || fromAsset === 'yUSDC' 
+    ? amt 
+    : amt * BASE_RATES['XLM_USDC'];
 
-  // In Testnet mode: Simulate or transfer the fee into faucet pool
+  // 三方よし 1:1:1 Split (each 1/3 of the 0.30% fee = 0.10%)
+  const ownerShareXlm = feeInXlm / 3;
+  const bonusShareXlm = feeInXlm / 3;
+  const dropPoolShareXlm = feeInXlm / 3;
+
+  // Update state
+  ownerAccumulatedProfitXlm += ownerShareXlm;
+  monthlyBonusPoolXlm += bonusShareXlm;
+  dropPoolAccumulatedRefillXlm += dropPoolShareXlm;
+  totalMonthlyVolumeUsd += volumeUsd;
+  
+  const currentAddressVol = userMonthlyVolumes.get(address) || 0;
+  userMonthlyVolumes.set(address, currentAddressVol + volumeUsd);
+
+  console.log(`[StarSwap 1:1:1] Trade: ${amt} ${fromAsset} -> ${netOutput.toFixed(4)} ${toAsset} ($${volumeUsd.toFixed(2)})`);
+  console.log(`  ├─ 💰 Owner Profit: +${ownerShareXlm.toFixed(6)} XLM`);
+  console.log(`  ├─ 🎁 Monthly Bonus Pool: +${bonusShareXlm.toFixed(6)} XLM (Total Pool: ${monthlyBonusPoolXlm.toFixed(4)} XLM)`);
+  console.log(`  └─ 🌟 Drop Pool Refill: +${dropPoolShareXlm.toFixed(6)} XLM`);
+
   try {
-    if (faucetKeypair) {
-      console.log(`[Flywheel] Swap executed: ${amt} ${fromAsset} -> ${netOutput.toFixed(4)} ${toAsset}. Fee contributed to pool: +${feeInXlm.toFixed(6)} XLM`);
-    }
+    const userTotalVol = userMonthlyVolumes.get(address);
+    const userShareRatio = totalMonthlyVolumeUsd > 0 ? (userTotalVol / totalMonthlyVolumeUsd) : 0;
+    const userEstBonusXlm = monthlyBonusPoolXlm * userShareRatio;
 
     res.json({
       success: true,
@@ -362,9 +439,16 @@ app.post('/api/swap', async (req, res) => {
       inputAmount: amt.toFixed(4),
       outputAmount: netOutput.toFixed(4),
       rate: rate.toFixed(5),
-      feePercent: '0.3%',
-      feeContributedToPool: `${feeInXlm.toFixed(6)} XLM`,
-      message: `Swapped ${amt} ${fromAsset} for ${netOutput.toFixed(4)} ${toAsset}! 🎉 (+${feeInXlm.toFixed(5)} XLM fee added to the Community Drop Pool)`
+      feePercent: '0.30%',
+      split: {
+        ownerProfitXlm: ownerShareXlm.toFixed(6),
+        monthlyBonusXlm: bonusShareXlm.toFixed(6),
+        dropPoolRefillXlm: dropPoolShareXlm.toFixed(6)
+      },
+      userVolumeUsd: userTotalVol.toFixed(2),
+      userEstBonusXlm: userEstBonusXlm.toFixed(4),
+      monthlyPoolTotalXlm: monthlyBonusPoolXlm.toFixed(4),
+      message: `Swapped ${amt} ${fromAsset} for ${netOutput.toFixed(4)} ${toAsset}! 🎉 (Fee split 1:1:1: +${bonusShareXlm.toFixed(5)} XLM added to Monthly Bonus Pool!)`
     });
   } catch (err) {
     console.error('Swap error:', err);
