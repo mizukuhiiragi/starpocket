@@ -30,8 +30,12 @@ async function initFaucet() {
     console.log('Generating new Stellar Testnet Faucet Keypair...');
     faucetKeypair = StellarSdk.Keypair.random();
     secret = faucetKeypair.secret();
-    fs.appendFileSync(ENV_PATH, `\nFAUCET_SECRET_KEY=${secret}\n`);
-    console.log('Saved new faucet key to .env:', faucetKeypair.publicKey());
+    try {
+      fs.appendFileSync(ENV_PATH, `\nFAUCET_SECRET_KEY=${secret}\n`);
+      console.log('Saved new faucet key to .env:', faucetKeypair.publicKey());
+    } catch (e) {
+      console.log('Ephemeral container environment, faucet key kept in memory:', faucetKeypair.publicKey());
+    }
   } else {
     faucetKeypair = StellarSdk.Keypair.fromSecret(secret);
     console.log('Loaded faucet key from .env:', faucetKeypair.publicKey());
