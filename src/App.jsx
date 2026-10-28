@@ -1190,13 +1190,17 @@ export default function App() {
   };
 
   const handleShareInvite = () => {
-    const text = encodeURIComponent(
-      lang === 'ja' 
-        ? '⭐【StarPocket】自分専用の星のスマートウォレット＆星の金庫！年利5%で星を増やしてスワップもできる！'
-        : '⭐ Check out StarPocket! The cute smart wallet & 5% APY yield vault on Telegram. Claim free daily XLM and swap with zero hassle!'
-    );
-    const url = encodeURIComponent('https://t.me/share/url?url=https://t.me/starpocket_bot&text=' + text);
-    window.open(url, '_blank');
+    const shareText = lang === 'ja' 
+      ? '⭐【StarPocket】自分専用の星のスマートウォレット＆星の金庫！年利5%で星を増やしてスワップもできる！'
+      : '⭐ Check out StarPocket! The cute smart wallet & 5% APY yield vault on Telegram. Claim free daily XLM and swap with zero hassle!';
+    const appUrl = 'https://starpocket.onrender.com';
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(appUrl)}&text=${encodeURIComponent(shareText)}`;
+
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+      window.Telegram.WebApp.openTelegramLink(shareUrl);
+    } else {
+      window.open(shareUrl, '_blank');
+    }
   };
 
   const formatCooldown = (seconds) => {
@@ -2165,22 +2169,15 @@ export default function App() {
             </div>
 
             {/* VIRAL SHARE BUTTON */}
-            <div className="flex gap-2">
+            <div>
               <button
+                type="button"
                 onClick={handleShareInvite}
-                className="flex-1 py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-center gap-2 text-xs font-bold text-slate-200 transition cursor-pointer"
+                className="w-full py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 flex items-center justify-center gap-2 text-xs font-bold text-slate-200 transition cursor-pointer active:scale-[0.99]"
               >
                 <Share2 className="w-4 h-4 text-cyan-400" />
-                {t('btnInviteFriends')}
+                <span>{t('btnInviteFriends')}</span>
               </button>
-              <a
-                href="https://t.me/starpocket_bot"
-                target="_blank"
-                rel="noreferrer"
-                className="py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-200 transition"
-              >
-                <Smartphone className="w-4 h-4 text-purple-400" />
-              </a>
             </div>
 
             {/* RECENT CLAIM TRANSACTIONS LIST */}
