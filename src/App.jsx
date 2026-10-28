@@ -259,9 +259,86 @@ const SKINS = {
   }
 };
 
+// Real-time Reference Rates & Metadata for Supported Assets
+const ASSET_DETAILS = {
+  XLM: {
+    symbol: 'XLM',
+    name: 'Stellar Lumens',
+    nameJa: 'ステラルーメン (XLM)',
+    tag: 'Native Gas & Currency',
+    tagJa: 'ネイティブ基幹通貨・ガス代',
+    rateUsd: '0.1350',
+    change24h: '+2.4%',
+    isPositive: true,
+    marketCap: '$3.95 B',
+    vol24h: '$142 M',
+    network: 'Stellar Main/Testnet',
+    issuer: 'Decentralized / Non-custodial',
+    dexPair: 'SDEX XLM / USDC',
+    descJa: 'Stellarネットワークの基幹暗号資産。手数料はわずか0.00001 XLM（約0.0002円）で、3〜5秒で送金が即時確定します。',
+    descEn: 'The native cryptocurrency of Stellar. Features ~0.00001 XLM gas fees and instant 3-5s finality for global settlements.',
+    actionType: 'xlm'
+  },
+  USDC: {
+    symbol: 'USDC',
+    name: 'USD Coin',
+    nameJa: 'USDコイン (Circle USDC)',
+    tag: '100% Backed Digital Dollar',
+    tagJa: '米ドル完全裏付けステーブルコイン',
+    rateUsd: '1.0000',
+    change24h: '+0.01%',
+    isPositive: true,
+    marketCap: '$35.2 B',
+    vol24h: '$4.8 B',
+    network: 'Stellar SEP-24 / Circle',
+    issuer: 'Circle Financial Inc. (GA5Z...)',
+    dexPair: 'SDEX USDC / XLM',
+    descJa: '米大手金融企業Circle社が発行する正規米ドルステーブルコイン。米ドル現金および米国短期国債で100%裏付けられています。',
+    descEn: 'Regulated digital dollar issued by Circle, backed 100% by cash and short-dated US Treasuries for 1:1 price stability.',
+    actionType: 'usdc'
+  },
+  yXLM: {
+    symbol: 'yXLM',
+    name: 'Yield Stellar Lumens',
+    nameJa: '星の金庫 yXLM (利息付きルーメン)',
+    tag: 'Auto-Compounding 5.0% APY',
+    tagJa: '年利5.0% 毎日自動複利',
+    rateUsd: '0.1418',
+    rateUnderlying: '1.0500 XLM',
+    change24h: '+5.0% APY',
+    isPositive: true,
+    apy: '5.0%',
+    network: 'UltraStellar Yield Protocol',
+    issuer: 'UltraStellar (LOBSTR Core Team)',
+    dexPair: '1 yXLM ≈ 1.0500 XLM',
+    descJa: '保有するだけで年利5.0%の複利利息が毎日加算されるスマート金庫トークン。ロック期間なしでいつでも等価以上のXLMに引出可能です。',
+    descEn: 'Yield-bearing Stellar token earning 5.0% APY daily. Non-custodial with instant redemption back to native XLM anytime.',
+    actionType: 'vault-xlm'
+  },
+  yUSDC: {
+    symbol: 'yUSDC',
+    name: 'Yield USD Coin',
+    nameJa: '星の金庫 yUSDC (利息付き米ドル)',
+    tag: 'Auto-Compounding 5.0% APY',
+    tagJa: '米ドル年利5.0% 毎日自動複利',
+    rateUsd: '1.0500',
+    rateUnderlying: '1.0500 USDC',
+    change24h: '+5.0% APY',
+    isPositive: true,
+    apy: '5.0%',
+    network: 'UltraStellar Yield Protocol',
+    issuer: 'UltraStellar (LOBSTR Core Team)',
+    dexPair: '1 yUSDC ≈ $1.0500 USD',
+    descJa: 'デジタル米ドル（USDC）を年利5.0%で安全に自動運用。為替リスクなくドル建ての安定した利息を毎日ポケットに蓄積できます。',
+    descEn: 'Earn 5.0% APY on digital USD without market volatility. Yield is compounded daily into your non-custodial pocket.',
+    actionType: 'vault-usdc'
+  }
+};
+
 export default function App() {
   const [tgUser, setTgUser] = useState(null);
   const [activeTab, setActiveTab] = useState('wallet'); // 'wallet' | 'swap' | 'vault' | 'reward'
+  const [selectedAssetDetail, setSelectedAssetDetail] = useState(null); // 'XLM' | 'USDC' | 'yXLM' | 'yUSDC'
   
   // Active Skin Theme
   const [currentSkin, setCurrentSkin] = useState(() => {
@@ -1061,14 +1138,16 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="flex items-baseline gap-2 my-2">
-                <span className="text-4xl font-extrabold tracking-tight text-white font-mono">
+              <div className="flex items-center gap-2.5 my-2 flex-wrap">
+                <span className="text-4xl font-extrabold tracking-tight text-white font-mono leading-none">
                   {balance}
                 </span>
-                <span className="text-xl font-black bg-gradient-to-r from-amber-400 to-yellow-200 bg-clip-text text-transparent flex items-center gap-1.5">
-                  <XlmIcon className="w-5 h-5 rounded-lg inline-block shadow-sm" />
-                  <span>XLM</span>
-                </span>
+                <div className="inline-flex items-center gap-1.5 bg-amber-400/15 border border-amber-400/30 px-2.5 py-1 rounded-xl shadow-sm">
+                  <XlmIcon className="w-4 h-4 rounded-md shrink-0 shadow-sm" />
+                  <span className="text-xs font-black text-amber-300 font-mono tracking-wide leading-none">
+                    XLM
+                  </span>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 text-[11px] text-slate-400">
@@ -1110,75 +1189,125 @@ export default function App() {
                   <Layers className="w-3.5 h-3.5 text-cyan-400" />
                   {t('portfolioAssets')}
                 </span>
-                <span className="text-[10px] text-slate-400">{t('stellarDex')}</span>
+                <span className="text-[10px] text-cyan-400/80 font-mono">
+                  {lang === 'ja' ? 'タップで詳細・レート' : 'Tap for rates'}
+                </span>
               </div>
 
               <div className="space-y-2">
                 {/* 1. XLM (Native) */}
-                <div className="bg-slate-900/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedAssetDetail(ASSET_DETAILS.XLM);
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                    }
+                  }}
+                  className="w-full bg-slate-900/70 hover:bg-slate-900 border border-slate-800/80 hover:border-amber-400/50 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left"
+                >
                   <div className="flex items-center gap-2.5">
                     <XlmIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
                     <div>
-                      <p className="font-bold text-xs text-white">Stellar Lumens (XLM)</p>
-                      <p className="text-[9px] text-slate-400">{t('nativeAssetDesc')}</p>
+                      <p className="font-bold text-xs text-white group-hover:text-amber-300 transition-colors">Stellar Lumens (XLM)</p>
+                      <p className="text-[9px] text-slate-400 font-mono">1 XLM ≈ $0.1350 <span className="text-emerald-400 font-bold">+2.4%</span></p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono font-bold text-xs text-white">{balance}</p>
-                    <p className="text-[9px] text-slate-500">≈ ${(parseFloat(balance) * 0.135).toFixed(2)}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className="font-mono font-bold text-xs text-white">{balance}</p>
+                      <p className="text-[9px] text-slate-500 font-mono">≈ ${(parseFloat(balance) * 0.135).toFixed(2)}</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-amber-400 transition-colors shrink-0" />
                   </div>
-                </div>
+                </button>
 
                 {/* 2. USDC (Circle) */}
-                <div className="bg-slate-900/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedAssetDetail(ASSET_DETAILS.USDC);
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                    }
+                  }}
+                  className="w-full bg-slate-900/70 hover:bg-slate-900 border border-slate-800/80 hover:border-cyan-400/50 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left"
+                >
                   <div className="flex items-center gap-2.5">
                     <UsdcIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
                     <div>
-                      <p className="font-bold text-xs text-white">USD Coin (USDC)</p>
-                      <p className="text-[9px] text-slate-400">{t('usdcDesc')}</p>
+                      <p className="font-bold text-xs text-white group-hover:text-cyan-300 transition-colors">USD Coin (USDC)</p>
+                      <p className="text-[9px] text-slate-400 font-mono">1 USDC = $1.0000 <span className="text-slate-400">Pegged</span></p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono font-bold text-xs text-white">0.0000</p>
-                    <p className="text-[9px] text-slate-500">≈ $0.00</p>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className="font-mono font-bold text-xs text-white">0.0000</p>
+                      <p className="text-[9px] text-slate-500 font-mono">≈ $0.00</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-cyan-400 transition-colors shrink-0" />
                   </div>
-                </div>
+                </button>
 
                 {/* 3. yXLM (UltraStellar Yield XLM) */}
-                <div className="bg-gradient-to-r from-amber-950/20 to-slate-900/80 border border-amber-500/30 rounded-xl p-2.5 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedAssetDetail(ASSET_DETAILS.yXLM);
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                    }
+                  }}
+                  className="w-full bg-gradient-to-r from-amber-950/20 to-slate-900/80 hover:from-amber-950/30 hover:to-slate-900 border border-amber-500/30 hover:border-amber-400/60 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left"
+                >
                   <div className="flex items-center gap-2.5">
                     <YXlmIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <p className="font-bold text-xs text-amber-200">yXLM (Yield Lumens)</p>
+                        <p className="font-bold text-xs text-amber-200 group-hover:text-amber-100 transition-colors">yXLM (Yield Lumens)</p>
                         <span className="text-[8px] bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded font-bold">5.0% APY</span>
                       </div>
-                      <p className="text-[9px] text-slate-400">{t('yXlmDesc')}</p>
+                      <p className="text-[9px] text-slate-400 font-mono">1 yXLM ≈ 1.05 XLM <span className="text-emerald-400 font-bold">{t('compoundingDaily')}</span></p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono font-bold text-xs text-amber-300">{vaultInfo.yXLM}</p>
-                    <p className="text-[9px] text-emerald-400 font-mono">{t('compoundingDaily')}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className="font-mono font-bold text-xs text-amber-300">{vaultInfo.yXLM}</p>
+                      <p className="text-[9px] text-slate-500 font-mono">≈ ${(parseFloat(vaultInfo.yXLM || 0) * 0.1418).toFixed(2)}</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-amber-400 transition-colors shrink-0" />
                   </div>
-                </div>
+                </button>
 
                 {/* 4. yUSDC (UltraStellar Yield USDC) */}
-                <div className="bg-gradient-to-r from-cyan-950/20 to-slate-900/80 border border-cyan-500/30 rounded-xl p-2.5 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedAssetDetail(ASSET_DETAILS.yUSDC);
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                    }
+                  }}
+                  className="w-full bg-gradient-to-r from-cyan-950/20 to-slate-900/80 hover:from-cyan-950/30 hover:to-slate-900 border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left"
+                >
                   <div className="flex items-center gap-2.5">
                     <YUsdcIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <p className="font-bold text-xs text-cyan-200">yUSDC (Yield Dollar)</p>
+                        <p className="font-bold text-xs text-cyan-200 group-hover:text-cyan-100 transition-colors">yUSDC (Yield Dollar)</p>
                         <span className="text-[8px] bg-cyan-400/20 text-cyan-300 px-1.5 py-0.2 rounded font-bold">5.0% APY</span>
                       </div>
-                      <p className="text-[9px] text-slate-400">{t('yUsdcDesc')}</p>
+                      <p className="text-[9px] text-slate-400 font-mono">1 yUSDC ≈ $1.05 <span className="text-emerald-400 font-bold">{t('compoundingDaily')}</span></p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono font-bold text-xs text-cyan-300">{vaultInfo.yUSDC}</p>
-                    <p className="text-[9px] text-emerald-400 font-mono">{t('compoundingDaily')}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="text-right">
+                      <p className="font-mono font-bold text-xs text-cyan-300">{vaultInfo.yUSDC}</p>
+                      <p className="text-[9px] text-slate-500 font-mono">≈ ${(parseFloat(vaultInfo.yUSDC || 0) * 1.05).toFixed(2)}</p>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-cyan-400 transition-colors shrink-0" />
                   </div>
-                </div>
+                </button>
               </div>
             </div>
 
@@ -2313,6 +2442,192 @@ export default function App() {
               >
                 {t('btnClose')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 📊 ASSET MARKET RATE & DETAILS DRAWER */}
+      {/* ========================================================= */}
+      {selectedAssetDetail && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
+          <div className="bg-[#121626] border border-cyan-500/40 rounded-t-3xl sm:rounded-2xl p-5 max-w-sm w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <TokenIcon symbol={selectedAssetDetail.symbol} className="w-8 h-8 rounded-xl shadow-md" />
+                <div>
+                  <h3 className="font-extrabold text-sm text-white">
+                    {lang === 'ja' ? selectedAssetDetail.nameJa : selectedAssetDetail.name}
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    {lang === 'ja' ? selectedAssetDetail.tagJa : selectedAssetDetail.tag}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedAssetDetail(null)}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Price & 24h Change Box */}
+            <div className="bg-slate-950/80 rounded-2xl p-4 border border-slate-800/90 mb-4">
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">
+                {lang === 'ja' ? 'リアルタイム参考レート (SDEX)' : 'Real-time SDEX Rate'}
+              </div>
+              <div className="flex items-baseline justify-between">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-extrabold font-mono text-white">
+                    ${selectedAssetDetail.rateUsd}
+                  </span>
+                  <span className="text-xs font-bold text-slate-400">USD</span>
+                </div>
+                <span className="text-xs font-extrabold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1 font-mono">
+                  <TrendingUp className="w-3 h-3" />
+                  {selectedAssetDetail.change24h}
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1 font-mono flex items-center justify-between pt-2 border-t border-slate-900">
+                <span>{lang === 'ja' ? '日本円参考' : 'JPY Approx'}</span>
+                <span className="text-amber-300 font-bold">≈ {(parseFloat(selectedAssetDetail.rateUsd) * 155.0).toFixed(1)} JPY</span>
+              </div>
+            </div>
+
+            {/* User Holdings in this Asset */}
+            <div className="bg-gradient-to-r from-slate-900 to-[#161c32] rounded-xl p-3 border border-slate-800 mb-4 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] text-slate-400 block">{lang === 'ja' ? 'あなたの保有残高' : 'Your Holdings'}</span>
+                <span className="font-mono font-bold text-base text-white">
+                  {selectedAssetDetail.symbol === 'XLM' && balance}
+                  {selectedAssetDetail.symbol === 'USDC' && '0.0000'}
+                  {selectedAssetDetail.symbol === 'yXLM' && vaultInfo.yXLM}
+                  {selectedAssetDetail.symbol === 'yUSDC' && vaultInfo.yUSDC}
+                  {' '}{selectedAssetDetail.symbol}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-slate-400 block">{lang === 'ja' ? '評価額 (USD)' : 'Est. Value'}</span>
+                <span className="font-mono font-bold text-xs text-emerald-400">
+                  ≈ ${(() => {
+                    let bal = 0;
+                    if (selectedAssetDetail.symbol === 'XLM') bal = parseFloat(balance) || 0;
+                    if (selectedAssetDetail.symbol === 'yXLM') bal = parseFloat(vaultInfo.yXLM) || 0;
+                    if (selectedAssetDetail.symbol === 'yUSDC') bal = parseFloat(vaultInfo.yUSDC) || 0;
+                    return (bal * parseFloat(selectedAssetDetail.rateUsd)).toFixed(2);
+                  })()} USD
+                </span>
+              </div>
+            </div>
+
+            {/* Market & Protocol Specs (2x2 Grid) */}
+            <div className="grid grid-cols-2 gap-2 mb-4 text-[11px]">
+              <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                <span className="text-[10px] text-slate-400 block">{lang === 'ja' ? 'ネットワーク' : 'Network'}</span>
+                <span className="font-bold text-slate-200">{selectedAssetDetail.network}</span>
+              </div>
+              <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                <span className="text-[10px] text-slate-400 block">{lang === 'ja' ? '取引ペア' : 'Market Pair'}</span>
+                <span className="font-bold text-cyan-300 font-mono">{selectedAssetDetail.dexPair}</span>
+              </div>
+              <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                <span className="text-[10px] text-slate-400 block">{lang === 'ja' ? '送金・取引手数料' : 'Fee'}</span>
+                <span className="font-bold text-emerald-400 font-mono">~0.00001 XLM (0.3% Swap)</span>
+              </div>
+              <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                <span className="text-[10px] text-slate-400 block">{lang === 'ja' ? 'カストディ種別' : 'Custody Type'}</span>
+                <span className="font-bold text-amber-300 font-mono">Non-Custodial (自己主権)</span>
+              </div>
+            </div>
+
+            {/* Description */}
+            <p className="text-[11px] text-slate-400 leading-relaxed mb-4 bg-slate-950/40 p-3 rounded-xl border border-slate-900">
+              {lang === 'ja' ? selectedAssetDetail.descJa : selectedAssetDetail.descEn}
+            </p>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+              {selectedAssetDetail.symbol === 'XLM' && (
+                <>
+                  <button
+                    onClick={() => {
+                      setSelectedAssetDetail(null);
+                      setSwapFrom('XLM');
+                      setActiveTab('swap');
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-400/20 cursor-pointer"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5" />
+                    <span>{lang === 'ja' ? 'スワップする' : 'Swap XLM'}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedAssetDetail(null);
+                      setShowSendModal(true);
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-700 cursor-pointer"
+                  >
+                    <Send className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{lang === 'ja' ? '送金する' : 'Send XLM'}</span>
+                  </button>
+                </>
+              )}
+
+              {selectedAssetDetail.symbol === 'USDC' && (
+                <>
+                  <button
+                    onClick={() => {
+                      setSelectedAssetDetail(null);
+                      setSwapFrom('USDC');
+                      setActiveTab('swap');
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-400/20 cursor-pointer"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5" />
+                    <span>{lang === 'ja' ? 'スワップする' : 'Swap USDC'}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedAssetDetail(null);
+                      setVaultActionAsset('USDC');
+                      setShowVaultDepositModal(true);
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-400/20 cursor-pointer"
+                  >
+                    <Landmark className="w-3.5 h-3.5" />
+                    <span>{lang === 'ja' ? '年利5%金庫へ' : 'Earn 5% APY'}</span>
+                  </button>
+                </>
+              )}
+
+              {(selectedAssetDetail.symbol === 'yXLM' || selectedAssetDetail.symbol === 'yUSDC') && (
+                <>
+                  <button
+                    onClick={() => {
+                      setSelectedAssetDetail(null);
+                      setActiveTab('vault');
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-400/20 cursor-pointer"
+                  >
+                    <Landmark className="w-3.5 h-3.5" />
+                    <span>{lang === 'ja' ? '金庫を開く' : 'Open Vault'}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedAssetDetail(null);
+                      setVaultActionAsset(selectedAssetDetail.symbol === 'yXLM' ? 'XLM' : 'USDC');
+                      setShowVaultWithdrawModal(true);
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-700 cursor-pointer"
+                  >
+                    <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{lang === 'ja' ? '引き出す' : 'Withdraw'}</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
