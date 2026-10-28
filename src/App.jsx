@@ -113,6 +113,88 @@ function StarPocketLogo({ size = 44 }) {
   );
 }
 
+// Official Stellar Lumens (XLM) Vector Icon
+export function XlmIcon({ className = "w-6 h-6", size }) {
+  const style = size ? { width: size, height: size } : undefined;
+  return (
+    <div 
+      className={`relative flex items-center justify-center rounded-xl bg-gradient-to-tr from-[#080d1a] via-[#11192e] to-[#16233f] border border-amber-400/40 shadow-sm shrink-0 overflow-hidden ${className}`} 
+      style={style}
+    >
+      <div className="absolute inset-0 bg-amber-400/10 rounded-xl pointer-events-none" />
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[68%] h-[68%] relative z-10">
+        <path
+          d="M12.003 1.716c-1.37 0-2.7.27-3.948.78A10.18 10.18 0 0 0 2.66 7.901a10.136 10.136 0 0 0-.797 3.954c0 .258.01.516.027.775a1.942 1.942 0 0 1-1.055 1.88L0 14.934v1.902l2.463-1.26.072-.032v.005l.77-.39.758-.385.066-.039 14.807-7.56 1.666-.847 3.392-1.732V2.694L17.792 5.86 3.744 13.025l-.104.055-.017-.115a8.286 8.286 0 0 1-.071-1.105c0-2.255.88-4.377 2.474-5.977a8.462 8.462 0 0 1 2.71-1.82 8.513 8.513 0 0 1 3.2-.654h.067a8.41 8.41 0 0 1 4.09 1.055l1.628-.83.126-.066a10.11 10.11 0 0 0-5.845-1.853zM24 7.143 5.047 16.808l-1.666.847L0 19.382v1.902l3.282-1.671 2.91-1.485 14.058-7.153.105-.055.016.115c.05.369.072.743.072 1.11 0 2.255-.88 4.383-2.475 5.978a8.461 8.461 0 0 1-2.71 1.82 8.305 8.305 0 0 1-3.2.654h-.06c-1.441 0-2.86-.369-4.102-1.061l-.066.033-1.683.857c.594.418 1.232.776 1.903 1.062a10.11 10.11 0 0 0 3.947.797 10.09 10.09 0 0 0 7.17-2.975 10.136 10.136 0 0 0 2.969-7.18c0-.259-.005-.523-.027-.781a1.942 1.942 0 0 1 1.055-1.88L24 9.044z"
+          fill="url(#xlmGrad)"
+        />
+        <defs>
+          <linearGradient id="xlmGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#FDE047" />
+            <stop offset="0.5" stopColor="#F59E0B" />
+            <stop offset="1" stopColor="#38BDF8" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
+// Official USD Coin (USDC) Vector Icon
+export function UsdcIcon({ className = "w-6 h-6", size }) {
+  const style = size ? { width: size, height: size } : undefined;
+  return (
+    <div 
+      className={`relative flex items-center justify-center rounded-xl bg-gradient-to-tr from-[#142e4e] via-[#1a4a7d] to-[#2775CA] border border-cyan-400/40 shadow-sm shrink-0 overflow-hidden ${className}`} 
+      style={style}
+    >
+      <div className="absolute inset-0 bg-cyan-400/10 rounded-xl pointer-events-none" />
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[72%] h-[72%] relative z-10">
+        <path d="M20.022 18.124c0-2.124-1.28-2.852-3.84-3.156-1.828-.243-2.193-.728-2.193-1.578 0-.85.61-1.396 1.828-1.396 1.097 0 1.707.364 2.011 1.275a.458.458 0 00.427.303h.975a.416.416 0 00.427-.425v-.06a3.04 3.04 0 00-2.743-2.489V9.142c0-.243-.183-.425-.487-.486h-.915c-.243 0-.426.182-.487.486v1.396c-1.829.242-2.986 1.456-2.986 2.974 0 2.002 1.218 2.791 3.778 3.095 1.707.303 2.255.668 2.255 1.639 0 .97-.853 1.638-2.011 1.638-1.585 0-2.133-.667-2.316-1.578-.06-.242-.244-.364-.427-.364h-1.036a.416.416 0 00-.426.425v.06c.243 1.518 1.219 2.61 3.23 2.914v1.457c0 .242.183.425.487.485h.915c.243 0 .426-.182.487-.485V21.34c1.829-.303 3.047-1.578 3.047-3.217z" fill="#FFFFFF"/>
+        <path d="M12.892 24.497c-4.754-1.7-7.192-6.98-5.424-11.653.914-2.55 2.925-4.491 5.424-5.402.244-.121.365-.303.365-.607v-.85c0-.242-.121-.424-.365-.485-.061 0-.183 0-.244.06a10.895 10.895 0 00-7.13 13.717c1.096 3.4 3.717 6.01 7.13 7.102.244.121.488 0 .548-.243.061-.06.061-.122.061-.243v-.85c0-.182-.182-.424-.365-.546zm6.46-18.936c-.244-.122-.488 0-.548.242-.061.061-.061.122-.061.243v.85c0 .243.182.485.365.607 4.754 1.7 7.192 6.98 5.424 11.653-.914 2.55-2.925 4.491-5.424 5.402-.244.121-.365.303-.365.607v.85c0 .242.121.424.365.485.061 0 .183 0 .244-.06a10.895 10.895 0 007.13-13.717c-1.096-3.46-3.778-6.07-7.13-7.162z" fill="#FFFFFF" fillOpacity="0.75"/>
+      </svg>
+    </div>
+  );
+}
+
+// Yield Lumens (yXLM) Vector Icon
+export function YXlmIcon({ className = "w-6 h-6", size }) {
+  const style = size ? { width: size, height: size } : undefined;
+  return (
+    <div className={`relative ${className}`} style={style}>
+      <XlmIcon className="w-full h-full" />
+      <span className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-[9px] px-1 rounded-full border border-[#080d1a] shadow-sm leading-tight">
+        y
+      </span>
+    </div>
+  );
+}
+
+// Yield Dollar (yUSDC) Vector Icon
+export function YUsdcIcon({ className = "w-6 h-6", size }) {
+  const style = size ? { width: size, height: size } : undefined;
+  return (
+    <div className={`relative ${className}`} style={style}>
+      <UsdcIcon className="w-full h-full" />
+      <span className="absolute -bottom-1 -right-1 bg-gradient-to-r from-cyan-400 to-blue-400 text-slate-950 font-black text-[9px] px-1 rounded-full border border-[#080d1a] shadow-sm leading-tight">
+        y
+      </span>
+    </div>
+  );
+}
+
+// Universal Token Icon Dispatcher
+export function TokenIcon({ symbol, className = "w-6 h-6", size }) {
+  if (symbol === 'XLM') return <XlmIcon className={className} size={size} />;
+  if (symbol === 'USDC') return <UsdcIcon className={className} size={size} />;
+  if (symbol === 'yXLM') return <YXlmIcon className={className} size={size} />;
+  if (symbol === 'yUSDC') return <YUsdcIcon className={className} size={size} />;
+  return (
+    <div className={`rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-[10px] text-white shrink-0 ${className}`}>
+      {symbol?.slice(0, 3) || '★'}
+    </div>
+  );
+}
+
 // 4 Distinct Themed Skins
 const SKINS = {
   cosmos: {
@@ -983,8 +1065,9 @@ export default function App() {
                 <span className="text-4xl font-extrabold tracking-tight text-white font-mono">
                   {balance}
                 </span>
-                <span className="text-xl font-black bg-gradient-to-r from-amber-400 to-yellow-200 bg-clip-text text-transparent">
-                  XLM
+                <span className="text-xl font-black bg-gradient-to-r from-amber-400 to-yellow-200 bg-clip-text text-transparent flex items-center gap-1.5">
+                  <XlmIcon className="w-5 h-5 rounded-lg inline-block shadow-sm" />
+                  <span>XLM</span>
                 </span>
               </div>
 
@@ -1034,11 +1117,9 @@ export default function App() {
                 {/* 1. XLM (Native) */}
                 <div className="bg-slate-900/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-xs">
-                      XLM
-                    </div>
+                    <XlmIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
                     <div>
-                      <p className="font-bold text-xs text-white">Stellar Lumens</p>
+                      <p className="font-bold text-xs text-white">Stellar Lumens (XLM)</p>
                       <p className="text-[9px] text-slate-400">{t('nativeAssetDesc')}</p>
                     </div>
                   </div>
@@ -1051,9 +1132,7 @@ export default function App() {
                 {/* 2. USDC (Circle) */}
                 <div className="bg-slate-900/70 border border-slate-800/80 rounded-xl p-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 font-black text-xs">
-                      $
-                    </div>
+                    <UsdcIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
                     <div>
                       <p className="font-bold text-xs text-white">USD Coin (USDC)</p>
                       <p className="text-[9px] text-slate-400">{t('usdcDesc')}</p>
@@ -1068,9 +1147,7 @@ export default function App() {
                 {/* 3. yXLM (UltraStellar Yield XLM) */}
                 <div className="bg-gradient-to-r from-amber-950/20 to-slate-900/80 border border-amber-500/30 rounded-xl p-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-sm">
-                      y★
-                    </div>
+                    <YXlmIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
                     <div>
                       <div className="flex items-center gap-1.5">
                         <p className="font-bold text-xs text-amber-200">yXLM (Yield Lumens)</p>
@@ -1088,9 +1165,7 @@ export default function App() {
                 {/* 4. yUSDC (UltraStellar Yield USDC) */}
                 <div className="bg-gradient-to-r from-cyan-950/20 to-slate-900/80 border border-cyan-500/30 rounded-xl p-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 text-slate-950 flex items-center justify-center font-black text-xs shadow-sm">
-                      y$
-                    </div>
+                    <YUsdcIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
                     <div>
                       <div className="flex items-center gap-1.5">
                         <p className="font-bold text-xs text-cyan-200">yUSDC (Yield Dollar)</p>
@@ -1219,16 +1294,19 @@ export default function App() {
                       >
                         {t('btnMax')}
                       </button>
-                      <select
-                        value={swapFrom}
-                        onChange={(e) => setSwapFrom(e.target.value)}
-                        className="bg-slate-800 border border-slate-700 text-white font-bold text-xs rounded-lg px-2.5 py-1.5 outline-none cursor-pointer"
-                      >
-                        <option value="XLM">XLM</option>
-                        <option value="USDC">USDC</option>
-                        <option value="yXLM">yXLM</option>
-                        <option value="yUSDC">yUSDC</option>
-                      </select>
+                      <div className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1">
+                        <TokenIcon symbol={swapFrom} className="w-5 h-5 rounded-md" />
+                        <select
+                          value={swapFrom}
+                          onChange={(e) => setSwapFrom(e.target.value)}
+                          className="bg-transparent text-white font-bold text-xs outline-none cursor-pointer"
+                        >
+                          <option value="XLM" className="bg-slate-900">XLM</option>
+                          <option value="USDC" className="bg-slate-900">USDC</option>
+                          <option value="yXLM" className="bg-slate-900">yXLM</option>
+                          <option value="yUSDC" className="bg-slate-900">yUSDC</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1254,16 +1332,19 @@ export default function App() {
                     <span className="text-xl font-bold font-mono text-emerald-400">
                       {getEstimatedSwapOutput(swapFrom, swapTo, swapAmount)}
                     </span>
-                    <select
-                      value={swapTo}
-                      onChange={(e) => setSwapTo(e.target.value)}
-                      className="bg-slate-800 border border-slate-700 text-white font-bold text-xs rounded-lg px-2.5 py-1.5 outline-none shrink-0 cursor-pointer"
-                    >
-                      <option value="USDC">USDC</option>
-                      <option value="XLM">XLM</option>
-                      <option value="yXLM">yXLM</option>
-                      <option value="yUSDC">yUSDC</option>
-                    </select>
+                    <div className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1">
+                      <TokenIcon symbol={swapTo} className="w-5 h-5 rounded-md" />
+                      <select
+                        value={swapTo}
+                        onChange={(e) => setSwapTo(e.target.value)}
+                        className="bg-transparent text-white font-bold text-xs outline-none shrink-0 cursor-pointer"
+                      >
+                        <option value="USDC" className="bg-slate-900">USDC</option>
+                        <option value="XLM" className="bg-slate-900">XLM</option>
+                        <option value="yXLM" className="bg-slate-900">yXLM</option>
+                        <option value="yUSDC" className="bg-slate-900">yUSDC</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -1328,9 +1409,9 @@ export default function App() {
               {/* VAULT STATS GRID */}
               <div className="grid grid-cols-2 gap-2 my-3">
                 <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800">
-                  <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Star className="w-3 h-3 text-amber-400" />
-                    {t('inVaultYxlm')}
+                  <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
+                    <YXlmIcon className="w-3.5 h-3.5 rounded-sm shrink-0" />
+                    <span>{t('inVaultYxlm')}</span>
                   </p>
                   <p className="text-xl font-extrabold text-amber-300 font-mono mt-1">
                     {vaultInfo.yXLM}
@@ -1341,9 +1422,9 @@ export default function App() {
                 </div>
 
                 <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800">
-                  <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <DollarSign className="w-3 h-3 text-cyan-400" />
-                    {t('inVaultYusdc')}
+                  <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
+                    <YUsdcIcon className="w-3.5 h-3.5 rounded-sm shrink-0" />
+                    <span>{t('inVaultYusdc')}</span>
                   </p>
                   <p className="text-xl font-extrabold text-cyan-300 font-mono mt-1">
                     {vaultInfo.yUSDC}
@@ -1845,24 +1926,26 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setVaultActionAsset('XLM')}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       vaultActionAsset === 'XLM' 
                         ? 'bg-amber-500/20 border-amber-400 text-amber-300' 
                         : 'bg-slate-900 border-slate-800 text-slate-400'
                     }`}
                   >
-                    XLM → yXLM
+                    <XlmIcon className="w-3.5 h-3.5 rounded-sm" />
+                    <span>XLM → yXLM</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setVaultActionAsset('USDC')}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       vaultActionAsset === 'USDC' 
                         ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' 
                         : 'bg-slate-900 border-slate-800 text-slate-400'
                     }`}
                   >
-                    USDC → yUSDC
+                    <UsdcIcon className="w-3.5 h-3.5 rounded-sm" />
+                    <span>USDC → yUSDC</span>
                   </button>
                 </div>
               </div>
@@ -1945,24 +2028,26 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setVaultActionAsset('XLM')}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       vaultActionAsset === 'XLM' 
                         ? 'bg-amber-500/20 border-amber-400 text-amber-300' 
                         : 'bg-slate-900 border-slate-800 text-slate-400'
                     }`}
                   >
-                    yXLM → XLM
+                    <YXlmIcon className="w-3.5 h-3.5 rounded-sm" />
+                    <span>yXLM → XLM</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setVaultActionAsset('USDC')}
-                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       vaultActionAsset === 'USDC' 
                         ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' 
                         : 'bg-slate-900 border-slate-800 text-slate-400'
                     }`}
                   >
-                    yUSDC → USDC
+                    <YUsdcIcon className="w-3.5 h-3.5 rounded-sm" />
+                    <span>yUSDC → USDC</span>
                   </button>
                 </div>
               </div>
