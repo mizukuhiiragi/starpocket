@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Zap, 
   Coins, 
@@ -37,7 +37,8 @@ import {
   BookOpen,
   Bookmark,
   Trash2,
-  Plus
+  Plus,
+  Eye
 } from 'lucide-react';
 import { Keypair, StrKey, Horizon, Networks, TransactionBuilder, Operation, Asset, Memo } from '@stellar/stellar-sdk';
 import { translations } from './i18n.js';
@@ -384,6 +385,8 @@ export const INITIAL_ADDRESS_BOOK = [
   }
 ];
 
+const MAIN_TABS = ['wallet', 'swap', 'vault', 'reward'];
+
 export default function App() {
   const [tgUser, setTgUser] = useState(null);
   const [activeTab, setActiveTab] = useState('wallet'); // 'wallet' | 'swap' | 'vault' | 'reward'
@@ -398,6 +401,63 @@ export default function App() {
   const [isStellaUnlocked, setIsStellaUnlocked] = useState(() => {
     return localStorage.getItem('starpocket_skin_stella_unlocked') === 'true';
   });
+
+  // Character Full-Body Showcase Modal
+  const [showcaseModal, setShowcaseModal] = useState(false);
+  const [showcaseSkin, setShowcaseSkin] = useState('stella'); // 'stella' | 'chibi'
+
+  // Touch Swipe for Top Tabs (Pocket / Swap / Vault / Reward)
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const touchEndXRef = useRef(0);
+  const touchEndYRef = useRef(0);
+  const isSwipingInteractiveRef = useRef(false);
+
+  const handleTouchStart = (e) => {
+    if (e.target.closest('input, textarea, select, [role="slider"]')) {
+      isSwipingInteractiveRef.current = true;
+      return;
+    }
+    isSwipingInteractiveRef.current = false;
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    touchEndXRef.current = e.touches[0].clientX;
+    touchEndYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e) => {
+    if (isSwipingInteractiveRef.current) return;
+    touchEndXRef.current = e.touches[0].clientX;
+    touchEndYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = () => {
+    if (isSwipingInteractiveRef.current) return;
+    const deltaX = touchEndXRef.current - touchStartXRef.current;
+    const deltaY = touchEndYRef.current - touchStartYRef.current;
+
+    // Minimum swipe distance of 45px and predominantly horizontal (deltaX > 1.4 * deltaY)
+    if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4) {
+      const currentIndex = MAIN_TABS.indexOf(activeTab);
+      if (currentIndex !== -1) {
+        if (deltaX < 0 && currentIndex < MAIN_TABS.length - 1) {
+          // Swipe Left -> Next Tab (Wallet -> Swap -> Vault -> Reward)
+          const nextTab = MAIN_TABS[currentIndex + 1];
+          setActiveTab(nextTab);
+          if (window.Telegram?.WebApp?.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.selectionChanged();
+          }
+        } else if (deltaX > 0 && currentIndex > 0) {
+          // Swipe Right -> Prev Tab (Reward -> Vault -> Swap -> Wallet)
+          const prevTab = MAIN_TABS[currentIndex - 1];
+          setActiveTab(prevTab);
+          if (window.Telegram?.WebApp?.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.selectionChanged();
+          }
+        }
+      }
+    }
+  };
 
   const skin = SKINS[currentSkin] || SKINS.cosmos;
 
@@ -1422,6 +1482,24 @@ export default function App() {
 
         {/* Right Header items: Compact Star Points & Unified Settings */}
         <div className="flex items-center gap-1.5 shrink-0">
+          {/* Character Full-Body Showcase Button */}
+          {(currentSkin === 'stella' || currentSkin === 'chibi') && (
+            <button
+              onClick={() => {
+                setShowcaseSkin(currentSkin);
+                setShowcaseModal(true);
+                if (window.Telegram?.WebApp?.HapticFeedback) {
+                  window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                }
+              }}
+              className="flex items-center gap-1 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 hover:from-purple-500/30 hover:to-cyan-500/30 border border-purple-400/50 px-2 py-1 rounded-full text-xs font-bold text-cyan-300 hover:text-white transition cursor-pointer active:scale-95 shadow-sm shadow-purple-500/20"
+              title={lang === 'ja' ? '全身イラスト鑑賞' : 'View Full Illustration'}
+            >
+              <Eye className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
+              <span className="text-[10px] font-mono font-bold">{lang === 'ja' ? '全身' : 'View'}</span>
+            </button>
+          )}
+
           {/* Star Points Badge (Click to open Rewards / Calendar) */}
           <button
             onClick={() => {
@@ -1505,8 +1583,13 @@ export default function App() {
         </button>
       </div>
 
-      {/* MAIN BODY CONTENT */}
-      <main className="space-y-3.5 my-auto pb-3">
+      {/* MAIN BODY CONTENT (SWIPEABLE TABS) */}
+      <main 
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="space-y-3.5 my-auto pb-3 min-h-[460px] touch-pan-y"
+      >
         
         {/* ========================================================= */}
         {/* 👛 TAB 1: WALLET & MULTI-ASSET PORTFOLIO */}
@@ -3223,7 +3306,26 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="shrink-0">
+                      <div className="shrink-0 flex items-center gap-2">
+                        {(item.id === 'stella' || item.id === 'chibi') && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowcaseSkin(item.id);
+                              setShowcaseModal(true);
+                              setShowSettingsModal(false);
+                              if (window.Telegram?.WebApp?.HapticFeedback) {
+                                window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                              }
+                            }}
+                            className="py-1 px-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/40 text-[10px] font-bold text-cyan-300 hover:text-white flex items-center gap-1 cursor-pointer transition shadow-sm"
+                            title={lang === 'ja' ? '全身イラストを鑑賞' : 'View Full Illustration'}
+                          >
+                            <Eye className="w-3 h-3 text-cyan-300" />
+                            <span>{lang === 'ja' ? '全身' : 'View'}</span>
+                          </button>
+                        )}
                         {isActive ? (
                           <CheckCircle2 className="w-4 h-4 text-amber-400" />
                         ) : (
@@ -3964,6 +4066,125 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 FULL-BODY ILLUSTRATION SHOWCASE MODAL (全身鑑賞モード) */}
+      {showcaseModal && (
+        <div 
+          onClick={() => setShowcaseModal(false)}
+          className="fixed inset-0 z-50 flex flex-col justify-between p-4 bg-slate-950/95 backdrop-blur-2xl animate-in fade-in duration-300 cursor-pointer select-none"
+        >
+          {/* Top Bar */}
+          <div className="flex items-center justify-between z-10 shrink-0 pt-2" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-lg shadow-sm">
+                {showcaseSkin === 'chibi' ? '🌟' : '🪐'}
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
+                  <span>{showcaseSkin === 'chibi' ? (lang === 'ja' ? 'ちびステラ ＆ お星さま' : 'Chibi Stella & Star') : (lang === 'ja' ? '宇宙浮遊ステラ' : 'Techwear Stella')}</span>
+                  <span className="text-[9px] bg-cyan-400/20 border border-cyan-400/40 text-cyan-300 px-1.5 py-0.2 rounded-full font-bold">
+                    {lang === 'ja' ? '全身鑑賞' : 'Full Showcase'}
+                  </span>
+                </h3>
+                <p className="text-[10px] text-slate-400 font-mono">
+                  {showcaseSkin === 'chibi' ? 'Chibi Stella Character Art' : 'Official Techwear Illustration'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowcaseModal(false)}
+              className="p-1.5 rounded-full bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white transition cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Character Illustration Centerpiece */}
+          <div className="relative flex-1 flex flex-col items-center justify-center my-auto overflow-hidden pointer-events-none">
+            {/* Background Aura Flare */}
+            <div className={`absolute w-[340px] h-[480px] rounded-full blur-3xl ${
+              showcaseSkin === 'chibi' 
+                ? 'bg-gradient-to-br from-cyan-400/30 via-purple-400/25 to-amber-300/20' 
+                : 'bg-gradient-to-br from-purple-600/35 via-cyan-500/25 to-pink-500/20'
+            }`} />
+
+            <img
+              src={showcaseSkin === 'chibi' ? '/chibi_stella_skin.jpg' : '/stella_techwear_skin.jpg'}
+              alt="Character Showcase"
+              className="max-h-[58vh] max-w-[90vw] object-contain drop-shadow-[0_0_35px_rgba(56,189,248,0.5)] animate-float-stella select-none"
+            />
+
+            {/* Character Dialogue Quote */}
+            <div className="mt-3 max-w-xs text-center px-4 py-2 rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-2xl backdrop-blur-md">
+              <p className="text-xs font-bold text-amber-200 leading-relaxed font-sans">
+                {showcaseSkin === 'chibi' 
+                  ? (lang === 'ja' ? '『ちびもいっしょだよー！お星さまたくさん集めてぎゅーってしよ🌟』' : '"Chibi is right here! Let\'s collect shining stars together!🌟"')
+                  : (lang === 'ja' ? '『お兄ちゃん、いつもStarPocketを使ってくれてありがとう！宇宙の果てまで一緒に行こうね⭐』' : '"Always by your side, onii-chan! Let\'s venture across the cosmos together!⭐"')
+                }
+              </p>
+            </div>
+          </div>
+
+          {/* Bottom Switcher & Return Hint */}
+          <div className="flex flex-col items-center gap-2.5 z-10 shrink-0 pb-3" onClick={(e) => e.stopPropagation()}>
+            {/* Character Switcher Tabs */}
+            <div className="inline-flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 shadow-lg">
+              <button
+                onClick={() => {
+                  setShowcaseSkin('stella');
+                  if (window.Telegram?.WebApp?.HapticFeedback) {
+                    window.Telegram.WebApp.HapticFeedback.selectionChanged();
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  showcaseSkin === 'stella'
+                    ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>🪐</span>
+                <span>{lang === 'ja' ? 'ステラ' : 'Stella'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowcaseSkin('chibi');
+                  if (window.Telegram?.WebApp?.HapticFeedback) {
+                    window.Telegram.WebApp.HapticFeedback.selectionChanged();
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  showcaseSkin === 'chibi'
+                    ? 'bg-cyan-500 text-slate-950 font-black shadow-md shadow-cyan-400/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>🌟</span>
+                <span>{lang === 'ja' ? 'ちびステラ' : 'Chibi Stella'}</span>
+              </button>
+            </div>
+
+            {/* Apply Skin Button (if not currently active) */}
+            {currentSkin !== showcaseSkin && (
+              <button
+                onClick={() => {
+                  handleSelectSkin(showcaseSkin);
+                  setShowcaseModal(false);
+                }}
+                className="text-[11px] font-bold text-amber-300 hover:text-amber-200 bg-amber-400/15 border border-amber-400/30 px-3 py-1 rounded-full cursor-pointer transition active:scale-95"
+              >
+                {lang === 'ja' ? '✨ このスキンをウォレットに適用する' : '✨ Apply this skin theme'}
+              </button>
+            )}
+
+            {/* Tap hint */}
+            <p className="text-[10px] text-slate-500 font-mono text-center">
+              {lang === 'ja' ? '画面をタップするとウォレットに戻ります' : 'Tap anywhere to return to wallet'}
+            </p>
           </div>
         </div>
       )}
