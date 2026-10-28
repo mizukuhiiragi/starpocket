@@ -281,6 +281,7 @@ app.post('/api/gamification/redeem', (req, res) => {
   }
 
   const PERK_CATALOG = {
+    chibi_skin: { name: '限定スキン【ちびステラ ＆ お星さま ⭐】', cost: 150 },
     vault_boost: { name: '星の金庫 +1.0% APYブースト (30日)', cost: 200 },
     pet_candy: { name: 'StarPet 彗星キャンディ 🍭', cost: 80 },
     swap_discount: { name: 'Star Swap 手数料50%OFFチケット', cost: 150 },
@@ -302,6 +303,7 @@ app.post('/api/gamification/redeem', (req, res) => {
     data.perks.push(perkId);
   }
   userGamificationData.set(address, data);
+  savePersistedData();
 
   res.json({
     success: true,

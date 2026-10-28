@@ -276,6 +276,22 @@ const SKINS = {
     pillActive: 'bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 text-slate-950 font-black shadow-lg shadow-purple-500/30',
     accentBorder: 'border-purple-400/60',
     accentBadge: 'bg-purple-500/20 border-cyan-400/50 text-cyan-200'
+  },
+  chibi: {
+    id: 'chibi',
+    name: 'ちびステラ ＆ お星さま 🌟',
+    nameEn: 'Chibi Stella & Star',
+    icon: '🌟',
+    isSpecial: true,
+    previewGradient: 'from-[#1c1836] via-[#10243d] to-[#0a1526]',
+    previewBorder: 'border-cyan-300',
+    bgClass: 'bg-[#080f1e]',
+    glow1: 'bg-cyan-400/25',
+    glow2: 'bg-purple-400/25',
+    headerText: 'from-cyan-200 via-sky-200 to-amber-200',
+    pillActive: 'bg-gradient-to-r from-sky-400 via-cyan-300 to-amber-300 text-slate-950 font-black shadow-lg shadow-cyan-400/30',
+    accentBorder: 'border-cyan-300/60',
+    accentBadge: 'bg-cyan-500/20 border-cyan-400/50 text-cyan-200'
   }
 };
 
@@ -732,7 +748,9 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         setGamification(data);
-        if (perkId === 'cyber_skin') {
+        if (perkId === 'chibi_skin') {
+          handleSelectSkin('chibi');
+        } else if (perkId === 'cyber_skin') {
           handleSelectSkin('cyber');
         }
         setGamificationNotice(data.message);
@@ -1349,6 +1367,21 @@ export default function App() {
             className="max-h-[80vh] w-auto object-contain opacity-30 mix-blend-screen pointer-events-none select-none animate-float-stella"
             style={{
               filter: 'drop-shadow(0 0 25px rgba(168, 85, 247, 0.45)) drop-shadow(0 0 45px rgba(6, 182, 212, 0.3))'
+            }}
+          />
+        </div>
+      )}
+
+      {/* 🌟 FLOATING CHIBI STELLA SKIN BACKGROUND */}
+      {currentSkin === 'chibi' && (
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-center justify-center">
+          <div className="absolute w-[360px] h-[520px] rounded-full bg-gradient-to-br from-cyan-400/25 via-purple-400/20 to-amber-300/15 blur-3xl pointer-events-none" />
+          <img
+            src="/chibi_stella_skin.jpg"
+            alt="Floating Chibi Stella"
+            className="max-h-[82vh] w-auto object-contain opacity-35 mix-blend-screen pointer-events-none select-none animate-float-stella"
+            style={{
+              filter: 'drop-shadow(0 0 25px rgba(56, 189, 248, 0.5)) drop-shadow(0 0 45px rgba(251, 191, 36, 0.35))'
             }}
           />
         </div>
@@ -2259,6 +2292,13 @@ export default function App() {
 
               <div className="grid grid-cols-2 gap-2">
                 {[
+                  { 
+                    id: 'chibi_skin', 
+                    name: lang === 'ja' ? 'ちびステラスキン ⭐' : 'Chibi Stella Skin ⭐', 
+                    desc: lang === 'ja' ? 'お星さまを抱っこしたちびステラが背景でふわふわ浮遊！' : 'Chibi Stella hugging a star floats softly in your background!', 
+                    cost: 150, 
+                    icon: '🌟' 
+                  },
                   { id: 'vault_boost', name: t('perkVaultBoost'), desc: t('perkVaultBoostDesc'), cost: 200, icon: '🏦' },
                   { id: 'pet_candy', name: t('perkPetCandy'), desc: t('perkPetCandyDesc'), cost: 80, icon: '🍭' },
                   { id: 'swap_discount', name: t('perkSwapDiscount'), desc: t('perkSwapDiscountDesc'), cost: 150, icon: '🔄' },
@@ -3162,6 +3202,7 @@ export default function App() {
                             {item.id === 'sakura' && 'Midnight Plum & Sakura'}
                             {item.id === 'retro' && '8-Bit Dot GameBoy LCD'}
                             {item.id === 'stella' && (lang === 'ja' ? '✨ 宇宙浮遊ステラ ＆ ネオンオーラ背景' : "✨ Floating Stella & Nebula Aura BG")}
+                            {item.id === 'chibi' && (lang === 'ja' ? '🌟 お星さまを抱っこしたちびステラ浮遊背景 (150 SP)' : "🌟 Floating Chibi Stella & Star BG (150 SP)")}
                           </div>
                         </div>
                       </div>
