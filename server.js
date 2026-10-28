@@ -50,12 +50,8 @@ async function initFaucet() {
       await fundViaFriendbot(faucetKeypair.publicKey());
     }
   } catch (err) {
-    if (err.name === 'NotFoundError') {
-      console.log('Faucet account not found on Testnet, requesting Friendbot funding...');
-      await fundViaFriendbot(faucetKeypair.publicKey());
-    } else {
-      console.error('Error loading faucet account:', err.message);
-    }
+    console.log('Faucet account not found on Testnet, requesting Friendbot funding...');
+    await fundViaFriendbot(faucetKeypair.publicKey());
   }
 }
 
@@ -124,8 +120,17 @@ app.get('/api/faucet', async (req, res) => {
     if (!faucetKeypair) {
       return res.status(503).json({ error: 'Faucet initializing' });
     }
-    const acc = await server.loadAccount(faucetKeypair.publicKey());
-    const nativeBal = acc.balances.find(b => b.asset_type === 'native')?.balance || '0';
+    let nativeBal = '0';
+    try {
+      const acc = await server.loadAccount(faucetKeypair.publicKey());
+      nativeBal = acc.balances.find(b => b.asset_type === 'native')?.balance || '0';
+    } catch (e) {
+      await fundViaFriendbot(faucetKeypair.publicKey());
+      try {
+        const acc = await server.loadAccount(faucetKeypair.publicKey());
+        nativeBal = acc.balances.find(b => b.asset_type === 'native')?.balance || '0';
+      } catch (e2) {}
+    }
     res.json({
       publicKey: faucetKeypair.publicKey(),
       balance: nativeBal,
