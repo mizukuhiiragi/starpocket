@@ -31,7 +31,8 @@ import {
   ArrowDownUp,
   Repeat,
   Globe,
-  Gift
+  Gift,
+  Palette
 } from 'lucide-react';
 import { Keypair, StrKey, Horizon, Networks, TransactionBuilder, Operation, Asset, Memo } from '@stellar/stellar-sdk';
 import { translations } from './i18n.js';
@@ -111,9 +112,90 @@ function StarPocketLogo({ size = 44 }) {
   );
 }
 
+// 4 Distinct Themed Skins
+const SKINS = {
+  cosmos: {
+    id: 'cosmos',
+    name: '深宇宙ネイビー',
+    nameEn: 'Deep Cosmos',
+    icon: '🌌',
+    previewGradient: 'from-[#1b223c] to-[#0d1222]',
+    previewBorder: 'border-amber-400',
+    bgClass: 'bg-[#080b14]',
+    glow1: 'bg-amber-500/15',
+    glow2: 'bg-cyan-500/15',
+    headerText: 'from-amber-300 via-yellow-200 to-white',
+    pillActive: 'bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 shadow-md shadow-amber-400/20',
+    accentBorder: 'border-amber-400/40',
+    accentBadge: 'bg-amber-400/15 border-amber-400/40 text-amber-300'
+  },
+  cyber: {
+    id: 'cyber',
+    name: 'サイバー天文台',
+    nameEn: 'Cyber Observatory',
+    icon: '⚡',
+    previewGradient: 'from-[#070914] via-[#141228] to-[#080718]',
+    previewBorder: 'border-cyan-400',
+    bgClass: 'bg-[#050711]',
+    glow1: 'bg-cyan-500/25',
+    glow2: 'bg-fuchsia-500/25',
+    headerText: 'from-cyan-300 via-fuchsia-300 to-pink-400',
+    pillActive: 'bg-gradient-to-r from-cyan-400 to-fuchsia-400 text-slate-950 shadow-md shadow-cyan-500/30',
+    accentBorder: 'border-cyan-400/50',
+    accentBadge: 'bg-cyan-400/15 border-cyan-400/40 text-cyan-300'
+  },
+  sakura: {
+    id: 'sakura',
+    name: '夜桜星雲',
+    nameEn: 'Sakura Nebula',
+    icon: '🌸',
+    previewGradient: 'from-[#241032] via-[#1a0c24] to-[#12081c]',
+    previewBorder: 'border-pink-400',
+    bgClass: 'bg-[#12081c]',
+    glow1: 'bg-pink-500/20',
+    glow2: 'bg-purple-500/20',
+    headerText: 'from-pink-300 via-rose-200 to-amber-200',
+    pillActive: 'bg-gradient-to-r from-pink-400 to-rose-300 text-slate-950 shadow-md shadow-pink-500/30',
+    accentBorder: 'border-pink-400/50',
+    accentBadge: 'bg-pink-400/15 border-pink-400/40 text-pink-300'
+  },
+  retro: {
+    id: 'retro',
+    name: 'レトロ8ビット',
+    nameEn: '8-Bit Dot Game',
+    icon: '👾',
+    previewGradient: 'from-[#1a281c] via-[#132015] to-[#0f1710]',
+    previewBorder: 'border-emerald-400',
+    bgClass: 'bg-[#0f1710]',
+    glow1: 'bg-emerald-500/20',
+    glow2: 'bg-lime-500/20',
+    headerText: 'from-emerald-300 via-green-200 to-lime-300',
+    pillActive: 'bg-gradient-to-r from-emerald-400 to-lime-300 text-slate-950 shadow-md shadow-emerald-500/30 font-mono',
+    accentBorder: 'border-emerald-400/50',
+    accentBadge: 'bg-emerald-400/15 border-emerald-400/40 text-emerald-300 font-mono'
+  }
+};
+
 export default function App() {
   const [tgUser, setTgUser] = useState(null);
   const [activeTab, setActiveTab] = useState('wallet'); // 'wallet' | 'swap' | 'vault' | 'reward'
+  
+  // Active Skin Theme
+  const [currentSkin, setCurrentSkin] = useState(() => {
+    return localStorage.getItem('starpocket_skin') || 'cosmos';
+  });
+  const [showSkinModal, setShowSkinModal] = useState(false);
+
+  const skin = SKINS[currentSkin] || SKINS.cosmos;
+
+  const handleSelectSkin = (skinId) => {
+    setCurrentSkin(skinId);
+    localStorage.setItem('starpocket_skin', skinId);
+    setShowSkinModal(false);
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
+  };
   
   // Default is strictly English (en) for global compliance.
   // Only switches if the user manually toggles and saves it in localStorage.
@@ -327,6 +409,9 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         setGamification(data);
+        if (perkId === 'cyber_skin') {
+          handleSelectSkin('cyber');
+        }
         setGamificationNotice(data.message);
         setTimeout(() => setGamificationNotice(null), 4000);
       } else {
@@ -761,11 +846,11 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080b14] text-slate-100 flex flex-col justify-between max-w-md mx-auto relative px-4 py-4 font-sans select-none">
+    <div className={`min-h-screen ${skin.bgClass} text-slate-100 flex flex-col justify-between max-w-md mx-auto relative px-4 py-4 font-sans select-none transition-colors duration-500`}>
       
       {/* Background ambient light */}
-      <div className="fixed top-[-80px] left-[-80px] w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="fixed bottom-[-80px] right-[-80px] w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className={`fixed top-[-80px] left-[-80px] w-72 h-72 ${skin.glow1} rounded-full blur-3xl pointer-events-none transition-all duration-700`} />
+      <div className={`fixed bottom-[-80px] right-[-80px] w-72 h-72 ${skin.glow2} rounded-full blur-3xl pointer-events-none transition-all duration-700`} />
 
       {/* TOP HEADER */}
       <header className="flex items-center justify-between pb-3 border-b border-slate-800/80">
@@ -773,7 +858,7 @@ export default function App() {
           <StarPocketLogo size={38} />
           <div>
             <div className="flex items-center gap-1.5">
-              <h1 className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-amber-300 via-yellow-200 to-white bg-clip-text text-transparent">
+              <h1 className={`font-extrabold text-lg tracking-tight bg-gradient-to-r ${skin.headerText} bg-clip-text text-transparent`}>
                 {t('appName')}
               </h1>
               <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
@@ -784,7 +869,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Header items: Star Points, Language Toggle & Telegram User Badge */}
+        {/* Right Header items: Star Points, Theme Palette, Language Toggle & Telegram User Badge */}
         <div className="flex items-center gap-1.5">
           {/* Star Points Badge (Click to open Rewards / Calendar) */}
           <button
@@ -799,6 +884,21 @@ export default function App() {
           >
             <Star className="w-3 h-3 fill-amber-400 text-amber-400 animate-pulse" />
             <span>{gamification.starPoints} SP</span>
+          </button>
+
+          {/* Theme Palette Switcher */}
+          <button
+            onClick={() => {
+              setShowSkinModal(true);
+              if (window.Telegram?.WebApp?.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+              }
+            }}
+            className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 hover:border-amber-400 px-2 py-1 rounded-full text-[10px] font-bold text-slate-300 hover:text-white transition cursor-pointer"
+            title="Theme Skins / テーマ着せ替え"
+          >
+            <Palette className="w-3 h-3 text-amber-400" />
+            <span>{skin.icon}</span>
           </button>
 
           {/* Quick Language Switcher */}
@@ -1996,6 +2096,93 @@ export default function App() {
               )}
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 🎨 THEME SKINS SELECTION MODAL */}
+      {/* ========================================================= */}
+      {showSkinModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
+          <div className="bg-[#121626] border border-amber-500/30 rounded-t-3xl sm:rounded-2xl p-5 max-w-sm w-full shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Palette className="w-5 h-5 text-amber-400" />
+                <h3 className="font-extrabold text-sm text-white">
+                  {lang === 'ja' ? 'ウォレット着せ替えテーマ' : 'Choose Wallet Theme'}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setShowSkinModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 mb-4">
+              {lang === 'ja' 
+                ? 'お好みの世界観に合わせてStarPocketを着せ替えることができます。' 
+                : 'Personalize StarPocket with unique cosmic, cyber and retro themes.'}
+            </p>
+
+            <div className="space-y-2.5">
+              {Object.values(SKINS).map((item) => {
+                const isActive = currentSkin === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleSelectSkin(item.id)}
+                    className={`w-full p-3 rounded-2xl flex items-center justify-between transition cursor-pointer text-left border ${
+                      isActive 
+                        ? 'bg-slate-900 border-amber-400 shadow-md shadow-amber-500/20 ring-1 ring-amber-400' 
+                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${item.previewGradient} border ${item.previewBorder} flex items-center justify-center text-lg shadow-sm shrink-0`}>
+                        {item.icon}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <span>{lang === 'ja' ? item.name : item.nameEn}</span>
+                          {isActive && (
+                            <span className="text-[9px] font-bold text-amber-300 bg-amber-400/20 px-1.5 py-0.5 rounded-full border border-amber-400/40">
+                              {lang === 'ja' ? '適用中' : 'Active'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          {item.id === 'cosmos' && 'Default Navy & Gold'}
+                          {item.id === 'cyber' && 'Neon Cyan & Hot Pink'}
+                          {item.id === 'sakura' && 'Midnight Plum & Sakura Pink'}
+                          {item.id === 'retro' && '8-Bit GameBoy Dot LCD'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0">
+                      {isActive ? (
+                        <CheckCircle2 className="w-5 h-5 text-amber-400" />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+              <span>{lang === 'ja' ? '星ポイントやチケットで新スキン解放！' : 'Unlock exclusive skins via Star Points!'}</span>
+              <button
+                onClick={() => setShowSkinModal(false)}
+                className="text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
+              >
+                {t('btnClose')}
+              </button>
+            </div>
           </div>
         </div>
       )}
