@@ -1360,13 +1360,21 @@ export default function App() {
       {/* 🪐 FLOATING STELLA AURA SKIN BACKGROUND */}
       {currentSkin === 'stella' && (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-center justify-center">
-          <div className="absolute w-[360px] h-[520px] rounded-full bg-gradient-to-br from-purple-600/25 via-cyan-500/20 to-transparent blur-3xl pointer-events-none" />
+          <div className="absolute w-[360px] h-[520px] rounded-full bg-gradient-to-br from-purple-600/20 via-cyan-500/15 to-transparent blur-3xl pointer-events-none" />
           <img
             src="/stella_techwear_skin.jpg"
             alt="Floating Stella Aura"
-            className="max-h-[80vh] w-auto object-contain opacity-30 mix-blend-screen pointer-events-none select-none animate-float-stella"
+            className="max-h-[78vh] w-auto object-contain opacity-22 mix-blend-screen pointer-events-none select-none animate-float-stella"
             style={{
-              filter: 'drop-shadow(0 0 25px rgba(168, 85, 247, 0.45)) drop-shadow(0 0 45px rgba(6, 182, 212, 0.3))'
+              filter: 'drop-shadow(0 0 25px rgba(168, 85, 247, 0.35)) drop-shadow(0 0 45px rgba(6, 182, 212, 0.25))'
+            }}
+          />
+          {/* Dark Gradient & Radial Vignette Overlay for Clear Text Readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#090c15]/50 via-[#090c15]/30 to-[#090c15]/80 pointer-events-none" />
+          <div 
+            className="absolute inset-0 pointer-events-none" 
+            style={{
+              background: 'radial-gradient(ellipse at center, transparent 30%, rgba(9, 12, 21, 0.75) 100%)'
             }}
           />
         </div>
@@ -1375,13 +1383,21 @@ export default function App() {
       {/* 🌟 FLOATING CHIBI STELLA SKIN BACKGROUND */}
       {currentSkin === 'chibi' && (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-center justify-center">
-          <div className="absolute w-[360px] h-[520px] rounded-full bg-gradient-to-br from-cyan-400/25 via-purple-400/20 to-amber-300/15 blur-3xl pointer-events-none" />
+          <div className="absolute w-[360px] h-[520px] rounded-full bg-gradient-to-br from-cyan-400/20 via-purple-400/15 to-amber-300/10 blur-3xl pointer-events-none" />
           <img
             src="/chibi_stella_skin.jpg"
             alt="Floating Chibi Stella"
-            className="max-h-[82vh] w-auto object-contain opacity-35 mix-blend-screen pointer-events-none select-none animate-float-stella"
+            className="max-h-[80vh] w-auto object-contain opacity-24 mix-blend-screen pointer-events-none select-none animate-float-stella"
             style={{
-              filter: 'drop-shadow(0 0 25px rgba(56, 189, 248, 0.5)) drop-shadow(0 0 45px rgba(251, 191, 36, 0.35))'
+              filter: 'drop-shadow(0 0 25px rgba(56, 189, 248, 0.4)) drop-shadow(0 0 45px rgba(251, 191, 36, 0.25))'
+            }}
+          />
+          {/* Dark Gradient & Radial Vignette Overlay for Clear Text Readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#090c15]/50 via-[#090c15]/30 to-[#090c15]/80 pointer-events-none" />
+          <div 
+            className="absolute inset-0 pointer-events-none" 
+            style={{
+              background: 'radial-gradient(ellipse at center, transparent 30%, rgba(9, 12, 21, 0.75) 100%)'
             }}
           />
         </div>
@@ -1592,7 +1608,7 @@ export default function App() {
                       window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
                     }
                   }}
-                  className="w-full bg-slate-900/70 hover:bg-slate-900 border border-slate-800/80 hover:border-amber-400/50 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left"
+                  className="w-full bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800/90 hover:border-amber-400/50 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left backdrop-blur-sm shadow-sm"
                 >
                   <div className="flex items-center gap-2.5">
                     <XlmIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
@@ -1604,9 +1620,9 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <div className="text-right">
                       <p className="font-mono font-bold text-xs text-white">{balance}</p>
-                      <p className="text-[9px] text-slate-500 font-mono">≈ ${(parseFloat(balance) * 0.135).toFixed(2)}</p>
+                      <p className="text-[9px] text-slate-400 font-mono">≈ ${(parseFloat(balance) * 0.135).toFixed(2)}</p>
                     </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-amber-400 transition-colors shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-colors shrink-0" />
                   </div>
                 </button>
 
@@ -1619,7 +1635,7 @@ export default function App() {
                       window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
                     }
                   }}
-                  className="w-full bg-slate-900/70 hover:bg-slate-900 border border-slate-800/80 hover:border-cyan-400/50 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left"
+                  className="w-full bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800/90 hover:border-cyan-400/50 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left backdrop-blur-sm shadow-sm"
                 >
                   <div className="flex items-center gap-2.5">
                     <UsdcIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
@@ -1631,9 +1647,9 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <div className="text-right">
                       <p className="font-mono font-bold text-xs text-white">{usdcBalance}</p>
-                      <p className="text-[9px] text-slate-500 font-mono">≈ ${(parseFloat(usdcBalance || 0) * 1.00).toFixed(2)}</p>
+                      <p className="text-[9px] text-slate-400 font-mono">≈ ${(parseFloat(usdcBalance || 0) * 1.00).toFixed(2)}</p>
                     </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-cyan-400 transition-colors shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-400 transition-colors shrink-0" />
                   </div>
                 </button>
 
@@ -1646,7 +1662,7 @@ export default function App() {
                       window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
                     }
                   }}
-                  className="w-full bg-gradient-to-r from-amber-950/20 to-slate-900/80 hover:from-amber-950/30 hover:to-slate-900 border border-amber-500/30 hover:border-amber-400/60 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left"
+                  className="w-full bg-gradient-to-r from-amber-950/30 to-slate-900/95 hover:from-amber-950/45 hover:to-slate-900 border border-amber-500/35 hover:border-amber-400/60 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left backdrop-blur-sm shadow-sm"
                 >
                   <div className="flex items-center gap-2.5">
                     <YXlmIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
@@ -1661,9 +1677,9 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <div className="text-right">
                       <p className="font-mono font-bold text-xs text-amber-300">{vaultInfo.yXLM}</p>
-                      <p className="text-[9px] text-slate-500 font-mono">≈ ${(parseFloat(vaultInfo.yXLM || 0) * 0.1418).toFixed(2)}</p>
+                      <p className="text-[9px] text-slate-400 font-mono">≈ ${(parseFloat(vaultInfo.yXLM || 0) * 0.1418).toFixed(2)}</p>
                     </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-amber-400 transition-colors shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-colors shrink-0" />
                   </div>
                 </button>
 
@@ -1676,7 +1692,7 @@ export default function App() {
                       window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
                     }
                   }}
-                  className="w-full bg-gradient-to-r from-cyan-950/20 to-slate-900/80 hover:from-cyan-950/30 hover:to-slate-900 border border-cyan-500/30 hover:border-cyan-400/60 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left"
+                  className="w-full bg-gradient-to-r from-cyan-950/30 to-slate-900/95 hover:from-cyan-950/45 hover:to-slate-900 border border-cyan-500/35 hover:border-cyan-400/60 rounded-xl p-2.5 flex items-center justify-between transition cursor-pointer active:scale-[0.99] group text-left backdrop-blur-sm shadow-sm"
                 >
                   <div className="flex items-center gap-2.5">
                     <YUsdcIcon className="w-8 h-8 rounded-xl shadow-md shrink-0" />
@@ -1691,9 +1707,9 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <div className="text-right">
                       <p className="font-mono font-bold text-xs text-cyan-300">{vaultInfo.yUSDC}</p>
-                      <p className="text-[9px] text-slate-500 font-mono">≈ ${(parseFloat(vaultInfo.yUSDC || 0) * 1.05).toFixed(2)}</p>
+                      <p className="text-[9px] text-slate-400 font-mono">≈ ${(parseFloat(vaultInfo.yUSDC || 0) * 1.05).toFixed(2)}</p>
                     </div>
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-cyan-400 transition-colors shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-400 transition-colors shrink-0" />
                   </div>
                 </button>
               </div>
@@ -1741,7 +1757,7 @@ export default function App() {
                     return (
                       <div
                         key={item.id}
-                        className="bg-slate-900/80 border border-slate-800/90 hover:border-slate-700 rounded-xl p-2.5 transition"
+                        className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700 rounded-xl p-2.5 transition backdrop-blur-sm shadow-sm"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
@@ -1762,26 +1778,26 @@ export default function App() {
                                     ⭐ {getContactName(item.counterparty)}
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] text-slate-400 font-mono truncate">
+                                  <span className="text-[10px] text-slate-300 font-mono truncate">
                                     {item.counterparty ? `${item.counterparty.slice(0, 4)}...${item.counterparty.slice(-4)}` : 'Friendbot'}
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[9px] text-slate-500 font-mono block">
+                              <span className="text-[9px] text-slate-400 font-mono block">
                                 {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
                               </span>
                             </div>
                           </div>
 
                           <div className="text-right shrink-0">
-                            <span className={`font-mono font-bold text-xs block ${isReceive ? 'text-emerald-400' : 'text-slate-200'}`}>
+                            <span className={`font-mono font-bold text-xs block ${isReceive ? 'text-emerald-400' : 'text-slate-100'}`}>
                               {isReceive ? '+' : '-'}{parseFloat(item.amount).toFixed(2)} {item.asset}
                             </span>
                             <a
                               href={item.explorerUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[9px] text-cyan-400/80 hover:text-cyan-300 inline-flex items-center gap-0.5 font-mono cursor-pointer"
+                              className="text-[9px] text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-0.5 font-mono cursor-pointer"
                             >
                               <span>TX</span>
                               <ExternalLink className="w-2.5 h-2.5" />
@@ -1795,7 +1811,7 @@ export default function App() {
                             <span className="text-amber-400/90 font-mono font-bold text-[9px] bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.2 rounded shrink-0">
                               MEMO
                             </span>
-                            <span className="text-amber-200 font-mono bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800/90 truncate flex-1 text-[11px]">
+                            <span className="text-amber-200 font-mono bg-slate-950/90 px-2 py-0.5 rounded border border-slate-800 truncate flex-1 text-[11px] shadow-inner">
                               💬 "{item.memo}"
                             </span>
                           </div>
