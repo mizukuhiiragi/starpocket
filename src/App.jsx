@@ -33,7 +33,11 @@ import {
   Globe,
   Gift,
   Palette,
-  Settings
+  Settings,
+  BookOpen,
+  Bookmark,
+  Trash2,
+  Plus
 } from 'lucide-react';
 import { Keypair, StrKey, Horizon, Networks, TransactionBuilder, Operation, Asset, Memo } from '@stellar/stellar-sdk';
 import { translations } from './i18n.js';
@@ -335,6 +339,19 @@ const ASSET_DETAILS = {
   }
 };
 
+export const STELLA_WALLET_ADDRESS = 'GAKDLWCZOEZAEVFDLIQGIB2UUWCUM3KIMPXHQLITEGFLGO6PN7FYVQSG';
+
+export const INITIAL_ADDRESS_BOOK = [
+  {
+    id: 'stella-fund',
+    name: 'ステラ (開発・サーバー支援 ⭐)',
+    address: 'GAKDLWCZOEZAEVFDLIQGIB2UUWCUM3KIMPXHQLITEGFLGO6PN7FYVQSG',
+    memo: 'Server Support! ☕',
+    memoType: 'text',
+    tag: 'dev'
+  }
+];
+
 export default function App() {
   const [tgUser, setTgUser] = useState(null);
   const [activeTab, setActiveTab] = useState('wallet'); // 'wallet' | 'swap' | 'vault' | 'reward'
@@ -472,6 +489,94 @@ export default function App() {
       window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
     }
     setTimeout(() => setCopiedActivityKey(''), 2000);
+  };
+
+  // Address Book (連絡先・アドレス帳) State
+  const [addressBook, setAddressBook] = useState(() => {
+    try {
+      const saved = localStorage.getItem('starpocket_address_book');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_ADDRESS_BOOK;
+  });
+  const [showAddressBookModal, setShowAddressBookModal] = useState(false);
+  const [showAddContactModal, setShowAddContactModal] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    address: '',
+    memo: '',
+    memoType: 'text',
+    tag: 'friend'
+  });
+  const [contactError, setContactError] = useState('');
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('starpocket_address_book', JSON.stringify(addressBook));
+    } catch (e) {}
+  }, [addressBook]);
+
+  const handleSaveContact = (e) => {
+    if (e) e.preventDefault();
+    setContactError('');
+    const trimmedAddr = contactForm.address.trim();
+    const trimmedName = contactForm.name.trim();
+
+    if (!trimmedName) {
+      setContactError(lang === 'ja' ? '名前を入力してください' : 'Please enter a name');
+      return;
+    }
+    if (!StrKey.isValidEd25519PublicKey(trimmedAddr)) {
+      setContactError(lang === 'ja' ? '無効なStellarアドレスです (Gから始まる56文字)' : 'Invalid Stellar address (56 chars starting with G)');
+      return;
+    }
+
+    const newContact = {
+      id: 'contact_' + Date.now(),
+      name: trimmedName,
+      address: trimmedAddr,
+      memo: contactForm.memo.trim(),
+      memoType: contactForm.memoType || 'text',
+      tag: contactForm.tag || 'friend'
+    };
+
+    setAddressBook((prev) => {
+      const existingIdx = prev.findIndex((c) => c.address === trimmedAddr);
+      if (existingIdx >= 0) {
+        const updated = [...prev];
+        updated[existingIdx] = { ...updated[existingIdx], ...newContact, id: updated[existingIdx].id };
+        return updated;
+      }
+      return [newContact, ...prev];
+    });
+
+    setShowAddContactModal(false);
+    setContactForm({ name: '', address: '', memo: '', memoType: 'text', tag: 'friend' });
+  };
+
+  const handleDeleteContact = (id) => {
+    setAddressBook((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const openAddContactWithPrefill = (address, memo = '', memoType = 'text', defaultName = '') => {
+    setContactForm({
+      name: defaultName,
+      address: address || '',
+      memo: memo || '',
+      memoType: memoType || 'text',
+      tag: 'friend'
+    });
+    setContactError('');
+    setShowAddContactModal(true);
+  };
+
+  const getContactName = (addr) => {
+    if (!addr) return null;
+    const found = addressBook.find((c) => c.address === addr);
+    return found ? found.name : null;
   };
 
   // Gamification: Star Points & 31-Day Login Calendar
@@ -1467,9 +1572,15 @@ export default function App() {
                                 <span className="font-bold text-xs text-white">
                                   {isReceive ? (lang === 'ja' ? '受取' : 'Received') : (lang === 'ja' ? '送金' : 'Sent')}
                                 </span>
-                                <span className="text-[10px] text-slate-400 font-mono truncate">
-                                  {item.counterparty ? `${item.counterparty.slice(0, 4)}...${item.counterparty.slice(-4)}` : 'Friendbot'}
-                                </span>
+                                {getContactName(item.counterparty) ? (
+                                  <span className="text-[10px] text-amber-300 font-bold bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.2 rounded truncate max-w-[120px]">
+                                    ⭐ {getContactName(item.counterparty)}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-slate-400 font-mono truncate">
+                                    {item.counterparty ? `${item.counterparty.slice(0, 4)}...${item.counterparty.slice(-4)}` : 'Friendbot'}
+                                  </span>
+                                )}
                               </div>
                               <span className="text-[9px] text-slate-500 font-mono block">
                                 {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
@@ -2219,15 +2330,71 @@ export default function App() {
 
             <form onSubmit={handleSendXLM} className="space-y-3">
               <div>
-                <label className="text-[11px] text-slate-400 mb-1 block">{t('recipientLabel')}</label>
-                <input
-                  type="text"
-                  placeholder="G..."
-                  value={sendDest}
-                  onChange={(e) => setSendDest(e.target.value.trim())}
-                  required
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-amber-400 outline-none"
-                />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] text-slate-400 block">{t('recipientLabel')}</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddressBookModal(true)}
+                    className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono cursor-pointer"
+                  >
+                    <BookOpen className="w-3 h-3" />
+                    <span>{lang === 'ja' ? `アドレス帳 (${addressBook.length})` : `Contacts (${addressBook.length})`}</span>
+                  </button>
+                </div>
+
+                {/* Quick Contact Chips */}
+                {addressBook.length > 0 && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 mb-1.5 no-scrollbar">
+                    {addressBook.slice(0, 4).map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          setSendDest(c.address);
+                          if (c.memo) {
+                            setSendMemo(c.memo);
+                            setSendMemoType(c.memoType || 'text');
+                          }
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded-lg border flex items-center gap-1 shrink-0 font-mono transition cursor-pointer ${
+                          sendDest === c.address 
+                            ? 'bg-amber-400/20 border-amber-400 text-amber-300 font-bold' 
+                            : 'bg-slate-900/90 border-slate-700/80 text-slate-300 hover:border-slate-500'
+                        }`}
+                      >
+                        <span>{c.tag === 'dev' ? '⭐' : c.tag === 'exchange' ? '🏢' : '👤'}</span>
+                        <span className="truncate max-w-[110px]">{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="G..."
+                    value={sendDest}
+                    onChange={(e) => setSendDest(e.target.value.trim())}
+                    required
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-amber-400 outline-none pr-14"
+                  />
+                  {sendDest && StrKey.isValidEd25519PublicKey(sendDest) && !getContactName(sendDest) && (
+                    <button
+                      type="button"
+                      onClick={() => openAddContactWithPrefill(sendDest, sendMemo, sendMemoType)}
+                      className="absolute right-2 top-2 text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold cursor-pointer flex items-center gap-1"
+                    >
+                      <Plus className="w-2.5 h-2.5" />
+                      <span>{lang === 'ja' ? '保存' : 'Save'}</span>
+                    </button>
+                  )}
+                </div>
+
+                {getContactName(sendDest) && (
+                  <p className="text-[10px] text-amber-300 mt-1 font-mono flex items-center gap-1">
+                    <span>⭐ {getContactName(sendDest)}</span>
+                  </p>
+                )}
               </div>
 
               <div>
@@ -2678,6 +2845,37 @@ export default function App() {
               </div>
             </div>
 
+            {/* Address Book Section */}
+            <div className="mb-4">
+              <label className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{lang === 'ja' ? 'アドレス帳 (連絡先管理)' : 'Address Book'}</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettingsModal(false);
+                  setShowAddressBookModal(true);
+                }}
+                className="w-full p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-slate-700 flex items-center justify-between text-left transition cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center text-cyan-300">
+                    <Bookmark className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-white block">
+                      {lang === 'ja' ? '登録済みアドレスの管理' : 'Manage Saved Contacts'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">
+                      {addressBook.length} {lang === 'ja' ? '件の登録' : 'contacts saved'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+
             {/* Theme Skins Section */}
             <div className="mb-2">
               <label className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
@@ -3071,8 +3269,25 @@ export default function App() {
                       {item.counterparty && (
                         <div className="mt-2 pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] text-slate-400 font-mono">
                           <span className="text-slate-500">{isReceive ? (lang === 'ja' ? '送金元:' : 'From:') : (lang === 'ja' ? '宛先:' : 'To:')}</span>
-                          <div className="flex items-center gap-1">
-                            <span>{item.counterparty.slice(0, 8)}...{item.counterparty.slice(-6)}</span>
+                          <div className="flex items-center gap-1.5">
+                            {getContactName(item.counterparty) ? (
+                              <span className="text-amber-300 font-bold bg-amber-400/10 border border-amber-400/20 px-1.5 py-0.2 rounded truncate max-w-[130px]">
+                                ⭐ {getContactName(item.counterparty)}
+                              </span>
+                            ) : (
+                              <>
+                                <span>{item.counterparty.slice(0, 8)}...{item.counterparty.slice(-6)}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => openAddContactWithPrefill(item.counterparty, item.memo, item.memoType)}
+                                  className="text-amber-400 hover:text-amber-300 bg-amber-500/15 border border-amber-500/30 px-1 py-0.2 rounded text-[9px] font-bold cursor-pointer flex items-center gap-0.5"
+                                  title="Save to Address Book"
+                                >
+                                  <Bookmark className="w-2.5 h-2.5" />
+                                  <span>{lang === 'ja' ? '保存' : 'Save'}</span>
+                                </button>
+                              </>
+                            )}
                             <button
                               type="button"
                               onClick={() => copyText(item.counterparty, item.id)}
@@ -3118,6 +3333,279 @@ export default function App() {
                 {lang === 'ja' ? '閉じる' : 'Close'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📖 ADDRESS BOOK MODAL */}
+      {showAddressBookModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-[#121627] border border-cyan-500/30 rounded-2xl p-5 max-w-sm w-full shadow-2xl relative max-h-[85vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-white">
+                    {lang === 'ja' ? 'アドレス帳 (連絡先)' : 'Address Book'}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-mono">
+                    {addressBook.length} {lang === 'ja' ? '件登録済み' : 'contacts'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddressBookModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Add Contact Button */}
+            <div className="py-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setContactForm({ name: '', address: '', memo: '', memoType: 'text', tag: 'friend' });
+                  setContactError('');
+                  setShowAddContactModal(true);
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{lang === 'ja' ? '＋ 新規アドレスを登録' : '+ Add New Contact'}</span>
+              </button>
+            </div>
+
+            {/* Contacts List */}
+            <div className="overflow-y-auto space-y-2 flex-1 my-1 pr-1">
+              {addressBook.length === 0 ? (
+                <div className="text-center py-8 text-slate-500 text-xs font-mono">
+                  {lang === 'ja' ? '登録されているアドレスはありません' : 'No contacts saved yet'}
+                </div>
+              ) : (
+                addressBook.map((contact) => (
+                  <div
+                    key={contact.id}
+                    className="bg-slate-950/70 border border-slate-800 rounded-xl p-3 hover:border-slate-700 transition"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-xs font-bold text-white truncate">{contact.name}</span>
+                          <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                            contact.tag === 'dev' 
+                              ? 'bg-amber-400/15 border border-amber-400/30 text-amber-300' 
+                              : contact.tag === 'exchange'
+                              ? 'bg-purple-500/15 border border-purple-500/30 text-purple-300'
+                              : 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-300'
+                          }`}>
+                            {contact.tag === 'dev' ? '⭐ 開発・支援' : contact.tag === 'exchange' ? '🏢 取引所' : '👤 個人'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] font-mono text-slate-400">
+                          <span>{contact.address.slice(0, 8)}...{contact.address.slice(-6)}</span>
+                          <button
+                            type="button"
+                            onClick={() => copyText(contact.address, contact.id)}
+                            className="text-slate-500 hover:text-cyan-300 p-0.5 cursor-pointer"
+                            title="Copy Address"
+                          >
+                            {copiedActivityKey === contact.id ? (
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                        {contact.memo && (
+                          <div className="mt-1.5 text-[9px] font-mono text-amber-300/90 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded truncate">
+                            Memo ({contact.memoType ? contact.memoType.toUpperCase() : 'TEXT'}): "{contact.memo}"
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSendDest(contact.address);
+                            if (contact.memo) {
+                              setSendMemo(contact.memo);
+                              setSendMemoType(contact.memoType || 'text');
+                            }
+                            setShowAddressBookModal(false);
+                            setShowSendModal(true);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-[10px] flex items-center gap-1 shadow-sm cursor-pointer"
+                        >
+                          <Send className="w-2.5 h-2.5" />
+                          <span>{lang === 'ja' ? '送金' : 'Send'}</span>
+                        </button>
+                        {contact.id !== 'stella-fund' && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteContact(contact.id)}
+                            className="text-slate-500 hover:text-red-400 p-1 cursor-pointer"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Bottom Close */}
+            <div className="pt-3 border-t border-slate-800 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowAddressBookModal(false)}
+                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer"
+              >
+                {lang === 'ja' ? '閉じる' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ➕ ADD CONTACT MODAL */}
+      {showAddContactModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-[#121627] border border-amber-500/30 rounded-2xl p-5 max-w-sm w-full shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                <Bookmark className="w-4 h-4 text-amber-400" />
+                <span>{lang === 'ja' ? 'アドレスを登録' : 'Save Address'}</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddContactModal(false)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveContact} className="space-y-3">
+              <div>
+                <label className="text-[11px] text-slate-400 mb-1 block">
+                  {lang === 'ja' ? '名前 / ニックネーム' : 'Name / Label'}
+                </label>
+                <input
+                  type="text"
+                  placeholder={lang === 'ja' ? '例: マイBinance、友達のアリス' : 'e.g. My Binance, Friend Alice'}
+                  value={contactForm.name}
+                  onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                  required
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:border-amber-400 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-slate-400 mb-1 block">
+                  {lang === 'ja' ? 'Stellarアドレス (G...)' : 'Stellar Address (G...)'}
+                </label>
+                <input
+                  type="text"
+                  placeholder="G..."
+                  value={contactForm.address}
+                  onChange={(e) => setContactForm({ ...contactForm, address: e.target.value.trim() })}
+                  required
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-amber-400 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-slate-400 mb-1 block">
+                  {lang === 'ja' ? 'カテゴリ' : 'Category Tag'}
+                </label>
+                <div className="grid grid-cols-3 gap-1.5 text-[10px] font-mono">
+                  {[
+                    { id: 'friend', label: lang === 'ja' ? '👤 友達' : '👤 Friend' },
+                    { id: 'exchange', label: lang === 'ja' ? '🏢 取引所' : '🏢 Exchange' },
+                    { id: 'dev', label: lang === 'ja' ? '⭐ 開発' : '⭐ Dev' },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setContactForm({ ...contactForm, tag: t.id })}
+                      className={`py-1.5 px-2 rounded-lg border transition cursor-pointer text-center ${
+                        contactForm.tag === t.id
+                          ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold'
+                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                  <span>{lang === 'ja' ? '固定メモ (任意)' : 'Default Memo (Optional)'}</span>
+                  <div className="flex gap-1 bg-slate-900 border border-slate-800 p-0.5 rounded-lg text-[9px] font-mono">
+                    <button
+                      type="button"
+                      onClick={() => setContactForm({ ...contactForm, memoType: 'text' })}
+                      className={`px-1.5 py-0.5 rounded cursor-pointer ${
+                        contactForm.memoType === 'text' ? 'bg-amber-400/20 text-amber-300 font-bold' : 'text-slate-400'
+                      }`}
+                    >
+                      TEXT
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setContactForm({ ...contactForm, memoType: 'id' })}
+                      className={`px-1.5 py-0.5 rounded cursor-pointer ${
+                        contactForm.memoType === 'id' ? 'bg-amber-400/20 text-amber-300 font-bold' : 'text-slate-400'
+                      }`}
+                    >
+                      ID
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder={contactForm.memoType === 'id' ? '12345678' : 'memo text'}
+                  value={contactForm.memo}
+                  onChange={(e) => setContactForm({ ...contactForm, memo: e.target.value })}
+                  maxLength={contactForm.memoType === 'text' ? 28 : 20}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-amber-400 outline-none"
+                />
+              </div>
+
+              {contactError && (
+                <p className="text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 p-2 rounded-lg font-mono">
+                  {contactError}
+                </p>
+              )}
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddContactModal(false)}
+                  className="w-1/2 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs cursor-pointer"
+                >
+                  {lang === 'ja' ? 'キャンセル' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-extrabold text-xs shadow-md shadow-amber-500/20 cursor-pointer"
+                >
+                  {lang === 'ja' ? '保存する' : 'Save'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
