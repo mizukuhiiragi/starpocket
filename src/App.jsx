@@ -212,6 +212,20 @@ export default function App() {
   const [claimError, setClaimError] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // Gamification: Star Points & 31-Day Login Calendar
+  const [gamification, setGamification] = useState({
+    starPoints: 50,
+    streak: 1,
+    checkedInToday: false,
+    checkinDays: [new Date().getUTCDate()],
+    currentDayOfMonth: new Date().getUTCDate(),
+    perks: [],
+    hasCompleted31: false
+  });
+  const [checkinLoading, setCheckinLoading] = useState(false);
+  const [redeemLoading, setRedeemLoading] = useState(null);
+  const [gamificationNotice, setGamificationNotice] = useState(null);
+
   // Initialize Telegram WebApp & Wallet
   useEffect(() => {
     if (window.Telegram?.WebApp) {
@@ -255,6 +269,74 @@ export default function App() {
     fetchUserStatus(addr);
     fetchVaultInfo(addr);
     fetchSwapBonus(addr);
+    fetchGamification(addr);
+  };
+
+  const fetchGamification = async (addr) => {
+    if (!addr) return;
+    try {
+      const res = await fetch(`/api/gamification/${addr}`);
+      if (res.ok) {
+        const data = await res.json();
+        setGamification(data);
+      }
+    } catch (err) {
+      console.log('Gamification fetch fallback:', err);
+    }
+  };
+
+  // Daily Streak Check-in
+  const handleCheckin = async () => {
+    if (!activeAddress || gamification.checkedInToday || checkinLoading) return;
+    setCheckinLoading(true);
+    try {
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+      const res = await fetch('/api/gamification/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: activeAddress })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGamification(data);
+        setGamificationNotice(data.message || '+10 SP ⭐');
+        setTimeout(() => setGamificationNotice(null), 4000);
+      }
+    } catch (err) {
+      console.error('Checkin error:', err);
+    } finally {
+      setCheckinLoading(false);
+    }
+  };
+
+  // Redeem Perk
+  const handleRedeemPerk = async (perkId) => {
+    if (!activeAddress || redeemLoading) return;
+    setRedeemLoading(perkId);
+    try {
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+      }
+      const res = await fetch('/api/gamification/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: activeAddress, perkId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGamification(data);
+        setGamificationNotice(data.message);
+        setTimeout(() => setGamificationNotice(null), 4000);
+      } else {
+        alert(data.error || '交換に失敗しました');
+      }
+    } catch (err) {
+      console.error('Redeem error:', err);
+    } finally {
+      setRedeemLoading(null);
+    }
   };
 
   // Cooldown local tick
@@ -382,6 +464,9 @@ export default function App() {
 
       setSwapResult(data);
       setSwapAmount('');
+      if (data.starPoints) {
+        setGamification(prev => ({ ...prev, starPoints: data.starPoints }));
+      }
       fetchAll(activeAddress);
     } catch (err) {
       setSwapError(err.message);
@@ -556,6 +641,9 @@ export default function App() {
         setUserStatus(data.status);
         setCooldownSec(data.status.cooldownRemainingSec || 0);
       }
+      if (data.starPoints) {
+        setGamification(prev => ({ ...prev, starPoints: data.starPoints }));
+      }
 
       if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
@@ -696,8 +784,23 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Header items: Language Toggle & Telegram User Badge */}
+        {/* Right Header items: Star Points, Language Toggle & Telegram User Badge */}
         <div className="flex items-center gap-1.5">
+          {/* Star Points Badge (Click to open Rewards / Calendar) */}
+          <button
+            onClick={() => {
+              setActiveTab('reward');
+              if (window.Telegram?.WebApp?.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+              }
+            }}
+            className="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 hover:from-amber-500/30 hover:to-yellow-500/20 border border-amber-400/40 px-2 py-1 rounded-full text-[10px] font-mono font-black text-amber-300 shadow-sm shadow-amber-400/20 transition cursor-pointer active:scale-95"
+            title="Star Points (SP) / 星ポイント"
+          >
+            <Star className="w-3 h-3 fill-amber-400 text-amber-400 animate-pulse" />
+            <span>{gamification.starPoints} SP</span>
+          </button>
+
           {/* Quick Language Switcher */}
           <button
             onClick={toggleLanguage}
@@ -1221,10 +1324,154 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* ⭐ TAB 4: DAILY STAR DROP */}
+        {/* ⭐ TAB 4: DAILY STAR DROP, LOGIN CALENDAR & STAR POINTS */}
         {/* ========================================================= */}
         {activeTab === 'reward' && (
           <div className="space-y-3.5 animate-in fade-in duration-200">
+            {/* Gamification Notification Toast */}
+            {gamificationNotice && (
+              <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-500/25 border border-amber-400/50 shadow-lg shadow-amber-400/20 text-center text-xs font-black text-amber-200 animate-in fade-in slide-in-from-top-2">
+                ✨ {gamificationNotice}
+              </div>
+            )}
+
+            {/* ⭐ 1. 31-DAY STAR STREAK CALENDAR */}
+            <div className="bg-gradient-to-b from-[#1b223c] to-[#0d1222] rounded-2xl p-4 border border-amber-400/40 shadow-xl relative overflow-hidden">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                  <h2 className="font-extrabold text-sm text-white">{t('loginCalendarTitle')}</h2>
+                </div>
+                <div className="flex items-center gap-1 bg-amber-400/15 border border-amber-400/40 px-2.5 py-0.5 rounded-full text-[11px] font-black text-amber-300 font-mono shadow-sm shadow-amber-400/15">
+                  <span>🔥 {gamification.streak} {t('streakDaysLabel')}</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
+                {t('loginCalendarSubtitle')}
+              </p>
+
+              {/* Check-in CTA Button */}
+              <div className="mb-3.5">
+                {gamification.checkedInToday ? (
+                  <div className="w-full py-2.5 px-3 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-2 shadow-sm">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>{t('checkedInBadge')}</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleCheckin}
+                    disabled={checkinLoading}
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-[0.98] transition cursor-pointer"
+                  >
+                    <Star className="w-4 h-4 fill-slate-950" />
+                    <span>{checkinLoading ? '...' : t('checkInBtn')}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* 31-Day Constellation Calendar Grid */}
+              <div className="bg-slate-950/70 rounded-xl p-2.5 border border-slate-800/80 mb-3">
+                <div className="grid grid-cols-7 gap-1.5 text-center">
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                    const isChecked = gamification.checkinDays?.includes(day);
+                    const isToday = day === gamification.currentDayOfMonth;
+                    const isMilestone = day === 7 || day === 14 || day === 21 || day === 31;
+                    return (
+                      <div
+                        key={day}
+                        className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-[10px] font-mono transition-all duration-200 ${
+                          isChecked 
+                            ? 'bg-amber-400/20 text-amber-300 border border-amber-400/60 shadow-sm shadow-amber-400/25 font-bold'
+                            : isToday
+                              ? 'bg-cyan-500/20 text-cyan-200 border-2 border-cyan-400 animate-pulse font-extrabold'
+                              : 'bg-slate-900/60 text-slate-500 border border-slate-800/60 hover:border-slate-700'
+                        }`}
+                      >
+                        {isChecked ? (
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        ) : (
+                          <span>{day}</span>
+                        )}
+                        {isMilestone && (
+                          <span className="absolute -top-1 -right-1 text-[8px] leading-none">
+                            {day === 31 ? '🎫' : day === 14 ? '🍭' : '⭐'}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 31-Day Select Ticket Highlight Banner */}
+              <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-cyan-500/15 border border-amber-400/30 flex items-start gap-2.5">
+                <Gift className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+                <div className="text-[10px] leading-relaxed">
+                  <div className="font-extrabold text-amber-200">{t('ticket31Banner')}</div>
+                  <div className="text-slate-400 mt-0.5">{t('ticket31Desc')}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* ⭐ 2. STAR POINTS PERKS EXCHANGE (特典交換所) */}
+            <div className="bg-gradient-to-b from-[#181c30] to-[#0f1220] rounded-2xl p-4 border border-cyan-500/30 shadow-xl">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <Coins className="w-4 h-4 text-cyan-400" />
+                  <h3 className="font-extrabold text-xs text-white">{t('perksTitle')}</h3>
+                </div>
+                <span className="text-[11px] font-black text-amber-300 font-mono bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/30">
+                  {gamification.starPoints} SP
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-400 mb-3">{t('perksSubtitle')}</p>
+
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'vault_boost', name: t('perkVaultBoost'), desc: t('perkVaultBoostDesc'), cost: 200, icon: '🏦' },
+                  { id: 'pet_candy', name: t('perkPetCandy'), desc: t('perkPetCandyDesc'), cost: 80, icon: '🍭' },
+                  { id: 'swap_discount', name: t('perkSwapDiscount'), desc: t('perkSwapDiscountDesc'), cost: 150, icon: '🔄' },
+                  { id: 'cyber_skin', name: t('perkCyberSkin'), desc: t('perkCyberSkinDesc'), cost: 300, icon: '🎨' },
+                ].map((item) => {
+                  const unlocked = gamification.perks?.includes(item.id);
+                  const canAfford = (gamification.starPoints || 0) >= item.cost;
+                  return (
+                    <div key={item.id} className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-sm">{item.icon}</span>
+                          <span className="text-[11px] font-extrabold text-white truncate">{item.name}</span>
+                        </div>
+                        <p className="text-[9px] text-slate-400 leading-tight mb-2 line-clamp-2">{item.desc}</p>
+                      </div>
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                        <span className="text-[10px] font-black font-mono text-amber-300">{item.cost} SP</span>
+                        {unlocked ? (
+                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                            {t('redeemedBadge')}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleRedeemPerk(item.id)}
+                            disabled={!canAfford || redeemLoading === item.id}
+                            className={`text-[9px] font-bold px-2 py-0.5 rounded transition ${
+                              canAfford 
+                                ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 active:scale-95 cursor-pointer' 
+                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                            }`}
+                          >
+                            {redeemLoading === item.id ? '...' : canAfford ? t('btnRedeem') : t('insufficientSp')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ⭐ 3. DAILY DROP SECTION */}
             <div className="bg-gradient-to-b from-[#181c30] to-[#0f1220] rounded-2xl p-5 border border-amber-500/30 shadow-xl relative overflow-hidden">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-1.5">

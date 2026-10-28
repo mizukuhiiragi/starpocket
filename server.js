@@ -114,6 +114,153 @@ app.get('/api/user-status/:address', (req, res) => {
   res.json(getUserClaimStatus(address));
 });
 
+// ============================================================================
+// ⭐ STAR POINTS & 31-DAY LOGIN CALENDAR (GAMIFICATION ENGINE)
+// ============================================================================
+// destination -> { starPoints, streak, lastCheckinDate, checkinDays: number[], perks: string[], hasCompleted31: boolean }
+const userGamificationData = new Map();
+
+function getUserGamification(destination) {
+  const today = getTodayString();
+  const currentDay = new Date().getUTCDate(); // 1 - 31
+  let data = userGamificationData.get(destination);
+  if (!data) {
+    data = {
+      destination,
+      starPoints: 50, // Welcome bonus 50 SP!
+      streak: 1,
+      lastCheckinDate: today,
+      checkinDays: [currentDay],
+      perks: [],
+      hasCompleted31: false
+    };
+    userGamificationData.set(destination, data);
+  }
+  return {
+    ...data,
+    checkedInToday: data.lastCheckinDate === today,
+    currentDayOfMonth: currentDay
+  };
+}
+
+function addStarPoints(destination, amount, reason = '') {
+  const data = getUserGamification(destination);
+  data.starPoints = Math.max(0, (data.starPoints || 0) + amount);
+  userGamificationData.set(destination, data);
+  console.log(`[StarPoints] +${amount} SP to ${destination.slice(0, 8)}... (Total: ${data.starPoints} SP, Reason: ${reason})`);
+  return data.starPoints;
+}
+
+// GET /api/gamification/:address - get user's streak and points
+app.get('/api/gamification/:address', (req, res) => {
+  const { address } = req.params;
+  if (!address || !StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
+    return res.status(400).json({ error: 'Invalid Stellar Public Key' });
+  }
+  res.json(getUserGamification(address));
+});
+
+// POST /api/gamification/checkin - daily checkin
+app.post('/api/gamification/checkin', (req, res) => {
+  const { address } = req.body;
+  if (!address || !StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
+    return res.status(400).json({ error: 'Invalid Stellar Public Key' });
+  }
+  const today = getTodayString();
+  const currentDay = new Date().getUTCDate();
+  const data = getUserGamification(address);
+
+  if (data.lastCheckinDate === today) {
+    return res.json({
+      success: true,
+      alreadyCheckedIn: true,
+      message: '本日はすでにチェックイン済みです ⭐',
+      ...getUserGamification(address)
+    });
+  }
+
+  // Calculate streak: check if lastCheckinDate was yesterday
+  const yesterday = new Date(Date.now() - 86400000);
+  const yesterdayStr = `${yesterday.getUTCFullYear()}-${String(yesterday.getUTCMonth() + 1).padStart(2, '0')}-${String(yesterday.getUTCDate()).padStart(2, '0')}`;
+  
+  if (data.lastCheckinDate === yesterdayStr) {
+    data.streak = (data.streak || 0) + 1;
+  } else {
+    data.streak = 1;
+  }
+
+  data.lastCheckinDate = today;
+  if (!data.checkinDays.includes(currentDay)) {
+    data.checkinDays.push(currentDay);
+  }
+
+  // Points rewards
+  let earnedSp = 10;
+  let bonusMsg = '+10 SP earned!';
+  if (data.streak === 7) {
+    earnedSp += 50;
+    bonusMsg += ' 🎉 7-Day Streak Bonus: +50 SP!';
+  } else if (data.streak === 14) {
+    earnedSp += 80;
+    bonusMsg += ' 🍭 14-Day Streak Bonus: Cosmic Pet Candy unlocked!';
+  } else if (data.streak >= 31) {
+    earnedSp += 200;
+    data.hasCompleted31 = true;
+    bonusMsg += ' 🎫 31-Day Streak Completed: Select Ticket unlocked!';
+  }
+
+  data.starPoints = (data.starPoints || 0) + earnedSp;
+  userGamificationData.set(address, data);
+
+  res.json({
+    success: true,
+    alreadyCheckedIn: false,
+    earnedSp,
+    message: bonusMsg,
+    ...getUserGamification(address)
+  });
+});
+
+// POST /api/gamification/redeem - redeem Star Points for perks
+app.post('/api/gamification/redeem', (req, res) => {
+  const { address, perkId } = req.body;
+  if (!address || !StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
+    return res.status(400).json({ error: 'Invalid Stellar Public Key' });
+  }
+
+  const PERK_CATALOG = {
+    vault_boost: { name: '星の金庫 +1.0% APYブースト (30日)', cost: 200 },
+    pet_candy: { name: 'StarPet 彗星キャンディ 🍭', cost: 80 },
+    swap_discount: { name: 'Star Swap 手数料50%OFFチケット', cost: 150 },
+    cyber_skin: { name: '限定サイバー星空ウォレットスキン', cost: 300 }
+  };
+
+  const perk = PERK_CATALOG[perkId];
+  if (!perk) {
+    return res.status(400).json({ error: '無効なアイテムです' });
+  }
+
+  const data = getUserGamification(address);
+  if (data.starPoints < perk.cost) {
+    return res.status(400).json({ error: `星ポイントが不足しています (必要: ${perk.cost} SP, 現在: ${data.starPoints} SP)` });
+  }
+
+  data.starPoints -= perk.cost;
+  if (!data.perks.includes(perkId)) {
+    data.perks.push(perkId);
+  }
+  userGamificationData.set(address, data);
+
+  res.json({
+    success: true,
+    perkId,
+    perkName: perk.name,
+    remainingSp: data.starPoints,
+    message: `「${perk.name}」と交換しました！🎉`,
+    ...getUserGamification(address)
+  });
+});
+
 // GET /api/faucet - returns pool status
 app.get('/api/faucet', async (req, res) => {
   try {
@@ -436,6 +583,9 @@ app.post('/api/swap', async (req, res) => {
   console.log(`  ├─ 🎁 Monthly Bonus Pool: +${bonusShareXlm.toFixed(6)} XLM (Total Pool: ${monthlyBonusPoolXlm.toFixed(4)} XLM)`);
   console.log(`  └─ 🌟 Drop Pool Refill: +${dropPoolShareXlm.toFixed(6)} XLM`);
 
+  const swapEarnedSp = Math.max(1, Math.round(volumeUsd));
+  const currentSp = addStarPoints(address, swapEarnedSp, `Swap volume $${volumeUsd.toFixed(2)}`);
+
   try {
     const userTotalVol = userMonthlyVolumes.get(address);
     const userShareRatio = totalMonthlyVolumeUsd > 0 ? (userTotalVol / totalMonthlyVolumeUsd) : 0;
@@ -457,7 +607,9 @@ app.post('/api/swap', async (req, res) => {
       userVolumeUsd: userTotalVol.toFixed(2),
       userEstBonusXlm: userEstBonusXlm.toFixed(4),
       monthlyPoolTotalXlm: monthlyBonusPoolXlm.toFixed(4),
-      message: `Swapped ${amt} ${fromAsset} for ${netOutput.toFixed(4)} ${toAsset}! 🎉 (Fee split 1:1:1: +${bonusShareXlm.toFixed(5)} XLM added to Monthly Bonus Pool!)`
+      starPoints: currentSp,
+      earnedSp: swapEarnedSp,
+      message: `Swapped ${amt} ${fromAsset} for ${netOutput.toFixed(4)} ${toAsset}! 🎉 (+${swapEarnedSp} SP earned!)`
     });
   } catch (err) {
     console.error('Swap error:', err);
@@ -560,6 +712,7 @@ app.post('/api/claim', async (req, res) => {
     userClaimRecords.set(destination, existing);
 
     const updatedStatus = getUserClaimStatus(destination);
+    const updatedSp = addStarPoints(destination, 20, 'Daily Drop Claim');
 
     res.json({
       success: true,
@@ -568,9 +721,11 @@ app.post('/api/claim', async (req, res) => {
       destination,
       explorerUrl: `https://stellar.expert/explorer/testnet/tx/${txResult.hash}`,
       status: updatedStatus,
+      starPoints: updatedSp,
+      earnedSp: 20,
       message: destExists
-        ? '0.05 XLM deposited directly to your StarPocket! ⭐'
-        : 'New wallet activated with a 1.0 XLM welcome bonus! ⭐'
+        ? '0.05 XLM deposited directly to your StarPocket! ⭐ (+20 SP earned!)'
+        : 'New wallet activated with a 1.0 XLM welcome bonus! ⭐ (+20 SP earned!)'
     });
   } catch (err) {
     console.error('Claim error:', err);
