@@ -32,7 +32,8 @@ import {
   Repeat,
   Globe,
   Gift,
-  Palette
+  Palette,
+  Settings
 } from 'lucide-react';
 import { Keypair, StrKey, Horizon, Networks, TransactionBuilder, Operation, Asset, Memo } from '@stellar/stellar-sdk';
 import { translations } from './i18n.js';
@@ -184,14 +185,13 @@ export default function App() {
   const [currentSkin, setCurrentSkin] = useState(() => {
     return localStorage.getItem('starpocket_skin') || 'cosmos';
   });
-  const [showSkinModal, setShowSkinModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const skin = SKINS[currentSkin] || SKINS.cosmos;
 
   const handleSelectSkin = (skinId) => {
     setCurrentSkin(skinId);
     localStorage.setItem('starpocket_skin', skinId);
-    setShowSkinModal(false);
     if (window.Telegram?.WebApp?.HapticFeedback) {
       window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
     }
@@ -869,8 +869,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* Right Header items: Star Points, Theme Palette, Language Toggle & Telegram User Badge */}
-        <div className="flex items-center gap-1.5">
+        {/* Right Header items: Compact Star Points & Unified Settings */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* Star Points Badge (Click to open Rewards / Calendar) */}
           <button
             onClick={() => {
@@ -879,45 +879,27 @@ export default function App() {
                 window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
               }
             }}
-            className="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 hover:from-amber-500/30 hover:to-yellow-500/20 border border-amber-400/40 px-2 py-1 rounded-full text-[10px] font-mono font-black text-amber-300 shadow-sm shadow-amber-400/20 transition cursor-pointer active:scale-95"
+            className="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 hover:from-amber-500/30 hover:to-yellow-500/20 border border-amber-400/40 px-2 py-1 rounded-full text-[11px] font-mono font-black text-amber-300 shadow-sm shadow-amber-400/20 transition cursor-pointer active:scale-95"
             title="Star Points (SP) / 星ポイント"
           >
-            <Star className="w-3 h-3 fill-amber-400 text-amber-400 animate-pulse" />
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 animate-pulse" />
             <span>{gamification.starPoints} SP</span>
           </button>
 
-          {/* Theme Palette Switcher */}
+          {/* Unified Settings & Customization Button */}
           <button
             onClick={() => {
-              setShowSkinModal(true);
+              setShowSettingsModal(true);
               if (window.Telegram?.WebApp?.HapticFeedback) {
                 window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
               }
             }}
-            className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 hover:border-amber-400 px-2 py-1 rounded-full text-[10px] font-bold text-slate-300 hover:text-white transition cursor-pointer"
-            title="Theme Skins / テーマ着せ替え"
+            className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 hover:border-amber-400 px-2 py-1 rounded-full text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer active:scale-95 shadow-sm"
+            title="Settings, Themes & Language / 設定・着せ替え"
           >
-            <Palette className="w-3 h-3 text-amber-400" />
-            <span>{skin.icon}</span>
+            <span className="text-xs leading-none">{skin.icon}</span>
+            <Settings className="w-3.5 h-3.5 text-slate-400" />
           </button>
-
-          {/* Quick Language Switcher */}
-          <button
-            onClick={toggleLanguage}
-            className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 hover:border-cyan-400 px-2 py-1 rounded-full text-[10px] font-bold text-slate-300 hover:text-white transition cursor-pointer"
-            title="Switch Language / 言語切替"
-          >
-            <Globe className="w-3 h-3 text-cyan-400" />
-            <span>{lang === 'ja' ? 'JA' : 'EN'}</span>
-          </button>
-
-          {/* Telegram User Badge */}
-          <div className="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-2.5 py-1 rounded-full text-xs">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-slate-300 font-medium truncate max-w-[80px]">
-              {tgUser ? `@${tgUser.username || tgUser.first_name}` : t('guestUser')}
-            </span>
-          </div>
         </div>
       </header>
 
@@ -2101,83 +2083,146 @@ export default function App() {
       )}
 
       {/* ========================================================= */}
-      {/* 🎨 THEME SKINS SELECTION MODAL */}
+      {/* ⚙️ UNIFIED SETTINGS, THEME & PROFILE DRAWER */}
       {/* ========================================================= */}
-      {showSkinModal && (
+      {showSettingsModal && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
-          <div className="bg-[#121626] border border-amber-500/30 rounded-t-3xl sm:rounded-2xl p-5 max-w-sm w-full shadow-2xl relative">
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+          <div className="bg-[#121626] border border-amber-500/30 rounded-t-3xl sm:rounded-2xl p-5 max-w-sm w-full shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
               <div className="flex items-center gap-2">
-                <Palette className="w-5 h-5 text-amber-400" />
+                <Settings className="w-5 h-5 text-amber-400" />
                 <h3 className="font-extrabold text-sm text-white">
-                  {lang === 'ja' ? 'ウォレット着せ替えテーマ' : 'Choose Wallet Theme'}
+                  {lang === 'ja' ? '設定 ＆ カスタマイズ' : 'Settings & Customization'}
                 </h3>
               </div>
               <button 
-                onClick={() => setShowSkinModal(false)}
+                onClick={() => setShowSettingsModal(false)}
                 className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <p className="text-[11px] text-slate-400 mb-4">
-              {lang === 'ja' 
-                ? 'お好みの世界観に合わせてStarPocketを着せ替えることができます。' 
-                : 'Personalize StarPocket with unique cosmic, cyber and retro themes.'}
-            </p>
-
-            <div className="space-y-2.5">
-              {Object.values(SKINS).map((item) => {
-                const isActive = currentSkin === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleSelectSkin(item.id)}
-                    className={`w-full p-3 rounded-2xl flex items-center justify-between transition cursor-pointer text-left border ${
-                      isActive 
-                        ? 'bg-slate-900 border-amber-400 shadow-md shadow-amber-500/20 ring-1 ring-amber-400' 
-                        : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${item.previewGradient} border ${item.previewBorder} flex items-center justify-center text-lg shadow-sm shrink-0`}>
-                        {item.icon}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                          <span>{lang === 'ja' ? item.name : item.nameEn}</span>
-                          {isActive && (
-                            <span className="text-[9px] font-bold text-amber-300 bg-amber-400/20 px-1.5 py-0.5 rounded-full border border-amber-400/40">
-                              {lang === 'ja' ? '適用中' : 'Active'}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                          {item.id === 'cosmos' && 'Default Navy & Gold'}
-                          {item.id === 'cyber' && 'Neon Cyan & Hot Pink'}
-                          {item.id === 'sakura' && 'Midnight Plum & Sakura Pink'}
-                          {item.id === 'retro' && '8-Bit GameBoy Dot LCD'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="shrink-0">
-                      {isActive ? (
-                        <CheckCircle2 className="w-5 h-5 text-amber-400" />
-                      ) : (
-                        <div className="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
+            {/* User & Network Status */}
+            <div className="bg-slate-950/70 rounded-2xl p-3 border border-slate-800/80 mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center text-xs font-bold text-cyan-300">
+                  {tgUser ? (tgUser.first_name?.[0] || 'U') : '⭐'}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>{tgUser ? `@${tgUser.username || tgUser.first_name}` : t('guestUser')}</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                    Stellar Testnet • Active
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleCopyAddress}
+                className="text-[10px] font-bold px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer"
+              >
+                <Copy className="w-3 h-3 text-cyan-400" />
+                <span>{copied ? t('btnCopied') : t('btnCopy')}</span>
+              </button>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
-              <span>{lang === 'ja' ? '星ポイントやチケットで新スキン解放！' : 'Unlock exclusive skins via Star Points!'}</span>
+            {/* Language Selection */}
+            <div className="mb-4">
+              <label className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{lang === 'ja' ? '表示言語 (Language)' : 'Display Language'}</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2 mt-1.5">
+                <button
+                  onClick={() => {
+                    if (lang !== 'ja') toggleLanguage();
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border cursor-pointer ${
+                    lang === 'ja'
+                      ? 'bg-amber-400/20 border-amber-400 text-amber-300 font-extrabold shadow-sm'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>🇯🇵 日本語</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (lang !== 'en') toggleLanguage();
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border cursor-pointer ${
+                    lang === 'en'
+                      ? 'bg-cyan-400/20 border-cyan-400 text-cyan-300 font-extrabold shadow-sm'
+                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>🇺🇸 English</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Theme Skins Section */}
+            <div className="mb-2">
+              <label className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
+                <Palette className="w-3.5 h-3.5 text-amber-400" />
+                <span>{lang === 'ja' ? 'ウォレット着せ替えテーマ' : 'Wallet Themes'}</span>
+              </label>
+
+              <div className="space-y-2 mt-1.5">
+                {Object.values(SKINS).map((item) => {
+                  const isActive = currentSkin === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSelectSkin(item.id)}
+                      className={`w-full p-2.5 rounded-xl flex items-center justify-between transition cursor-pointer text-left border ${
+                        isActive 
+                          ? 'bg-slate-900 border-amber-400 shadow-md shadow-amber-500/20 ring-1 ring-amber-400' 
+                          : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${item.previewGradient} border ${item.previewBorder} flex items-center justify-center text-sm shadow-sm shrink-0`}>
+                          {item.icon}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span>{lang === 'ja' ? item.name : item.nameEn}</span>
+                            {isActive && (
+                              <span className="text-[9px] font-bold text-amber-300 bg-amber-400/20 px-1.5 py-0.2 rounded-full border border-amber-400/40">
+                                {lang === 'ja' ? '適用中' : 'Active'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            {item.id === 'cosmos' && 'Default Navy & Gold'}
+                            {item.id === 'cyber' && 'Neon Cyan & Hot Pink'}
+                            {item.id === 'sakura' && 'Midnight Plum & Sakura'}
+                            {item.id === 'retro' && '8-Bit Dot GameBoy LCD'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        {isActive ? (
+                          <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-slate-700" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Close */}
+            <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+              <span className="text-[10px] text-slate-500">StarPocket v1.0.0</span>
               <button
-                onClick={() => setShowSkinModal(false)}
+                onClick={() => setShowSettingsModal(false)}
                 className="text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
               >
                 {t('btnClose')}
