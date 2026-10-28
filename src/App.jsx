@@ -806,17 +806,28 @@ export default function App() {
     }
   };
 
+  // Swap conversion rates for all pairs
+  const SWAP_RATES = {
+    'XLM_USDC': 0.135,
+    'USDC_XLM': 1 / 0.135,
+    'XLM_yXLM': 0.98,
+    'yXLM_XLM': 1 / 0.98,
+    'USDC_yUSDC': 0.98,
+    'yUSDC_USDC': 1 / 0.98,
+    'XLM_yUSDC': 0.135 * 0.98,
+    'yUSDC_XLM': 1 / (0.135 * 0.98),
+    'USDC_yXLM': (1 / 0.135) * 0.98,
+    'yXLM_USDC': 0.135 / 0.98,
+    'yXLM_yUSDC': 0.135,
+    'yUSDC_yXLM': 1 / 0.135,
+  };
+
   // Swap calculation helper
   const getEstimatedSwapOutput = (from, to, inAmt) => {
     const num = parseFloat(inAmt);
     if (isNaN(num) || num <= 0) return '0.0000';
-    let rate = 1.0;
-    if (from === 'XLM' && to === 'USDC') rate = 0.135;
-    else if (from === 'USDC' && to === 'XLM') rate = 1 / 0.135;
-    else if (from === 'XLM' && to === 'yXLM') rate = 0.98;
-    else if (from === 'yXLM' && to === 'XLM') rate = 1 / 0.98;
-    else if (from === 'USDC' && to === 'yUSDC') rate = 0.98;
-    else if (from === 'yUSDC' && to === 'USDC') rate = 1 / 0.98;
+    if (from === to) return num.toFixed(4);
+    const rate = SWAP_RATES[`${from}_${to}`] || 1.0;
     const net = num * (1 - 0.003); // 0.3% protocol fee
     return (net * rate).toFixed(4);
   };
@@ -853,6 +864,18 @@ export default function App() {
 
       setSwapResult(data);
       setSwapAmount('');
+      if (data.usdcBalance !== undefined) {
+        setUsdcBalance(data.usdcBalance);
+      }
+      if (data.vault) {
+        setVaultInfo(prev => ({
+          ...prev,
+          yXLM: (typeof data.vault.yXLM === 'number' ? data.vault.yXLM.toFixed(4) : data.vault.yXLM),
+          yUSDC: (typeof data.vault.yUSDC === 'number' ? data.vault.yUSDC.toFixed(4) : data.vault.yUSDC),
+          totalEarnedXLM: data.vault.totalEarnedXLM || prev.totalEarnedXLM,
+          totalEarnedUSDC: data.vault.totalEarnedUSDC || prev.totalEarnedUSDC
+        }));
+      }
       if (data.starPoints) {
         setGamification(prev => ({ ...prev, starPoints: data.starPoints }));
       }
@@ -902,6 +925,16 @@ export default function App() {
 
       setVaultMsg('✨ ' + data.message);
       setVaultAmount('');
+      if (data.usdcBalance !== undefined) {
+        setUsdcBalance(data.usdcBalance);
+      }
+      if (data.vault) {
+        setVaultInfo(prev => ({
+          ...prev,
+          yXLM: (typeof data.vault.yXLM === 'number' ? data.vault.yXLM.toFixed(4) : data.vault.yXLM),
+          yUSDC: (typeof data.vault.yUSDC === 'number' ? data.vault.yUSDC.toFixed(4) : data.vault.yUSDC)
+        }));
+      }
       fetchAll(activeAddress);
       setTimeout(() => {
         setShowVaultDepositModal(false);
@@ -943,6 +976,16 @@ export default function App() {
 
       setVaultMsg('✨ ' + data.message);
       setVaultAmount('');
+      if (data.usdcBalance !== undefined) {
+        setUsdcBalance(data.usdcBalance);
+      }
+      if (data.vault) {
+        setVaultInfo(prev => ({
+          ...prev,
+          yXLM: (typeof data.vault.yXLM === 'number' ? data.vault.yXLM.toFixed(4) : data.vault.yXLM),
+          yUSDC: (typeof data.vault.yUSDC === 'number' ? data.vault.yUSDC.toFixed(4) : data.vault.yUSDC)
+        }));
+      }
       fetchAll(activeAddress);
       setTimeout(() => {
         setShowVaultWithdrawModal(false);
@@ -1778,7 +1821,14 @@ export default function App() {
                         <TokenIcon symbol={swapFrom} className="w-5 h-5 rounded-md" />
                         <select
                           value={swapFrom}
-                          onChange={(e) => setSwapFrom(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSwapFrom(val);
+                            if (val === swapTo) {
+                              const candidates = ['USDC', 'yUSDC', 'XLM', 'yXLM'].filter(x => x !== val);
+                              setSwapTo(candidates[0]);
+                            }
+                          }}
                           className="bg-transparent text-white font-bold text-xs outline-none cursor-pointer"
                         >
                           <option value="XLM" className="bg-slate-900">XLM</option>
@@ -1816,7 +1866,14 @@ export default function App() {
                       <TokenIcon symbol={swapTo} className="w-5 h-5 rounded-md" />
                       <select
                         value={swapTo}
-                        onChange={(e) => setSwapTo(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSwapTo(val);
+                          if (val === swapFrom) {
+                            const candidates = ['XLM', 'USDC', 'yXLM', 'yUSDC'].filter(x => x !== val);
+                            setSwapFrom(candidates[0]);
+                          }
+                        }}
                         className="bg-transparent text-white font-bold text-xs outline-none shrink-0 cursor-pointer"
                       >
                         <option value="USDC" className="bg-slate-900">USDC</option>
@@ -1831,7 +1888,7 @@ export default function App() {
                 {/* SWAP RATE INFO */}
                 <div className="text-[11px] text-slate-400 px-1 flex items-center justify-between font-mono">
                   <span>{t('rateLabel')}:</span>
-                  <span>1 {swapFrom} ≈ {(parseFloat(getEstimatedSwapOutput(swapFrom, swapTo, '1')) / 0.997).toFixed(4)} {swapTo}</span>
+                  <span>1 {swapFrom} ≈ {(SWAP_RATES[`${swapFrom}_${swapTo}`] || 1.0).toFixed(4)} {swapTo}</span>
                 </div>
 
                 {swapResult && (
@@ -1888,30 +1945,66 @@ export default function App() {
 
               {/* VAULT STATS GRID */}
               <div className="grid grid-cols-2 gap-2 my-3">
-                <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800">
-                  <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
-                    <YXlmIcon className="w-3.5 h-3.5 rounded-sm shrink-0" />
-                    <span>{t('inVaultYxlm')}</span>
-                  </p>
-                  <p className="text-xl font-extrabold text-amber-300 font-mono mt-1">
-                    {vaultInfo.yXLM}
-                  </p>
-                  <p className="text-[9px] text-slate-500 font-mono mt-0.5">
-                    {t('estDailyYield')}: +{vaultInfo.dailyEstXLM} XLM/d
-                  </p>
+                <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
+                      <YXlmIcon className="w-3.5 h-3.5 rounded-sm shrink-0" />
+                      <span>{t('inVaultYxlm')}</span>
+                    </p>
+                    <p className="text-xl font-extrabold text-amber-300 font-mono mt-1">
+                      {vaultInfo.yXLM}
+                    </p>
+                    <p className="text-[9px] text-slate-500 font-mono mt-0.5">
+                      {t('estDailyYield')}: +{vaultInfo.dailyEstXLM} XLM/d
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-800/80">
+                    <button
+                      type="button"
+                      onClick={() => { setVaultActionAsset('XLM'); setVaultAmount(''); setVaultMsg(''); setShowVaultDepositModal(true); }}
+                      className="flex-1 py-1 text-[10px] font-bold bg-amber-500/20 text-amber-300 rounded hover:bg-amber-500/30 transition text-center cursor-pointer"
+                    >
+                      + 預入
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setVaultActionAsset('XLM'); setVaultAmount(''); setVaultMsg(''); setShowVaultWithdrawModal(true); }}
+                      className="flex-1 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 rounded hover:bg-slate-700 transition text-center cursor-pointer"
+                    >
+                      - 引出
+                    </button>
+                  </div>
                 </div>
 
-                <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800">
-                  <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
-                    <YUsdcIcon className="w-3.5 h-3.5 rounded-sm shrink-0" />
-                    <span>{t('inVaultYusdc')}</span>
-                  </p>
-                  <p className="text-xl font-extrabold text-cyan-300 font-mono mt-1">
-                    {vaultInfo.yUSDC}
-                  </p>
-                  <p className="text-[9px] text-slate-500 font-mono mt-0.5">
-                    {t('estDailyYield')}: +{vaultInfo.dailyEstUSDC} USDC/d
-                  </p>
+                <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] text-slate-400 flex items-center gap-1.5">
+                      <YUsdcIcon className="w-3.5 h-3.5 rounded-sm shrink-0" />
+                      <span>{t('inVaultYusdc')}</span>
+                    </p>
+                    <p className="text-xl font-extrabold text-cyan-300 font-mono mt-1">
+                      {vaultInfo.yUSDC}
+                    </p>
+                    <p className="text-[9px] text-slate-500 font-mono mt-0.5">
+                      {t('estDailyYield')}: +{vaultInfo.dailyEstUSDC} USDC/d
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-2.5 pt-2 border-t border-slate-800/80">
+                    <button
+                      type="button"
+                      onClick={() => { setVaultActionAsset('USDC'); setVaultAmount(''); setVaultMsg(''); setShowVaultDepositModal(true); }}
+                      className="flex-1 py-1 text-[10px] font-bold bg-cyan-500/20 text-cyan-300 rounded hover:bg-cyan-500/30 transition text-center cursor-pointer"
+                    >
+                      + 預入
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setVaultActionAsset('USDC'); setVaultAmount(''); setVaultMsg(''); setShowVaultWithdrawModal(true); }}
+                      className="flex-1 py-1 text-[10px] font-bold bg-slate-800 text-slate-300 rounded hover:bg-slate-700 transition text-center cursor-pointer"
+                    >
+                      - 引出
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -1921,8 +2014,8 @@ export default function App() {
                   <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
                   {t('totalAccruedYield')}
                 </span>
-                <span className="font-mono font-bold text-emerald-400">
-                  +{vaultInfo.totalEarnedXLM} XLM
+                <span className="font-mono font-bold text-emerald-400 text-right">
+                  +{vaultInfo.totalEarnedXLM} XLM <span className="text-cyan-400 ml-1">/ +{vaultInfo.totalEarnedUSDC} USDC</span>
                 </span>
               </div>
 
@@ -2582,7 +2675,7 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setVaultActionAsset('XLM')}
+                    onClick={() => { setVaultActionAsset('XLM'); setVaultAmount(''); setVaultMsg(''); }}
                     className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       vaultActionAsset === 'XLM' 
                         ? 'bg-amber-500/20 border-amber-400 text-amber-300' 
@@ -2594,7 +2687,7 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setVaultActionAsset('USDC')}
+                    onClick={() => { setVaultActionAsset('USDC'); setVaultAmount(''); setVaultMsg(''); }}
                     className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       vaultActionAsset === 'USDC' 
                         ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' 
@@ -2610,7 +2703,7 @@ export default function App() {
               <div>
                 <div className="flex justify-between text-[11px] text-slate-400 mb-1">
                   <span>{t('depositAmount')}</span>
-                  <span>{t('availableLabel')}: {vaultActionAsset === 'XLM' ? balance : '0.00'}</span>
+                  <span>{t('availableLabel')}: {vaultActionAsset === 'XLM' ? balance : usdcBalance} {vaultActionAsset}</span>
                 </div>
                 <div className="relative">
                   <input
@@ -2624,7 +2717,7 @@ export default function App() {
                   />
                   <button
                     type="button"
-                    onClick={() => setVaultAmount(vaultActionAsset === 'XLM' ? Math.max(0, parseFloat(balance) - 0.1).toFixed(2) : '1.0')}
+                    onClick={() => setVaultAmount(vaultActionAsset === 'XLM' ? Math.max(0, parseFloat(balance) - 0.1).toFixed(2) : parseFloat(usdcBalance).toFixed(2))}
                     className="absolute right-2 top-2 text-[10px] bg-slate-800 text-cyan-400 px-2 py-0.5 rounded font-bold cursor-pointer"
                   >
                     {t('btnMax')}
@@ -2684,7 +2777,7 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setVaultActionAsset('XLM')}
+                    onClick={() => { setVaultActionAsset('XLM'); setVaultAmount(''); setVaultMsg(''); }}
                     className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       vaultActionAsset === 'XLM' 
                         ? 'bg-amber-500/20 border-amber-400 text-amber-300' 
@@ -2696,7 +2789,7 @@ export default function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setVaultActionAsset('USDC')}
+                    onClick={() => { setVaultActionAsset('USDC'); setVaultAmount(''); setVaultMsg(''); }}
                     className={`py-2 px-3 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       vaultActionAsset === 'USDC' 
                         ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300' 
@@ -2712,7 +2805,7 @@ export default function App() {
               <div>
                 <div className="flex justify-between text-[11px] text-slate-400 mb-1">
                   <span>{t('withdrawalAmount')}</span>
-                  <span>{t('inVaultYxlm')}: {vaultActionAsset === 'XLM' ? vaultInfo.yXLM : vaultInfo.yUSDC}</span>
+                  <span>{vaultActionAsset === 'XLM' ? t('inVaultYxlm') : (lang === 'ja' ? '星の金庫のyUSDC' : 'In Vault yUSDC')}: {vaultActionAsset === 'XLM' ? vaultInfo.yXLM : vaultInfo.yUSDC} {vaultActionAsset === 'XLM' ? 'yXLM' : 'yUSDC'}</span>
                 </div>
                 <div className="relative">
                   <input
@@ -3142,6 +3235,7 @@ export default function App() {
                     onClick={() => {
                       setSelectedAssetDetail(null);
                       setSwapFrom('USDC');
+                      setSwapTo('yUSDC');
                       setActiveTab('swap');
                     }}
                     className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-400/20 cursor-pointer"
@@ -3153,6 +3247,8 @@ export default function App() {
                     onClick={() => {
                       setSelectedAssetDetail(null);
                       setVaultActionAsset('USDC');
+                      setVaultAmount('');
+                      setVaultMsg('');
                       setShowVaultDepositModal(true);
                     }}
                     className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-400/20 cursor-pointer"

@@ -120,6 +120,58 @@ app.get('/api/user-status/:address', (req, res) => {
 // destination -> { starPoints, streak, lastCheckinDate, checkinDays: number[], perks: string[], hasCompleted31: boolean }
 const userGamificationData = new Map();
 
+// In-Memory & Persistent USDC Balances per user (simulating Testnet USDC asset holders)
+const userUsdcBalances = new Map();
+
+// 星の金庫 (Star Vault) State & Endpoints
+// Holds user deposits for yXLM (5.0% APY) & yUSDC (5.0% APY)
+const starVaults = new Map();
+
+// Local file persistence so balances & streaks survive restarts
+const DATA_FILE = path.join(__dirname, 'starpocket_data.json');
+
+function loadPersistedData() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const raw = fs.readFileSync(DATA_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      if (data.usdc) {
+        for (const [k, v] of Object.entries(data.usdc)) {
+          userUsdcBalances.set(k, v);
+        }
+      }
+      if (data.vaults) {
+        for (const [k, v] of Object.entries(data.vaults)) {
+          starVaults.set(k, v);
+        }
+      }
+      if (data.gamification) {
+        for (const [k, v] of Object.entries(data.gamification)) {
+          userGamificationData.set(k, v);
+        }
+      }
+      console.log(`[Storage] Loaded persistent state from ${DATA_FILE}`);
+    }
+  } catch (e) {
+    console.warn('[Storage] Failed to load starpocket_data.json:', e.message);
+  }
+}
+
+function savePersistedData() {
+  try {
+    const data = {
+      usdc: Object.fromEntries(userUsdcBalances),
+      vaults: Object.fromEntries(starVaults),
+      gamification: Object.fromEntries(userGamificationData)
+    };
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (e) {
+    console.warn('[Storage] Failed to save starpocket_data.json:', e.message);
+  }
+}
+
+loadPersistedData();
+
 function getUserGamification(destination) {
   const today = getTodayString();
   const currentDay = new Date().getUTCDate(); // 1 - 31
@@ -308,15 +360,13 @@ app.post('/api/fund-friendbot', async (req, res) => {
   }
 });
 
-// In-Memory USDC Balances per user (simulating Testnet USDC asset holders)
-const userUsdcBalances = new Map();
-
 function getUserUsdc(address) {
   return userUsdcBalances.get(address) || 0.0;
 }
 
 function setUserUsdc(address, amount) {
   userUsdcBalances.set(address, Math.max(0, amount));
+  savePersistedData();
 }
 
 // GET /api/balance/:address - checks balance of an address (multi-asset)
@@ -402,8 +452,6 @@ app.get('/api/activity/:address', async (req, res) => {
 
 // 星の金庫 (Star Vault) State & Endpoints
 // Holds user deposits for yXLM (5.0% APY) & yUSDC (5.0% APY)
-const starVaults = new Map();
-
 function getOrCreateVault(address) {
   let v = starVaults.get(address);
   if (!v) {
@@ -470,6 +518,7 @@ app.post('/api/vault/deposit', async (req, res) => {
 
   if (asset === 'XLM' || asset === 'yXLM') {
     vault.yXLM += amt;
+    savePersistedData();
     return res.json({
       success: true,
       message: `Deposited ${amt} XLM into Star Vault! ✨ (Now earning 5.0% APY as yXLM)`,
@@ -482,6 +531,7 @@ app.post('/api/vault/deposit', async (req, res) => {
     }
     setUserUsdc(address, curUsdc - amt);
     vault.yUSDC += amt;
+    savePersistedData();
     return res.json({
       success: true,
       message: `Deposited ${amt} USDC into Star Vault! 💵 (Now earning 5.0% APY as yUSDC)`,
@@ -511,6 +561,7 @@ app.post('/api/vault/withdraw', async (req, res) => {
       return res.status(400).json({ error: 'Insufficient vault balance' });
     }
     vault.yXLM -= amt;
+    savePersistedData();
     return res.json({
       success: true,
       message: `Withdrew ${amt} XLM from Star Vault back to your wallet!`,
@@ -523,6 +574,7 @@ app.post('/api/vault/withdraw', async (req, res) => {
     vault.yUSDC -= amt;
     const curUsdc = getUserUsdc(address);
     setUserUsdc(address, curUsdc + amt);
+    savePersistedData();
     return res.json({
       success: true,
       message: `Withdrew ${amt} USDC from Star Vault back to your wallet!`,
@@ -562,6 +614,12 @@ const BASE_RATES = {
   'yXLM_XLM': 1 / 0.98,
   'USDC_yUSDC': 0.98,
   'yUSDC_USDC': 1 / 0.98,
+  'XLM_yUSDC': 0.135 * 0.98,
+  'yUSDC_XLM': 1 / (0.135 * 0.98),
+  'USDC_yXLM': (1 / 0.135) * 0.98,
+  'yXLM_USDC': 0.135 / 0.98,
+  'yXLM_yUSDC': 0.135,
+  'yUSDC_yXLM': 1 / 0.135,
 };
 
 function getSwapRate(from, to) {
@@ -678,42 +736,58 @@ app.post('/api/swap', async (req, res) => {
   const swapEarnedSp = Math.max(1, Math.round(volumeUsd));
   const currentSp = addStarPoints(address, swapEarnedSp, `Swap volume $${volumeUsd.toFixed(2)}`);
 
-  // Update token balances in wallet / vault
-  if (fromAsset === 'XLM' && toAsset === 'USDC') {
-    const curUsdc = getUserUsdc(address);
-    setUserUsdc(address, curUsdc + netOutput);
-  } else if (fromAsset === 'USDC' && toAsset === 'XLM') {
-    const curUsdc = getUserUsdc(address);
+  // Universal Balance Updates for all 12 asset pairs (XLM, USDC, yXLM, yUSDC)
+  const curUsdc = getUserUsdc(address);
+  const vault = getOrCreateVault(address);
+
+  // 1. Verify and deduct source asset
+  if (fromAsset === 'USDC') {
     if (curUsdc < amt) {
       return res.status(400).json({ error: `保有USDCが不足しています (保有: ${curUsdc.toFixed(4)} USDC)` });
     }
     setUserUsdc(address, curUsdc - amt);
-  } else if (fromAsset === 'USDC' && toAsset === 'yUSDC') {
-    const curUsdc = getUserUsdc(address);
-    if (curUsdc < amt) {
-      return res.status(400).json({ error: `保有USDCが不足しています (保有: ${curUsdc.toFixed(4)} USDC)` });
-    }
-    setUserUsdc(address, curUsdc - amt);
-    const vault = getOrCreateVault(address);
-    vault.yUSDC += netOutput;
-  } else if (fromAsset === 'yUSDC' && toAsset === 'USDC') {
-    const vault = getOrCreateVault(address);
+  } else if (fromAsset === 'yUSDC') {
     if (vault.yUSDC < amt) {
       return res.status(400).json({ error: `金庫のyUSDCが不足しています (保有: ${vault.yUSDC.toFixed(4)} yUSDC)` });
     }
     vault.yUSDC -= amt;
-    const curUsdc = getUserUsdc(address);
-    setUserUsdc(address, curUsdc + netOutput);
-  } else if (fromAsset === 'XLM' && toAsset === 'yXLM') {
-    const vault = getOrCreateVault(address);
-    vault.yXLM += netOutput;
-  } else if (fromAsset === 'yXLM' && toAsset === 'XLM') {
-    const vault = getOrCreateVault(address);
+  } else if (fromAsset === 'yXLM') {
     if (vault.yXLM < amt) {
       return res.status(400).json({ error: `金庫のyXLMが不足しています (保有: ${vault.yXLM.toFixed(4)} yXLM)` });
     }
     vault.yXLM -= amt;
   }
+
+  // 2. Credit target asset
+  if (toAsset === 'USDC') {
+    setUserUsdc(address, getUserUsdc(address) + netOutput);
+  } else if (toAsset === 'yUSDC') {
+    vault.yUSDC += netOutput;
+  } else if (toAsset === 'yXLM') {
+    vault.yXLM += netOutput;
+  } else if (toAsset === 'XLM') {
+    // Attempt payout from Testnet distributor faucet
+    try {
+      const faucetAcc = await server.loadAccount(faucetKeypair.publicKey());
+      const tx = new StellarSdk.TransactionBuilder(faucetAcc, {
+        fee: StellarSdk.BASE_FEE,
+        networkPassphrase: StellarSdk.Networks.TESTNET
+      })
+        .addOperation(StellarSdk.Operation.payment({
+          destination: address,
+          asset: StellarSdk.Asset.native(),
+          amount: Math.min(100, netOutput).toFixed(7)
+        }))
+        .setTimeout(30)
+        .build();
+      tx.sign(faucetKeypair);
+      await server.submitTransaction(tx);
+    } catch (e) {
+      console.warn('Faucet payment for swap to XLM failed:', e.message);
+    }
+  }
+
+  savePersistedData();
 
   try {
     const userTotalVol = userMonthlyVolumes.get(address);
@@ -737,6 +811,12 @@ app.post('/api/swap', async (req, res) => {
       userEstBonusXlm: userEstBonusXlm.toFixed(4),
       monthlyPoolTotalXlm: monthlyBonusPoolXlm.toFixed(4),
       usdcBalance: getUserUsdc(address).toFixed(4),
+      vault: {
+        yXLM: vault.yXLM.toFixed(4),
+        yUSDC: vault.yUSDC.toFixed(4),
+        totalEarnedXLM: vault.totalEarnedXLM.toFixed(6),
+        totalEarnedUSDC: vault.totalEarnedUSDC.toFixed(6)
+      },
       starPoints: currentSp,
       earnedSp: swapEarnedSp,
       message: `Swapped ${amt} ${fromAsset} for ${netOutput.toFixed(4)} ${toAsset}! 🎉 (+${swapEarnedSp} SP earned!)`
