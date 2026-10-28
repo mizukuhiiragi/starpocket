@@ -81,3 +81,17 @@ body {
   background: #252e48;
   border-radius: 4px;
 }
+
+/* Floating Stella Aura Animation */
+@keyframes floatStella {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(-16px) rotate(1deg) scale(1.02);
+  }
+}
+
+.animate-float-stella {
+  animation: floatStella 6s ease-in-out infinite;
+}

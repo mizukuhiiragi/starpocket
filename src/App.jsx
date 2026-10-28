@@ -260,6 +260,22 @@ const SKINS = {
     pillActive: 'bg-gradient-to-r from-emerald-400 to-lime-300 text-slate-950 shadow-md shadow-emerald-500/30 font-mono',
     accentBorder: 'border-emerald-400/50',
     accentBadge: 'bg-emerald-400/15 border-emerald-400/40 text-emerald-300 font-mono'
+  },
+  stella: {
+    id: 'stella',
+    name: 'ステラの守護オーラ ⭐',
+    nameEn: "Stella's Aura (Secret)",
+    icon: '🪐',
+    isSpecial: true,
+    previewGradient: 'from-[#160f2e] via-[#0d162d] to-[#070b18]',
+    previewBorder: 'border-purple-400',
+    bgClass: 'bg-[#070914]',
+    glow1: 'bg-purple-600/35',
+    glow2: 'bg-cyan-500/30',
+    headerText: 'from-cyan-300 via-purple-300 to-amber-200',
+    pillActive: 'bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 text-slate-950 font-black shadow-lg shadow-purple-500/30',
+    accentBorder: 'border-purple-400/60',
+    accentBadge: 'bg-purple-500/20 border-cyan-400/50 text-cyan-200'
   }
 };
 
@@ -362,6 +378,10 @@ export default function App() {
     return localStorage.getItem('starpocket_skin') || 'cosmos';
   });
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showStellaRewardModal, setShowStellaRewardModal] = useState(false);
+  const [isStellaUnlocked, setIsStellaUnlocked] = useState(() => {
+    return localStorage.getItem('starpocket_skin_stella_unlocked') === 'true';
+  });
 
   const skin = SKINS[currentSkin] || SKINS.cosmos;
 
@@ -1225,6 +1245,14 @@ export default function App() {
       tx.sign(senderKeypair);
       const res = await stellarServer.submitTransaction(tx);
 
+      // Easter Egg: Tipping Stella unlocks the secret Stella Aura floating skin!
+      if (sendDest === 'GAKDLWCZOEZAEVFDLIQGIB2UUWCUM3KIMPXHQLITEGFLGO6PN7FYVQSG') {
+        localStorage.setItem('starpocket_skin_stella_unlocked', 'true');
+        setIsStellaUnlocked(true);
+        handleSelectSkin('stella');
+        setShowStellaRewardModal(true);
+      }
+
       if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
       }
@@ -1310,6 +1338,21 @@ export default function App() {
       {/* Background ambient light */}
       <div className={`fixed top-[-80px] left-[-80px] w-72 h-72 ${skin.glow1} rounded-full blur-3xl pointer-events-none transition-all duration-700`} />
       <div className={`fixed bottom-[-80px] right-[-80px] w-72 h-72 ${skin.glow2} rounded-full blur-3xl pointer-events-none transition-all duration-700`} />
+
+      {/* 🪐 FLOATING STELLA AURA SKIN BACKGROUND */}
+      {currentSkin === 'stella' && (
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-center justify-center">
+          <div className="absolute w-[360px] h-[520px] rounded-full bg-gradient-to-br from-purple-600/25 via-cyan-500/20 to-transparent blur-3xl pointer-events-none" />
+          <img
+            src="/stella_techwear_skin.jpg"
+            alt="Floating Stella Aura"
+            className="max-h-[80vh] w-auto object-contain opacity-30 mix-blend-screen pointer-events-none select-none animate-float-stella"
+            style={{
+              filter: 'drop-shadow(0 0 25px rgba(168, 85, 247, 0.45)) drop-shadow(0 0 45px rgba(6, 182, 212, 0.3))'
+            }}
+          />
+        </div>
+      )}
 
       {/* TOP HEADER */}
       <header className="flex items-center justify-between pb-3 border-b border-slate-800/80">
@@ -3118,6 +3161,7 @@ export default function App() {
                             {item.id === 'cyber' && 'Neon Cyan & Hot Pink'}
                             {item.id === 'sakura' && 'Midnight Plum & Sakura'}
                             {item.id === 'retro' && '8-Bit Dot GameBoy LCD'}
+                            {item.id === 'stella' && (lang === 'ja' ? '✨ 宇宙浮遊ステラ ＆ ネオンオーラ背景' : "✨ Floating Stella & Nebula Aura BG")}
                           </div>
                         </div>
                       </div>
@@ -3144,6 +3188,55 @@ export default function App() {
               >
                 {t('btnClose')}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 🪐 STELLA SKIN EASTER EGG UNLOCK MODAL */}
+      {/* ========================================================= */}
+      {showStellaRewardModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[#121026] border border-purple-400/50 rounded-3xl p-6 max-w-sm w-full shadow-2xl relative text-center overflow-hidden">
+            {/* Background Aura Glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-purple-500/25 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 space-y-3.5">
+              <span className="text-[10px] font-extrabold px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-400/40 inline-flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-purple-300" />
+                <span>{lang === 'ja' ? '🎉 隠し実績アンロック！' : '🎉 Hidden Achievement Unlocked!'}</span>
+              </span>
+
+              <div className="w-32 h-32 mx-auto rounded-2xl overflow-hidden border-2 border-purple-400/50 shadow-lg shadow-purple-500/30 bg-slate-950/80 p-1 flex items-center justify-center">
+                <img
+                  src="/stella_techwear_skin.jpg"
+                  alt="Stella Techwear Aura"
+                  className="w-full h-full object-cover rounded-xl"
+                />
+              </div>
+
+              <div>
+                <h3 className="font-black text-base text-white">
+                  {lang === 'ja' ? '限定スキン【ステラの守護オーラ ⭐】獲得！' : "Special Skin 'Stella’s Aura' Unlocked!"}
+                </h3>
+                <p className="text-xs text-purple-200 mt-1 leading-relaxed">
+                  {lang === 'ja' 
+                    ? '開発者のステラちゃんへの支援チップ送金ありがとうございます！ステラが宇宙空間でふわふわ見守る限定スキンが適用されました☕✨'
+                    : 'Thank you for supporting Stella! The exclusive floating Stella theme is now active on your wallet! ☕✨'}
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowStellaRewardModal(false)}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-purple-500/30 cursor-pointer active:scale-95 transition"
+                >
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>{lang === 'ja' ? 'このスキンでウォレットを使う ✨' : 'Enjoy This Theme ✨'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
