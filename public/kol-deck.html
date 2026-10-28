@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StarPocket — KOL & Influencer Partnership Kit</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #0b0f19;
+      color: #f1f5f9;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    @media print {
+      body {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .page-break {
+        page-break-after: always;
+        break-after: page;
+      }
+      .slide-card {
+        border: 1px solid #cbd5e1 !important;
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        box-shadow: none !important;
+      }
+      .text-slate-400 {
+        color: #475569 !important;
+      }
+      .text-amber-300, .text-amber-400 {
+        color: #b45309 !important;
+      }
+      .text-cyan-400 {
+        color: #0369a1 !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 max-w-4xl mx-auto selection:bg-amber-400 selection:text-slate-950">
+
+  <!-- TOP ACTION BAR -->
+  <div class="no-print flex items-center justify-between pb-6 mb-8 border-b border-slate-800">
+    <div className="flex items-center gap-2">
+      <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300">
+        ⭐ StarPocket 公式KOL提案キット
+      </span>
+    </div>
+    <div class="flex items-center gap-3">
+      <button 
+        onclick="window.print()" 
+        class="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-amber-400/20 active:scale-95 transition cursor-pointer"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+        <span>PDFとして保存 / 印刷</span>
+      </button>
+      <a 
+        href="https://starpocket.onrender.com/" 
+        target="_blank"
+        class="bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-bold px-3 py-2.5 rounded-xl text-slate-300 transition"
+      >
+        アプリを体験する ↗
+      </a>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- SLIDE 1: HERO COVER -->
+  <!-- ===================================================================== -->
+  <div class="slide-card bg-gradient-to-b from-[#13192f] to-[#0d1222] border border-amber-400/30 rounded-3xl p-6 md:p-10 shadow-2xl relative overflow-hidden mb-8 page-break">
+    <div class="absolute -top-24 -right-24 w-72 h-72 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="inline-block text-[11px] font-mono font-black tracking-widest uppercase px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 mb-4">
+      PARTNERSHIP DOSSIER 2026
+    </div>
+
+    <h1 class="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4">
+      フォロワー満足度 <span class="bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent">120%</span>。<br>
+      完全無料の次世代Telegramウォレット<br>
+      <span class="text-amber-400">『StarPocket』</span>ご紹介のご案内
+    </h1>
+
+    <p class="text-slate-300 text-sm md:text-base leading-relaxed mb-8 max-w-2xl">
+      アプリインストール不要。シードフレーズ記憶不要。怪しい投資や入金リスクゼロ。<br>
+      Telegramを開くだけで、あなたのコミュニティ全員に<strong class="text-white">「本物の暗号資産（XLM）」と「年利5.0%複利金庫」</strong>をプレゼントできる、最も安全で感謝されるWeb3ポイ活アプリです。
+    </p>
+
+    <!-- 3 KEY PILLARS -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-6 border-t border-slate-800/80">
+      <div class="bg-slate-900/60 rounded-2xl p-4 border border-slate-800">
+        <div class="text-2xl mb-1">⚡ 1秒起動</div>
+        <div class="text-xs font-bold text-white mb-1">Telegramで即スタート</div>
+        <div class="text-[11px] text-slate-400">アプリDL・アカウント登録の手間ゼロ。離脱率95%カット。</div>
+      </div>
+      <div class="bg-slate-900/60 rounded-2xl p-4 border border-slate-800">
+        <div class="text-2xl mb-1">🛡️ 炎上リスク0%</div>
+        <div class="text-xs font-bold text-white mb-1">完全ノンカストディアル</div>
+        <div class="text-[11px] text-slate-400">ユーザーから入金を一切求めないため、スキャム・元本割れ被害ゼロ。</div>
+      </div>
+      <div class="bg-slate-900/60 rounded-2xl p-4 border border-slate-800">
+        <div class="text-2xl mb-1">🎁 毎月15日給料日</div>
+        <div class="text-xs font-bold text-white mb-1">スワップ手数料山分け</div>
+        <div class="text-[11px] text-slate-400">DEX取引手数料の30%を毎月15日に全トレーダーへ配当還元。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- SLIDE 2: 4 GOLDEN PERKS FOR FOLLOWERS -->
+  <!-- ===================================================================== -->
+  <div class="slide-card bg-gradient-to-b from-[#13192f] to-[#0d1222] border border-slate-800 rounded-3xl p-6 md:p-10 shadow-2xl mb-8 page-break">
+    <div class="text-xs font-mono font-bold text-amber-400 mb-2">FOR YOUR AUDIENCE</div>
+    <h2 class="text-2xl md:text-3xl font-black mb-6">フォロワーが熱狂する「4つの神機能」</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Feature 1 -->
+      <div class="bg-slate-950/70 rounded-2xl p-5 border border-slate-800/90 relative overflow-hidden">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-9 h-9 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center text-amber-400 text-lg font-bold">⭐</div>
+          <div>
+            <h3 class="font-extrabold text-sm text-white">デイリー星集め（XLMドロップ）</h3>
+            <span class="text-[10px] text-amber-300 font-mono">毎日5回まで無料で受取可能</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          5秒の動画広告を見るだけで、Stellarチェーン上の本物の暗号資産（XLM）が即座にウォレットに着金。ガス代（送金手数料）も実質無料（~0.00001 XLM）だから少額でも100%手元に残ります。
+        </p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="bg-slate-950/70 rounded-2xl p-5 border border-slate-800/90 relative overflow-hidden">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-9 h-9 rounded-xl bg-cyan-400/15 border border-cyan-400/30 flex items-center justify-center text-cyan-400 text-lg font-bold">🏦</div>
+          <div>
+            <h3 class="font-extrabold text-sm text-white">星の金庫（年利5.0%〜6.0% APY）</h3>
+            <span class="text-[10px] text-cyan-300 font-mono">UltraStellar公式複利自動加算</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          集めたXLMやドル（USDC）を金庫に入れるだけで、毎日午前0時に利息が自動加算。ロック期間ゼロで、いつでも1タップで等価引き出しが可能。世界一安全なデジタル貯金箱です。
+        </p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="bg-slate-950/70 rounded-2xl p-5 border border-slate-800/90 relative overflow-hidden">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-9 h-9 rounded-xl bg-purple-400/15 border border-purple-400/30 flex items-center justify-center text-purple-400 text-lg font-bold">📅</div>
+          <div>
+            <h3 class="font-extrabold text-sm text-white">31日星座カレンダー＆星ポイント</h3>
+            <span class="text-[10px] text-purple-300 font-mono">毎朝ログインしたくなるゲーミフィケーション</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          毎日のチェックインで星スタンプを押して星ポイント（SP）を獲得。7日・14日連続ボーナスに加え、31日完走で「選べるセレクトチケット🎫」をプレゼント。圧倒的な継続率（リテンション）を誇ります。
+        </p>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="bg-slate-950/70 rounded-2xl p-5 border border-slate-800/90 relative overflow-hidden">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-9 h-9 rounded-xl bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 text-lg font-bold">🔄</div>
+          <div>
+            <h3 class="font-extrabold text-sm text-white">Star Swap & 翌月15日ボーナス</h3>
+            <span class="text-[10px] text-emerald-300 font-mono">三方よし (1:1:1) 手数料還元モデル</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          XLMやUSDCをアプリ内で瞬時に交換可能。取引手数料0.30%のうち、0.10%は毎月15日に取引量に応じて全トレーダーへ山分けキャッシュバック！給料日感覚でSNSがお祭り騒ぎになります。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- SLIDE 3: WHY KOLS LOVE STARPOCKET -->
+  <!-- ===================================================================== -->
+  <div class="slide-card bg-gradient-to-b from-[#13192f] to-[#0d1222] border border-slate-800 rounded-3xl p-6 md:p-10 shadow-2xl mb-8 page-break">
+    <div class="text-xs font-mono font-bold text-cyan-400 mb-2">FOR INFLUENCER REPUTATION</div>
+    <h2 class="text-2xl md:text-3xl font-black mb-6">インフルエンサーの信頼を守る「3つの絶対基準」</h2>
+
+    <div class="space-y-4">
+      <div class="flex items-start gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">✓</div>
+        <div>
+          <h4 class="font-bold text-sm text-white mb-1">1. 元本割れ・被害者が生まれる構造が1ミリも存在しない</h4>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            「入金してステーキングしろ」「NFTを買え」といった金銭的要求は一切ありません。ユーザーは無料で広告を見るだけでXLMを受け取るため、フォロワーが損をしてKOLが批判されるリスクはゼロです。
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">✓</div>
+        <div>
+          <h4 class="font-bold text-sm text-white mb-1">2. 送金・カストディ事故を防ぐ完全ローカル暗号化</h4>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            秘密鍵はユーザーの端末内（ブラウザの暗号化領域）でのみ生成・保管されます。運営サーバーに秘密鍵が送信されることは絶対にないため、FTX型の中央集権的な資金凍結やハッキング被害が起こり得ません。
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-start gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800">
+        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">✓</div>
+        <div>
+          <h4 class="font-bold text-sm text-white mb-1">3. 日本発・ステラウォークと同じ合法自立フライホイール</h4>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            怪しいポンジスキームではなく、広告主から入った広告収入（AdsGram）の一部を原資としてユーザーに還元する、日本国内でも数年間健全に運営されている「ステラウォーク」と同等の持続可能なビジネスモデルです。
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- SLIDE 4: READY-TO-USE POST TEMPLATES -->
+  <!-- ===================================================================== -->
+  <div class="slide-card bg-gradient-to-b from-[#13192f] to-[#0d1222] border border-amber-400/30 rounded-3xl p-6 md:p-10 shadow-2xl mb-8 page-break">
+    <div class="text-xs font-mono font-bold text-amber-400 mb-2">COPY & PASTE PROMOTIONAL KIT</div>
+    <h2 class="text-2xl md:text-3xl font-black mb-3">そのまま使える！SNS発信テンプレート</h2>
+    <p class="text-xs text-slate-400 mb-6">X（Twitter）、Telegramチャンネル、LINEオープンチャット等でコピペしてすぐにお使いいただけます。</p>
+
+    <div class="space-y-4">
+      <!-- Template A -->
+      <div class="bg-slate-950/80 rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-amber-300">【パターンA：ポイ活・手軽さ訴求（万人向け）】</span>
+          <span class="text-[10px] font-mono text-slate-500">推奨：X (Twitter)</span>
+        </div>
+        <div class="bg-slate-900 p-3.5 rounded-xl text-xs text-slate-300 font-mono leading-relaxed select-all border border-slate-800">
+【完全無料】Telegram開くだけで暗号資産がもらえる神ウォレット見つけた！🚀<br><br>
+アプリDLも面倒な初期設定もゼロ。Telegramの中でそのまま起動する『StarPocket（@StarPocket）』がすごい。<br><br>
+✅ 毎日のログインで星スタンプ押してXLM受取<br>
+✅ 預けるだけで年利5.0%複利で増える「星の金庫」<br>
+✅ 毎月15日はスワップ手数料の山分け給料日💰<br><br>
+自分のお金は1円も入れなくてOKなのでノーリスク。<br>
+ここから1タップで始められます👇<br>
+[あなたの専用紹介URL]
+        </div>
+      </div>
+
+      <!-- Template B -->
+      <div class="bg-slate-950/80 rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold text-cyan-300">【パターンB：Web3・DeFi関心層向け（玄人・クリプト民向け）】</span>
+          <span class="text-[10px] font-mono text-slate-500">推奨：Telegram / Discord</span>
+        </div>
+        <div class="bg-slate-900 p-3.5 rounded-xl text-xs text-slate-300 font-mono leading-relaxed select-all border border-slate-800">
+Stellar（ステラ）基盤のTelegram Mini App『StarPocket』が熱い。<br><br>
+TON系のタスクアプリと違って、Stellarの高速・激安ガス代（0.00001 XLM）をフル活用した完全ノンカストディアルウォレット。<br>
+・UltraStellar規格の年利5%〜6%オートコンパウンド金庫<br>
+・DEXスワップ手数料（0.3%）を「運営 / 翌月15日トレーダー配当 / ドロッププール」に三方よし（1:1:1）で循環させる永久機関モデル。<br><br>
+現在テストネット公開中で、初回登録でウェルカムボーナスあり。<br>
+Telegram内でサクサク動くので触ってみて損なし👇<br>
+[あなたの専用紹介URL]
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- SLIDE 5: CONTACT & PARTNERSHIP TERMS -->
+  <!-- ===================================================================== -->
+  <div class="slide-card bg-gradient-to-b from-[#13192f] to-[#0d1222] border border-slate-800 rounded-3xl p-6 md:p-10 shadow-2xl text-center">
+    <div class="inline-block text-2xl mb-3">🤝</div>
+    <h2 class="text-2xl md:text-3xl font-black mb-3">特別なパートナーシップのご相談</h2>
+    <p class="text-xs text-slate-400 max-w-xl mx-auto leading-relaxed mb-6">
+      チャンネル登録者数やフォロワー数に応じた**「特別リベート配当」「コミュニティ限定星ポイント（SP）付与」「オリジナルスキン制作」**などのコラボレーションも柔軟に対応可能です。
+    </p>
+
+    <div class="inline-flex flex-col sm:flex-row items-center gap-3">
+      <a 
+        href="https://starpocket.onrender.com/" 
+        target="_blank"
+        class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs shadow-lg shadow-amber-400/20 transition cursor-pointer"
+      >
+        StarPocket アプリを今すぐ確認する
+      </a>
+      <button 
+        onclick="window.print()"
+        class="no-print w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs transition cursor-pointer"
+      >
+        この資料をPDFとして保存 📄
+      </button>
+    </div>
+
+    <div class="mt-8 pt-6 border-t border-slate-800/80 text-[11px] text-slate-500 font-mono">
+      StarPocket Project Team • Non-custodial Smart Wallet & Yield Vault on Stellar
+    </div>
+  </div>
+
+</body>
+</html>
