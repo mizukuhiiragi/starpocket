@@ -289,6 +289,25 @@ app.get('/api/faucet', async (req, res) => {
   }
 });
 
+// POST /api/fund-friendbot - Request 10,000 Testnet XLM directly from official Friendbot
+app.post('/api/fund-friendbot', async (req, res) => {
+  try {
+    const { address } = req.body;
+    if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
+      return res.status(400).json({ error: 'Invalid Stellar Public Key' });
+    }
+    const resp = await fetch(`https://friendbot.stellar.org?addr=${address}`);
+    const data = await resp.json();
+    if (data.hash || resp.ok) {
+      return res.json({ success: true, hash: data.hash || null, message: '10,000 XLM funded successfully!' });
+    } else {
+      return res.status(400).json({ error: data.detail || 'Friendbot request failed' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Friendbot network error: ' + err.message });
+  }
+});
+
 // GET /api/balance/:address - checks balance of an address (multi-asset)
 app.get('/api/balance/:address', async (req, res) => {
   try {

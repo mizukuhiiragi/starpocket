@@ -440,6 +440,8 @@ export default function App() {
   const [adCompleted, setAdCompleted] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [fundingFriendbot, setFundingFriendbot] = useState(false);
+  const [friendbotMsg, setFriendbotMsg] = useState('');
   
   // Send Form
   const [sendDest, setSendDest] = useState('');
@@ -1011,6 +1013,33 @@ export default function App() {
   };
   const handleCopyAddress = copyAddress;
 
+  const handleFriendbotFund = async () => {
+    if (!activeAddress) return;
+    setFundingFriendbot(true);
+    setFriendbotMsg('');
+    try {
+      const res = await fetch('/api/fund-friendbot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: activeAddress })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Friendbot request failed');
+
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+      setFriendbotMsg(lang === 'ja' ? '🎉 10,000 XLMのチャージに成功しました！' : '🎉 10,000 XLM credited successfully!');
+      setTimeout(() => {
+        fetchAll(activeAddress);
+      }, 1200);
+    } catch (err) {
+      setFriendbotMsg(`❌ ${err.message}`);
+    } finally {
+      setFundingFriendbot(false);
+    }
+  };
+
   const handleShareInvite = () => {
     const text = encodeURIComponent(
       lang === 'ja' 
@@ -1172,10 +1201,23 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                <span>≈ ${(parseFloat(balance) * 0.135).toFixed(2)} USD</span>
-                <span>•</span>
-                <span className="text-emerald-400">{t('nearZeroFee')}</span>
+              <div className="flex items-center justify-between text-[11px] text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span>≈ ${(parseFloat(balance) * 0.135).toFixed(2)} USD</span>
+                  <span>•</span>
+                  <span className="text-emerald-400">{t('nearZeroFee')}</span>
+                </div>
+                {(parseFloat(balance) === 0 || isNaN(parseFloat(balance))) && (
+                  <button
+                    type="button"
+                    disabled={fundingFriendbot}
+                    onClick={handleFriendbotFund}
+                    className="text-[10px] text-amber-300 bg-amber-400/15 border border-amber-400/40 hover:bg-amber-400/25 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 disabled:opacity-50"
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    <span>{fundingFriendbot ? '...' : (lang === 'ja' ? '🚀 10,000 XLM 受取' : '🚀 Get 10k XLM')}</span>
+                  </button>
+                )}
               </div>
 
               {/* ACTION BUTTONS (Send / Receive / Swap) */}
@@ -1981,11 +2023,33 @@ export default function App() {
 
             <button
               onClick={copyAddress}
-              className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer mb-2.5"
             >
               {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copied ? t('btnCopied') : t('btnCopy')}
             </button>
+
+            {/* ONE-CLICK TESTNET 10,000 XLM CHARGE */}
+            <div className="pt-2.5 border-t border-slate-800">
+              <button
+                type="button"
+                disabled={fundingFriendbot}
+                onClick={handleFriendbotFund}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 hover:to-yellow-200 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-amber-400/20 active:scale-95 transition cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-slate-950" />
+                <span>
+                  {fundingFriendbot 
+                    ? (lang === 'ja' ? 'Friendbot注入中...' : 'Funding 10,000 XLM...') 
+                    : (lang === 'ja' ? '🚀 テスト用 10,000 XLM をチャージ (無料)' : '🚀 Claim 10,000 Testnet XLM (Free)')}
+                </span>
+              </button>
+              {friendbotMsg && (
+                <div className="mt-2 text-[10px] p-2 rounded-lg bg-slate-900 border border-slate-800 text-center font-mono text-amber-300">
+                  {friendbotMsg}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
