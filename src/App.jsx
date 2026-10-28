@@ -464,7 +464,7 @@ export default function App() {
   const [sendDest, setSendDest] = useState('');
   const [sendAmount, setSendAmount] = useState('');
   const [sendMemo, setSendMemo] = useState('');
-  const [sendMemoType, setSendMemoType] = useState('text'); // 'text' | 'id'
+  const [sendMemoType, setSendMemoType] = useState('auto'); // 'auto' | 'text' | 'id' (Auto-detects exchange numeric IDs vs messages)
   const [sending, setSending] = useState(false);
   const [sendMsg, setSendMsg] = useState('');
   
@@ -1088,8 +1088,18 @@ export default function App() {
       let memoObj = Memo.none();
       if (sendMemo && sendMemo.trim()) {
         const trimmed = sendMemo.trim();
-        if (sendMemoType === 'id') {
-          if (!/^\d+$/.test(trimmed)) {
+        const isPureDigits = /^\d+$/.test(trimmed);
+
+        // Smart Auto-Resolution:
+        // If 'auto', pure digits -> Memo.id, text -> Memo.text.
+        // Even if 'text' was selected by mistake, pure digits of 4+ length are safely resolved as Memo.id to protect from exchange loss!
+        let effectiveType = sendMemoType;
+        if (effectiveType === 'auto' || (effectiveType === 'text' && isPureDigits && trimmed.length >= 4)) {
+          effectiveType = isPureDigits ? 'id' : 'text';
+        }
+
+        if (effectiveType === 'id') {
+          if (!isPureDigits) {
             throw new Error(lang === 'ja' ? 'Memo IDは半角数字のみで入力してください' : 'Memo ID must contain digits only');
           }
           memoObj = Memo.id(trimmed);
@@ -2434,8 +2444,20 @@ export default function App() {
                   <div className="flex gap-1 bg-slate-900 border border-slate-800 p-0.5 rounded-lg text-[9px] font-mono">
                     <button
                       type="button"
+                      onClick={() => setSendMemoType('auto')}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer flex items-center gap-0.5 ${
+                        sendMemoType === 'auto' 
+                          ? 'bg-emerald-500/25 text-emerald-300 font-bold border border-emerald-500/40 shadow-xs' 
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Zap className="w-2.5 h-2.5" />
+                      <span>{lang === 'ja' ? '自動判別' : 'Auto'}</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setSendMemoType('text')}
-                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                      className={`px-1.5 py-0.5 rounded transition cursor-pointer ${
                         sendMemoType === 'text' 
                           ? 'bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30' 
                           : 'text-slate-400 hover:text-white'
@@ -2446,7 +2468,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => setSendMemoType('id')}
-                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                      className={`px-1.5 py-0.5 rounded transition cursor-pointer ${
                         sendMemoType === 'id' 
                           ? 'bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30' 
                           : 'text-slate-400 hover:text-white'
@@ -2461,13 +2483,40 @@ export default function App() {
                   placeholder={
                     sendMemoType === 'id' 
                       ? (lang === 'ja' ? '例: 12345678 (取引所指定の数字ID)' : 'e.g. 12345678 (Digits only)')
+                      : sendMemoType === 'auto'
+                      ? (lang === 'ja' ? '例: 12345678 (取引所ID) または メッセージ (自動判別)' : 'e.g. 12345678 (Exchange ID) or message')
                       : (lang === 'ja' ? '例: deposit-tag (最大28文字 / 空欄可)' : 'e.g. deposit-tag (Max 28 chars / optional)')
                   }
                   value={sendMemo}
                   onChange={(e) => setSendMemo(e.target.value)}
-                  maxLength={sendMemoType === 'text' ? 28 : 20}
+                  maxLength={sendMemoType === 'id' ? 20 : 28}
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-amber-400 outline-none"
                 />
+
+                {/* Auto Detection Dynamic Feedback */}
+                {sendMemo && sendMemo.trim() && (
+                  <div className="mt-1.5 animate-in fade-in">
+                    {(/^\d+$/.test(sendMemo.trim())) ? (
+                      <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-mono bg-emerald-500/10 border border-emerald-500/25 px-2 py-1 rounded-lg">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span>
+                          {lang === 'ja' 
+                            ? '💡 半角数字を検知：取引所宛ての【Memo ID (数値)】として安全に送信されます' 
+                            : '💡 Pure digits detected: safely transmitting as Memo ID for exchanges'}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-[10px] text-cyan-300 font-mono bg-cyan-500/10 border border-cyan-500/25 px-2 py-1 rounded-lg">
+                        <Sparkles className="w-3 h-3 text-cyan-400 shrink-0" />
+                        <span>
+                          {lang === 'ja' 
+                            ? '💬 文字列を検知：個人宛ての【Memo TEXT (メッセージ)】として送信されます' 
+                            : '💬 Text detected: transmitting as Memo TEXT message'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* EXCHANGE CAUTION NOTICE */}
