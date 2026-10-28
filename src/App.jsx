@@ -457,6 +457,10 @@ export default function App() {
   const [claimError, setClaimError] = useState('');
   const [copied, setCopied] = useState(false);
 
+  // Blockchain Activity & Transaction History
+  const [activityList, setActivityList] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
   // Gamification: Star Points & 31-Day Login Calendar
   const [gamification, setGamification] = useState({
     starPoints: 50,
@@ -515,6 +519,23 @@ export default function App() {
     fetchVaultInfo(addr);
     fetchSwapBonus(addr);
     fetchGamification(addr);
+    fetchActivity(addr);
+  };
+
+  const fetchActivity = async (addr) => {
+    if (!addr) return;
+    setLoadingActivity(true);
+    try {
+      const res = await fetch(`/api/activity/${addr}`);
+      const data = await res.json();
+      if (data.activity) {
+        setActivityList(data.activity);
+      }
+    } catch (e) {
+      console.error('Failed to fetch activity:', e);
+    } finally {
+      setLoadingActivity(false);
+    }
   };
 
   const fetchGamification = async (addr) => {
@@ -1373,6 +1394,96 @@ export default function App() {
                   </div>
                 </button>
               </div>
+            </div>
+
+            {/* RECENT BLOCKCHAIN ACTIVITY & MEMOS */}
+            <div className="glass-panel rounded-2xl p-4 border border-slate-800">
+              <div className="flex items-center justify-between mb-3 text-xs">
+                <span className="font-bold text-white flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{lang === 'ja' ? '送受金 ＆ メモ履歴' : 'Activity & Memos'}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => fetchActivity(activeAddress)}
+                  className="text-[10px] text-slate-400 hover:text-cyan-400 flex items-center gap-1 cursor-pointer font-mono"
+                >
+                  <RefreshCw className={`w-2.5 h-2.5 ${loadingActivity ? 'animate-spin text-cyan-400' : ''}`} />
+                  <span>{loadingActivity ? '...' : (lang === 'ja' ? '更新' : 'Refresh')}</span>
+                </button>
+              </div>
+
+              {activityList.length === 0 ? (
+                <div className="text-center py-5 text-slate-500 text-xs font-mono">
+                  {loadingActivity 
+                    ? (lang === 'ja' ? 'オンチェーン履歴を照会中...' : 'Fetching on-chain records...') 
+                    : (lang === 'ja' ? 'まだ取引履歴がありません' : 'No transactions recorded yet')}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {activityList.slice(0, 5).map((item) => {
+                    const isReceive = item.type === 'receive' || item.type === 'created';
+                    return (
+                      <div
+                        key={item.id}
+                        className="bg-slate-900/80 border border-slate-800/90 hover:border-slate-700 rounded-xl p-2.5 transition"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                              isReceive 
+                                ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400' 
+                                : 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
+                            }`}>
+                              {isReceive ? <ArrowDownLeft className="w-3.5 h-3.5" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-xs text-white">
+                                  {isReceive ? (lang === 'ja' ? '受取' : 'Received') : (lang === 'ja' ? '送金' : 'Sent')}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono truncate">
+                                  {item.counterparty ? `${item.counterparty.slice(0, 4)}...${item.counterparty.slice(-4)}` : 'Friendbot'}
+                                </span>
+                              </div>
+                              <span className="text-[9px] text-slate-500 font-mono block">
+                                {item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <span className={`font-mono font-bold text-xs block ${isReceive ? 'text-emerald-400' : 'text-slate-200'}`}>
+                              {isReceive ? '+' : '-'}{parseFloat(item.amount).toFixed(2)} {item.asset}
+                            </span>
+                            <a
+                              href={item.explorerUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[9px] text-cyan-400/80 hover:text-cyan-300 inline-flex items-center gap-0.5 font-mono cursor-pointer"
+                            >
+                              <span>TX</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* DISPLAY MEMO (THE CORE REQUEST!) */}
+                        {item.memo && (
+                          <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex items-center gap-1.5 text-[10px]">
+                            <span className="text-amber-400/90 font-mono font-bold text-[9px] bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.2 rounded shrink-0">
+                              MEMO
+                            </span>
+                            <span className="text-amber-200 font-mono bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800/90 truncate flex-1 text-[11px]">
+                              💬 "{item.memo}"
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* WALLET ADDRESS & SETTINGS */}

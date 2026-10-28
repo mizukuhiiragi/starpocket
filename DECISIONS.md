@@ -310,3 +310,22 @@
 - **アセットタップ時のインタラクティブドロワー:**
   - 保有アセット一覧のコインタップで、リアルタイムSDEXレート（USD/JPY換算）、24時間騰落率、ネットワーク仕様、保有額、ワンタップ操作（スワップ・送金・金庫預入）が連動する詳細モーダルを表示。
 
+---
+
+### 17. オンチェーン送受金履歴 ＆ メモ可視化（Recent Activity & Memo Badges）
+
+#### 1. 背景・課題
+- Stellarネットワークでは送金時にメモ（TEXT / ID）を付与できるが、受け取った側や送った側がウォレット上でメモを確認できないと、取引所入金テストやP2Pメッセージのやり取りの成否が判断できない（相棒のフィードバック：「残高は増えたけどメモが見れないｗ」）。
+
+#### 2. 実装方針
+- **バックエンド (`server.js`):**
+  - `GET /api/activity/:address`: Horizon SDK の `server.payments().forAccount(address).order('desc').limit(15)` を呼び出し。
+  - 各ペイメントレコードの underlying トランザクション (`p.transaction()`) を並行解決（`Promise.all`）し、`tx.memo`、`tx.memo_type`、`tx.created_at` を一括抽出（レスポンス時間約200ms）。
+  - 各レコードに `type` (receive / send / created)、`isIncoming`、`counterparty`、`explorerUrl` (Stellar Expert Testnet) を正規化して返却。
+- **フロントエンド (`src/App.jsx`):**
+  - ポートフォリオ一覧直下に「送受金 ＆ メモ履歴 (Recent Activity & Memos)」カードを設置。
+  - 🟢 受取（+XLM）/ 🔴 送金（-XLM）のビジュアル表示と相手アドレスの短縮表示。
+  - メモが存在する場合は、ゴールドの `[MEMO] 💬 "..."` バッジとして視覚的に強調表示。
+  - ワンタップで `stellar.expert` のトランザクション検証ページへ直接遷移できる外部リンクを常備。
+
+

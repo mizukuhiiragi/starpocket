@@ -336,6 +336,58 @@ app.get('/api/balance/:address', async (req, res) => {
   }
 });
 
+// GET /api/activity/:address - Returns recent payment activity with Memos
+app.get('/api/activity/:address', async (req, res) => {
+  try {
+    const { address } = req.params;
+    if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
+      return res.status(400).json({ error: 'Invalid Stellar Public Key' });
+    }
+    const payments = await server.payments().forAccount(address).order('desc').limit(15).call();
+    const records = await Promise.all(
+      payments.records.map(async (p) => {
+        let memo = null;
+        let memoType = 'none';
+        let createdAt = p.created_at || null;
+        try {
+          const tx = await p.transaction();
+          memo = tx.memo || null;
+          memoType = tx.memo_type || 'none';
+          createdAt = tx.created_at || createdAt;
+        } catch (e) {}
+
+        const isIncoming = p.to === address;
+        let type = 'unknown';
+        if (p.type === 'payment' || p.type === 'path_payment_strict_receive' || p.type === 'path_payment_strict_send') {
+          type = isIncoming ? 'receive' : 'send';
+        } else if (p.type === 'create_account') {
+          type = p.account === address ? 'created' : 'funded';
+        }
+
+        return {
+          id: p.id,
+          type,
+          isIncoming,
+          amount: p.amount || p.starting_balance || '0.0000',
+          asset: p.asset_type === 'native' ? 'XLM' : (p.asset_code || 'XLM'),
+          counterparty: isIncoming ? (p.from || p.funder) : (p.to || p.account),
+          memo,
+          memoType,
+          createdAt,
+          txHash: p.transaction_hash,
+          explorerUrl: `https://stellar.expert/explorer/testnet/tx/${p.transaction_hash}`
+        };
+      })
+    );
+    res.json({ address, activity: records });
+  } catch (err) {
+    if (err.name === 'NotFoundError' || err.response?.status === 404 || err.status === 404) {
+      return res.json({ address, activity: [] });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 星の金庫 (Star Vault) State & Endpoints
 // Holds user deposits for yXLM (5.0% APY) & yUSDC (5.0% APY)
 const starVaults = new Map();
