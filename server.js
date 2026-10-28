@@ -307,7 +307,7 @@ app.get('/api/balance/:address', async (req, res) => {
       }));
       res.json({ address, balance: nativeBal, assets, exists: true });
     } catch (e) {
-      if (e.name === 'NotFoundError') {
+      if (e.name === 'NotFoundError' || e.response?.status === 404 || e.status === 404) {
         return res.json({ address, balance: '0.0000000', assets: [{ code: 'XLM', balance: '0.0000000' }], exists: false });
       }
       throw e;

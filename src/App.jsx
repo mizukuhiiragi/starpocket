@@ -828,6 +828,7 @@ export default function App() {
     }
     setTimeout(() => setCopied(false), 2000);
   };
+  const handleCopyAddress = copyAddress;
 
   const handleShareInvite = () => {
     const text = encodeURIComponent(
@@ -2121,7 +2122,7 @@ export default function App() {
                 </div>
               </div>
               <button
-                onClick={handleCopyAddress}
+                onClick={copyAddress}
                 className="text-[10px] font-bold px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer"
               >
                 <Copy className="w-3 h-3 text-cyan-400" />

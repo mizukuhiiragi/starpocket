@@ -1,0 +1,60 @@
+<svg width='640' height='360' viewBox='0 0 640 360' xmlns='http://www.w3.org/2000/svg'>
+  <defs>
+    <linearGradient id='bg' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' stop-color='#0a0e1c'/>
+      <stop offset='50%' stop-color='#101730'/>
+      <stop offset='100%' stop-color='#05070e'/>
+    </linearGradient>
+    <linearGradient id='gold' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' stop-color='#fde047'/>
+      <stop offset='100%' stop-color='#f59e0b'/>
+    </linearGradient>
+    <linearGradient id='cyan' x1='0%' y1='0%' x2='100%' y2='100%'>
+      <stop offset='0%' stop-color='#38bdf8'/>
+      <stop offset='100%' stop-color='#0284c7'/>
+    </linearGradient>
+    <filter id='glow' x='-20%' y='-20%' width='140%' height='140%'>
+      <feGaussianBlur stdDeviation='8' result='blur'/>
+      <feComposite in='SourceGraphic' in2='blur' operator='over'/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width='640' height='360' fill='url(#bg)'/>
+  
+  <!-- Ambient Glows -->
+  <circle cx='140' cy='180' r='120' fill='#f59e0b' opacity='0.15' filter='url(#glow)'/>
+  <circle cx='500' cy='100' r='100' fill='#0284c7' opacity='0.15' filter='url(#glow)'/>
+  
+  <!-- Subtle Grid & Stars -->
+  <circle cx='80' cy='60' r='1.5' fill='#ffffff' opacity='0.6'/>
+  <circle cx='560' cy='70' r='2' fill='#ffffff' opacity='0.7'/>
+  <circle cx='480' cy='280' r='1.5' fill='#fde047' opacity='0.8'/>
+  <circle cx='220' cy='310' r='1' fill='#ffffff' opacity='0.4'/>
+  <circle cx='390' cy='50' r='1.5' fill='#38bdf8' opacity='0.7'/>
+  
+  <!-- Logo Icon Container -->
+  <g transform='translate(70, 95)'>
+    <rect x='0' y='0' width='170' height='170' rx='36' fill='#0d1326' stroke='#fde047' stroke-opacity='0.4' stroke-width='3'/>
+    <!-- Star Logo in Center -->
+    <path d='M85 30 L97 68 L137 68 L104 92 L117 130 L85 106 L53 130 L66 92 L33 68 L73 68 Z' fill='url(#gold)' filter='url(#glow)'/>
+    <!-- Pocket Arc -->
+    <path d='M45 105 C60 135 110 135 125 105' stroke='#38bdf8' stroke-width='4' stroke-linecap='round' fill='none'/>
+  </g>
+  
+  <!-- Text Content -->
+  <text x='270' y='145' font-family='sans-serif' font-weight='900' font-size='46' fill='url(#gold)' letter-spacing='-1'>StarPocket</text>
+  <text x='272' y='185' font-family='sans-serif' font-weight='700' font-size='20' fill='#ffffff' letter-spacing='-0.5'>Telegram Smart Wallet on Stellar</text>
+  
+  <!-- Badges -->
+  <g transform='translate(272, 215)'>
+    <rect x='0' y='0' width='100' height='28' rx='8' fill='#0f2942' stroke='#38bdf8' stroke-width='1.5'/>
+    <text x='14' y='18' font-family='sans-serif' font-weight='700' font-size='12' fill='#38bdf8'>⚡ 5.0% APY</text>
+    
+    <rect x='112' y='0' width='110' height='28' rx='8' fill='#241e0c' stroke='#fde047' stroke-width='1.5'/>
+    <text x='124' y='18' font-family='sans-serif' font-weight='700' font-size='12' fill='#fde047'>⭐ Daily Drops</text>
+
+    <rect x='234' y='0' width='95' height='28' rx='8' fill='#17102e' stroke='#c084fc' stroke-width='1.5'/>
+    <text x='246' y='18' font-family='sans-serif' font-weight='700' font-size='12' fill='#c084fc'>🔄 DEX Swap</text>
+  </g>
+</svg>
