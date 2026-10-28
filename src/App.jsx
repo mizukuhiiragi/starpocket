@@ -444,6 +444,8 @@ export default function App() {
   // Send Form
   const [sendDest, setSendDest] = useState('');
   const [sendAmount, setSendAmount] = useState('');
+  const [sendMemo, setSendMemo] = useState('');
+  const [sendMemoType, setSendMemoType] = useState('text'); // 'text' | 'id'
   const [sending, setSending] = useState(false);
   const [sendMsg, setSendMsg] = useState('');
   
@@ -942,6 +944,25 @@ export default function App() {
       const senderKeypair = Keypair.fromSecret(walletSecret);
       const senderAcc = await stellarServer.loadAccount(senderKeypair.publicKey());
       
+      let memoObj = Memo.none();
+      if (sendMemo && sendMemo.trim()) {
+        const trimmed = sendMemo.trim();
+        if (sendMemoType === 'id') {
+          if (!/^\d+$/.test(trimmed)) {
+            throw new Error(lang === 'ja' ? 'Memo IDは半角数字のみで入力してください' : 'Memo ID must contain digits only');
+          }
+          memoObj = Memo.id(trimmed);
+        } else {
+          const byteLen = new TextEncoder().encode(trimmed).length;
+          if (byteLen > 28) {
+            throw new Error(lang === 'ja' ? `Memo TEXTは最大28バイトまでです (現在: ${byteLen}B)` : `Memo text exceeds 28 bytes (${byteLen}B)`);
+          }
+          memoObj = Memo.text(trimmed);
+        }
+      } else {
+        memoObj = Memo.text('StarPocket');
+      }
+
       const tx = new TransactionBuilder(senderAcc, {
         fee: '100',
         networkPassphrase: Networks.TESTNET
@@ -951,7 +972,7 @@ export default function App() {
         asset: Asset.native(),
         amount: amt.toFixed(7)
       }))
-      .addMemo(Memo.text('StarPocket Transfer'))
+      .addMemo(memoObj)
       .setTimeout(30)
       .build();
 
@@ -965,6 +986,7 @@ export default function App() {
       setSendMsg(lang === 'ja' ? `✅ 送金成功！TX: ${res.hash.slice(0, 8)}...` : `✅ Sent successfully! TX: ${res.hash.slice(0, 8)}...`);
       setSendDest('');
       setSendAmount('');
+      setSendMemo('');
       fetchBalance(activeAddress);
 
       setTimeout(() => {
@@ -1944,8 +1966,17 @@ export default function App() {
               {t('modalReceiveDesc')}
             </p>
 
-            <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 break-all font-mono text-[11px] text-slate-300 text-center mb-4">
+            <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 break-all font-mono text-[11px] text-slate-300 text-center mb-3">
               {activeAddress}
+            </div>
+
+            <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-400 text-center mb-4 flex items-center justify-center gap-1.5 font-mono">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span>
+                {lang === 'ja'
+                  ? 'StarPocket個人ウォレット宛への入金はメモ（Memo）不要です'
+                  : 'No Memo required for StarPocket personal deposits'}
+              </span>
             </div>
 
             <button
@@ -1964,7 +1995,7 @@ export default function App() {
       {/* ========================================================= */}
       {showSendModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#121627] border border-amber-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+          <div className="bg-[#121627] border border-amber-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
                 <ArrowUpRight className="w-4 h-4 text-amber-400" />
@@ -2011,6 +2042,64 @@ export default function App() {
                     {t('btnMax')}
                   </button>
                 </div>
+              </div>
+
+              {/* MEMO FIELD (CRITICAL FOR EXCHANGES) */}
+              <div>
+                <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                  <span className="flex items-center gap-1 font-semibold text-slate-300">
+                    <span>{lang === 'ja' ? '送金メモ (Memo)' : 'Transaction Memo'}</span>
+                    <span className="text-[9px] text-amber-400/90 font-normal">
+                      ({lang === 'ja' ? '取引所送金時は必須' : 'Required for exchanges'})
+                    </span>
+                  </span>
+                  <div className="flex gap-1 bg-slate-900 border border-slate-800 p-0.5 rounded-lg text-[9px] font-mono">
+                    <button
+                      type="button"
+                      onClick={() => setSendMemoType('text')}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                        sendMemoType === 'text' 
+                          ? 'bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30' 
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      TEXT
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSendMemoType('id')}
+                      className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                        sendMemoType === 'id' 
+                          ? 'bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30' 
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      ID (数値)
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder={
+                    sendMemoType === 'id' 
+                      ? (lang === 'ja' ? '例: 12345678 (取引所指定の数字ID)' : 'e.g. 12345678 (Digits only)')
+                      : (lang === 'ja' ? '例: deposit-tag (最大28文字 / 空欄可)' : 'e.g. deposit-tag (Max 28 chars / optional)')
+                  }
+                  value={sendMemo}
+                  onChange={(e) => setSendMemo(e.target.value)}
+                  maxLength={sendMemoType === 'text' ? 28 : 20}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-amber-400 outline-none"
+                />
+              </div>
+
+              {/* EXCHANGE CAUTION NOTICE */}
+              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-400/30 flex items-start gap-2 text-[10px] text-amber-300 leading-relaxed">
+                <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
+                <span>
+                  {lang === 'ja'
+                    ? '国内・海外取引所（Binance, bitFlyer, GMO, Bybit等）宛てに送金する場合、取引所で発行される【Memo (メモ)】を必ず入力してください。未入力だと残高に反映されません。'
+                    : 'When depositing to centralized exchanges (Binance, Coinbase, bitFlyer, etc.), always provide the required Memo or funds may be lost.'}
+                </span>
               </div>
 
               {sendMsg && (
