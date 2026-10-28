@@ -399,6 +399,7 @@ export default function App() {
   
   // Balances & Multi-asset
   const [balance, setBalance] = useState('0.0000');
+  const [usdcBalance, setUsdcBalance] = useState('0.0000');
   const [assetList, setAssetList] = useState([]);
   const [isNewAccount, setIsNewAccount] = useState(false);
   const [loadingBalance, setLoadingBalance] = useState(false);
@@ -794,6 +795,7 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setBalance(parseFloat(data.balance).toFixed(4));
+        setUsdcBalance(parseFloat(data.usdcBalance || 0).toFixed(4));
         setAssetList(data.assets || []);
         setIsNewAccount(!data.exists);
       }
@@ -1459,8 +1461,8 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="text-right">
-                      <p className="font-mono font-bold text-xs text-white">0.0000</p>
-                      <p className="text-[9px] text-slate-500 font-mono">≈ $0.00</p>
+                      <p className="font-mono font-bold text-xs text-white">{usdcBalance}</p>
+                      <p className="text-[9px] text-slate-500 font-mono">≈ ${(parseFloat(usdcBalance || 0) * 1.00).toFixed(2)}</p>
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-cyan-400 transition-colors shrink-0" />
                   </div>
@@ -1739,7 +1741,13 @@ export default function App() {
                 <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800">
                   <div className="flex justify-between text-[11px] text-slate-400 mb-1">
                     <span>{t('youPay')}</span>
-                    <span>{t('balPrefix')}: {swapFrom === 'XLM' ? balance : '0.00'} {swapFrom}</span>
+                    <span>
+                      {t('balPrefix')}: {
+                        swapFrom === 'XLM' ? balance :
+                        swapFrom === 'USDC' ? usdcBalance :
+                        swapFrom === 'yXLM' ? vaultInfo.yXLM : vaultInfo.yUSDC
+                      } {swapFrom}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <input
@@ -1754,7 +1762,14 @@ export default function App() {
                     <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         type="button"
-                        onClick={() => setSwapAmount(swapFrom === 'XLM' ? Math.max(0, parseFloat(balance) - 0.05).toFixed(2) : '10')}
+                        onClick={() => {
+                          let maxVal = '0';
+                          if (swapFrom === 'XLM') maxVal = Math.max(0, parseFloat(balance) - 0.05).toFixed(2);
+                          else if (swapFrom === 'USDC') maxVal = parseFloat(usdcBalance).toFixed(2);
+                          else if (swapFrom === 'yXLM') maxVal = parseFloat(vaultInfo.yXLM).toFixed(2);
+                          else if (swapFrom === 'yUSDC') maxVal = parseFloat(vaultInfo.yUSDC).toFixed(2);
+                          setSwapAmount(maxVal);
+                        }}
                         className="text-[10px] px-2 py-1 rounded bg-slate-800 text-amber-400 font-bold cursor-pointer"
                       >
                         {t('btnMax')}
@@ -3047,7 +3062,7 @@ export default function App() {
                 <span className="text-[10px] text-slate-400 block">{lang === 'ja' ? 'あなたの保有残高' : 'Your Holdings'}</span>
                 <span className="font-mono font-bold text-base text-white">
                   {selectedAssetDetail.symbol === 'XLM' && balance}
-                  {selectedAssetDetail.symbol === 'USDC' && '0.0000'}
+                  {selectedAssetDetail.symbol === 'USDC' && usdcBalance}
                   {selectedAssetDetail.symbol === 'yXLM' && vaultInfo.yXLM}
                   {selectedAssetDetail.symbol === 'yUSDC' && vaultInfo.yUSDC}
                   {' '}{selectedAssetDetail.symbol}
@@ -3059,6 +3074,7 @@ export default function App() {
                   ≈ ${(() => {
                     let bal = 0;
                     if (selectedAssetDetail.symbol === 'XLM') bal = parseFloat(balance) || 0;
+                    if (selectedAssetDetail.symbol === 'USDC') bal = parseFloat(usdcBalance) || 0;
                     if (selectedAssetDetail.symbol === 'yXLM') bal = parseFloat(vaultInfo.yXLM) || 0;
                     if (selectedAssetDetail.symbol === 'yUSDC') bal = parseFloat(vaultInfo.yUSDC) || 0;
                     return (bal * parseFloat(selectedAssetDetail.rateUsd)).toFixed(2);

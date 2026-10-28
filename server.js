@@ -308,6 +308,17 @@ app.post('/api/fund-friendbot', async (req, res) => {
   }
 });
 
+// In-Memory USDC Balances per user (simulating Testnet USDC asset holders)
+const userUsdcBalances = new Map();
+
+function getUserUsdc(address) {
+  return userUsdcBalances.get(address) || 0.0;
+}
+
+function setUserUsdc(address, amount) {
+  userUsdcBalances.set(address, Math.max(0, amount));
+}
+
 // GET /api/balance/:address - checks balance of an address (multi-asset)
 app.get('/api/balance/:address', async (req, res) => {
   try {
@@ -318,16 +329,17 @@ app.get('/api/balance/:address', async (req, res) => {
     try {
       const acc = await server.loadAccount(address);
       const nativeBal = acc.balances.find(b => b.asset_type === 'native')?.balance || '0';
-      const assets = acc.balances.map(b => ({
-        code: b.asset_type === 'native' ? 'XLM' : b.asset_code,
-        type: b.asset_type,
-        issuer: b.asset_issuer || null,
-        balance: b.balance
-      }));
-      res.json({ address, balance: nativeBal, assets, exists: true });
+      const onChainUsdc = acc.balances.find(b => b.asset_code === 'USDC')?.balance;
+      const usdcBal = onChainUsdc ? parseFloat(onChainUsdc) : getUserUsdc(address);
+      const assets = [
+        { code: 'XLM', balance: nativeBal, type: 'native' },
+        { code: 'USDC', balance: usdcBal.toFixed(4), type: 'credit_alphanum4' }
+      ];
+      res.json({ address, balance: nativeBal, usdcBalance: usdcBal.toFixed(4), assets, exists: true });
     } catch (e) {
       if (e.name === 'NotFoundError' || e.response?.status === 404 || e.status === 404) {
-        return res.json({ address, balance: '0.0000000', assets: [{ code: 'XLM', balance: '0.0000000' }], exists: false });
+        const usdcBal = getUserUsdc(address);
+        return res.json({ address, balance: '0.0000000', usdcBalance: usdcBal.toFixed(4), assets: [{ code: 'XLM', balance: '0.0000000' }, { code: 'USDC', balance: usdcBal.toFixed(4) }], exists: false });
       }
       throw e;
     }
@@ -464,11 +476,17 @@ app.post('/api/vault/deposit', async (req, res) => {
       vault
     });
   } else if (asset === 'USDC' || asset === 'yUSDC') {
+    const curUsdc = getUserUsdc(address);
+    if (curUsdc < amt) {
+      return res.status(400).json({ error: `保有USDCが不足しています (保有: ${curUsdc.toFixed(4)} USDC)` });
+    }
+    setUserUsdc(address, curUsdc - amt);
     vault.yUSDC += amt;
     return res.json({
       success: true,
       message: `Deposited ${amt} USDC into Star Vault! 💵 (Now earning 5.0% APY as yUSDC)`,
-      vault
+      vault,
+      usdcBalance: getUserUsdc(address).toFixed(4)
     });
   } else {
     return res.status(400).json({ error: 'Unsupported asset (please choose XLM or USDC)' });
@@ -503,10 +521,13 @@ app.post('/api/vault/withdraw', async (req, res) => {
       return res.status(400).json({ error: 'Insufficient vault balance' });
     }
     vault.yUSDC -= amt;
+    const curUsdc = getUserUsdc(address);
+    setUserUsdc(address, curUsdc + amt);
     return res.json({
       success: true,
       message: `Withdrew ${amt} USDC from Star Vault back to your wallet!`,
-      vault
+      vault,
+      usdcBalance: getUserUsdc(address).toFixed(4)
     });
   } else {
     return res.status(400).json({ error: 'Unsupported asset' });
@@ -657,6 +678,43 @@ app.post('/api/swap', async (req, res) => {
   const swapEarnedSp = Math.max(1, Math.round(volumeUsd));
   const currentSp = addStarPoints(address, swapEarnedSp, `Swap volume $${volumeUsd.toFixed(2)}`);
 
+  // Update token balances in wallet / vault
+  if (fromAsset === 'XLM' && toAsset === 'USDC') {
+    const curUsdc = getUserUsdc(address);
+    setUserUsdc(address, curUsdc + netOutput);
+  } else if (fromAsset === 'USDC' && toAsset === 'XLM') {
+    const curUsdc = getUserUsdc(address);
+    if (curUsdc < amt) {
+      return res.status(400).json({ error: `保有USDCが不足しています (保有: ${curUsdc.toFixed(4)} USDC)` });
+    }
+    setUserUsdc(address, curUsdc - amt);
+  } else if (fromAsset === 'USDC' && toAsset === 'yUSDC') {
+    const curUsdc = getUserUsdc(address);
+    if (curUsdc < amt) {
+      return res.status(400).json({ error: `保有USDCが不足しています (保有: ${curUsdc.toFixed(4)} USDC)` });
+    }
+    setUserUsdc(address, curUsdc - amt);
+    const vault = getOrCreateVault(address);
+    vault.yUSDC += netOutput;
+  } else if (fromAsset === 'yUSDC' && toAsset === 'USDC') {
+    const vault = getOrCreateVault(address);
+    if (vault.yUSDC < amt) {
+      return res.status(400).json({ error: `金庫のyUSDCが不足しています (保有: ${vault.yUSDC.toFixed(4)} yUSDC)` });
+    }
+    vault.yUSDC -= amt;
+    const curUsdc = getUserUsdc(address);
+    setUserUsdc(address, curUsdc + netOutput);
+  } else if (fromAsset === 'XLM' && toAsset === 'yXLM') {
+    const vault = getOrCreateVault(address);
+    vault.yXLM += netOutput;
+  } else if (fromAsset === 'yXLM' && toAsset === 'XLM') {
+    const vault = getOrCreateVault(address);
+    if (vault.yXLM < amt) {
+      return res.status(400).json({ error: `金庫のyXLMが不足しています (保有: ${vault.yXLM.toFixed(4)} yXLM)` });
+    }
+    vault.yXLM -= amt;
+  }
+
   try {
     const userTotalVol = userMonthlyVolumes.get(address);
     const userShareRatio = totalMonthlyVolumeUsd > 0 ? (userTotalVol / totalMonthlyVolumeUsd) : 0;
@@ -678,6 +736,7 @@ app.post('/api/swap', async (req, res) => {
       userVolumeUsd: userTotalVol.toFixed(2),
       userEstBonusXlm: userEstBonusXlm.toFixed(4),
       monthlyPoolTotalXlm: monthlyBonusPoolXlm.toFixed(4),
+      usdcBalance: getUserUsdc(address).toFixed(4),
       starPoints: currentSp,
       earnedSp: swapEarnedSp,
       message: `Swapped ${amt} ${fromAsset} for ${netOutput.toFixed(4)} ${toAsset}! 🎉 (+${swapEarnedSp} SP earned!)`
