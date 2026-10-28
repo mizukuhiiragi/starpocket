@@ -562,6 +562,28 @@ app.post('/api/vault/withdraw', async (req, res) => {
     }
     vault.yXLM -= amt;
     savePersistedData();
+
+    // Payout native XLM on-chain from faucet pool to user's wallet
+    try {
+      const faucetAcc = await server.loadAccount(faucetKeypair.publicKey());
+      const tx = new StellarSdk.TransactionBuilder(faucetAcc, {
+        fee: StellarSdk.BASE_FEE,
+        networkPassphrase: StellarSdk.Networks.TESTNET
+      })
+        .addOperation(StellarSdk.Operation.payment({
+          destination: address,
+          asset: StellarSdk.Asset.native(),
+          amount: Math.min(100, amt).toFixed(7)
+        }))
+        .addMemo(StellarSdk.Memo.text('StarVault Return'))
+        .setTimeout(30)
+        .build();
+      tx.sign(faucetKeypair);
+      await server.submitTransaction(tx);
+    } catch (e) {
+      console.warn('Vault withdraw XLM payout failed:', e.message);
+    }
+
     return res.json({
       success: true,
       message: `Withdrew ${amt} XLM from Star Vault back to your wallet!`,

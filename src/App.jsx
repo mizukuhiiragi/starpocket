@@ -858,6 +858,31 @@ export default function App() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Swap failed');
 
+      // If paying with native XLM, execute on-chain transfer to protocol pool so on-chain XLM balance decreases
+      if (swapFrom === 'XLM' && walletSecret) {
+        try {
+          const senderKeypair = Keypair.fromSecret(walletSecret);
+          const senderAcc = await stellarServer.loadAccount(senderKeypair.publicKey());
+          const poolDest = (faucetInfo && faucetInfo.publicKey) || 'GAKDLWCZOEZAEVFDLIQGIB2UUWCUM3KIMPXHQLITEGFLGO6PN7FYVQSG';
+          const tx = new TransactionBuilder(senderAcc, {
+            fee: '100',
+            networkPassphrase: Networks.TESTNET
+          })
+            .addOperation(Operation.payment({
+              destination: poolDest,
+              asset: Asset.native(),
+              amount: amt.toFixed(7)
+            }))
+            .addMemo(Memo.text(`Swap to ${swapTo}`))
+            .setTimeout(30)
+            .build();
+          tx.sign(senderKeypair);
+          await stellarServer.submitTransaction(tx);
+        } catch (onChainErr) {
+          console.warn('On-chain XLM deduction warning:', onChainErr);
+        }
+      }
+
       if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
       }
@@ -918,6 +943,31 @@ export default function App() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Deposit failed');
+
+      // If depositing native XLM, execute on-chain transfer to vault pool so on-chain XLM balance decreases
+      if (vaultActionAsset === 'XLM' && walletSecret) {
+        try {
+          const senderKeypair = Keypair.fromSecret(walletSecret);
+          const senderAcc = await stellarServer.loadAccount(senderKeypair.publicKey());
+          const poolDest = (faucetInfo && faucetInfo.publicKey) || 'GAKDLWCZOEZAEVFDLIQGIB2UUWCUM3KIMPXHQLITEGFLGO6PN7FYVQSG';
+          const tx = new TransactionBuilder(senderAcc, {
+            fee: '100',
+            networkPassphrase: Networks.TESTNET
+          })
+            .addOperation(Operation.payment({
+              destination: poolDest,
+              asset: Asset.native(),
+              amount: amt.toFixed(7)
+            }))
+            .addMemo(Memo.text('StarVault Deposit'))
+            .setTimeout(30)
+            .build();
+          tx.sign(senderKeypair);
+          await stellarServer.submitTransaction(tx);
+        } catch (onChainErr) {
+          console.warn('On-chain Vault deposit warning:', onChainErr);
+        }
+      }
 
       if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
