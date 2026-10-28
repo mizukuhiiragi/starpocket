@@ -460,6 +460,19 @@ export default function App() {
   // Blockchain Activity & Transaction History
   const [activityList, setActivityList] = useState([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [showActivityModal, setShowActivityModal] = useState(false);
+  const [activityFilter, setActivityFilter] = useState('all'); // 'all' | 'receive' | 'send'
+  const [copiedActivityKey, setCopiedActivityKey] = useState('');
+
+  const copyText = (text, key) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedActivityKey(key);
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+    }
+    setTimeout(() => setCopiedActivityKey(''), 2000);
+  };
 
   // Gamification: Star Points & 31-Day Login Calendar
   const [gamification, setGamification] = useState({
@@ -1396,21 +1409,33 @@ export default function App() {
               </div>
             </div>
 
-            {/* RECENT BLOCKCHAIN ACTIVITY & MEMOS */}
+            {/* RECENT BLOCKCHAIN ACTIVITY & MEMOS (SHOW TOP 3 + VIEW ALL) */}
             <div className="glass-panel rounded-2xl p-4 border border-slate-800">
               <div className="flex items-center justify-between mb-3 text-xs">
                 <span className="font-bold text-white flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-amber-400" />
                   <span>{lang === 'ja' ? '送受金 ＆ メモ履歴' : 'Activity & Memos'}</span>
                 </span>
-                <button
-                  type="button"
-                  onClick={() => fetchActivity(activeAddress)}
-                  className="text-[10px] text-slate-400 hover:text-cyan-400 flex items-center gap-1 cursor-pointer font-mono"
-                >
-                  <RefreshCw className={`w-2.5 h-2.5 ${loadingActivity ? 'animate-spin text-cyan-400' : ''}`} />
-                  <span>{loadingActivity ? '...' : (lang === 'ja' ? '更新' : 'Refresh')}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {activityList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowActivityModal(true)}
+                      className="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-0.5 cursor-pointer"
+                    >
+                      <span>{lang === 'ja' ? 'すべて見る' : 'View all'}</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => fetchActivity(activeAddress)}
+                    className="text-[10px] text-slate-400 hover:text-cyan-400 flex items-center gap-1 cursor-pointer font-mono"
+                    title="Refresh"
+                  >
+                    <RefreshCw className={`w-2.5 h-2.5 ${loadingActivity ? 'animate-spin text-cyan-400' : ''}`} />
+                  </button>
+                </div>
               </div>
 
               {activityList.length === 0 ? (
@@ -1421,7 +1446,7 @@ export default function App() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {activityList.slice(0, 5).map((item) => {
+                  {activityList.slice(0, 3).map((item) => {
                     const isReceive = item.type === 'receive' || item.type === 'created';
                     return (
                       <div
@@ -1468,7 +1493,7 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* DISPLAY MEMO (THE CORE REQUEST!) */}
+                        {/* DISPLAY MEMO */}
                         {item.memo && (
                           <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex items-center gap-1.5 text-[10px]">
                             <span className="text-amber-400/90 font-mono font-bold text-[9px] bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.2 rounded shrink-0">
@@ -1482,6 +1507,17 @@ export default function App() {
                       </div>
                     );
                   })}
+
+                  {activityList.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowActivityModal(true)}
+                      className="w-full mt-2 py-2 rounded-xl bg-slate-950/60 hover:bg-slate-800/70 border border-slate-800 text-[11px] text-cyan-400 hover:text-cyan-300 font-medium flex items-center justify-center gap-1 transition cursor-pointer"
+                    >
+                      <span>{lang === 'ja' ? `過去の全取引を表示 (${activityList.length}件)` : `View all ${activityList.length} transactions`}</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -2892,6 +2928,195 @@ export default function App() {
                   </button>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULL ON-CHAIN ACTIVITY & MEMO MODAL */}
+      {showActivityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <div className="glass-panel w-full max-w-sm rounded-2xl border border-slate-700/80 p-5 shadow-2xl bg-slate-900/95 max-h-[85vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {lang === 'ja' ? '送受金 ＆ メモ全履歴' : 'Transaction & Memo History'}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-mono">
+                    Stellar Testnet • {activityList.length} {lang === 'ja' ? '件の記録' : 'records'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowActivityModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Filter Tabs & Sync */}
+            <div className="flex items-center justify-between gap-2 py-3 shrink-0">
+              <div className="flex items-center gap-1.5 bg-slate-950/60 p-1 rounded-xl border border-slate-800 text-[10px] font-mono">
+                <button
+                  type="button"
+                  onClick={() => setActivityFilter('all')}
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                    activityFilter === 'all'
+                      ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {lang === 'ja' ? 'すべて' : 'All'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivityFilter('receive')}
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                    activityFilter === 'receive'
+                      ? 'bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {lang === 'ja' ? '受取' : 'Received'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivityFilter('send')}
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                    activityFilter === 'send'
+                      ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {lang === 'ja' ? '送金' : 'Sent'}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => fetchActivity(activeAddress)}
+                className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/80 text-slate-300 hover:text-cyan-400 transition cursor-pointer flex items-center gap-1 text-[10px] font-mono"
+              >
+                <RefreshCw className={`w-3 h-3 ${loadingActivity ? 'animate-spin text-cyan-400' : ''}`} />
+                <span>{lang === 'ja' ? '更新' : 'Sync'}</span>
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="overflow-y-auto pr-1 space-y-2 flex-1 my-1">
+              {(() => {
+                const filtered = activityList.filter((item) => {
+                  if (activityFilter === 'receive') return item.type === 'receive' || item.type === 'created';
+                  if (activityFilter === 'send') return item.type === 'send';
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-slate-500 text-xs font-mono">
+                      {lang === 'ja' ? '該当する取引履歴がありません' : 'No transactions found'}
+                    </div>
+                  );
+                }
+
+                return filtered.map((item) => {
+                  const isReceive = item.type === 'receive' || item.type === 'created';
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-slate-950/70 border border-slate-800/90 rounded-xl p-3 hover:border-slate-700 transition"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                            isReceive 
+                              ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400' 
+                              : 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
+                          }`}>
+                            {isReceive ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-bold text-xs text-white block">
+                              {isReceive ? (lang === 'ja' ? '受取 (Deposit)' : 'Received') : (lang === 'ja' ? '送金 (Payment)' : 'Sent')}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono block">
+                              {item.createdAt ? new Date(item.createdAt).toLocaleString([], { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className={`font-mono font-bold text-xs block ${isReceive ? 'text-emerald-400' : 'text-slate-200'}`}>
+                            {isReceive ? '+' : '-'}{parseFloat(item.amount).toFixed(2)} {item.asset}
+                          </span>
+                          <a
+                            href={item.explorerUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[9px] text-cyan-400/80 hover:text-cyan-300 inline-flex items-center gap-0.5 font-mono cursor-pointer mt-0.5"
+                          >
+                            <span>Stellar Expert ↗</span>
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Counterparty Address row */}
+                      {item.counterparty && (
+                        <div className="mt-2 pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                          <span className="text-slate-500">{isReceive ? (lang === 'ja' ? '送金元:' : 'From:') : (lang === 'ja' ? '宛先:' : 'To:')}</span>
+                          <div className="flex items-center gap-1">
+                            <span>{item.counterparty.slice(0, 8)}...{item.counterparty.slice(-6)}</span>
+                            <button
+                              type="button"
+                              onClick={() => copyText(item.counterparty, item.id)}
+                              className="text-slate-500 hover:text-cyan-300 p-0.5 cursor-pointer"
+                              title="Copy Address"
+                            >
+                              {copiedActivityKey === item.id ? (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Full Memo Section */}
+                      {item.memo && (
+                        <div className="mt-2 pt-2 border-t border-slate-900">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-amber-400/90 font-mono font-bold text-[9px] bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.2 rounded shrink-0">
+                              MEMO ({item.memoType ? item.memoType.toUpperCase() : 'TEXT'})
+                            </span>
+                          </div>
+                          <div className="text-amber-200 font-mono bg-slate-950/90 p-2 rounded-lg border border-slate-800 text-xs break-all leading-relaxed">
+                            💬 "{item.memo}"
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Close Button */}
+            <div className="pt-3 border-t border-slate-800 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowActivityModal(false)}
+                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer"
+              >
+                {lang === 'ja' ? '閉じる' : 'Close'}
+              </button>
             </div>
           </div>
         </div>

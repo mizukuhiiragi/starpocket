@@ -343,7 +343,7 @@ app.get('/api/activity/:address', async (req, res) => {
     if (!StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
       return res.status(400).json({ error: 'Invalid Stellar Public Key' });
     }
-    const payments = await server.payments().forAccount(address).order('desc').limit(15).call();
+    const payments = await server.payments().forAccount(address).order('desc').limit(30).call();
     const records = await Promise.all(
       payments.records.map(async (p) => {
         let memo = null;
