@@ -28,6 +28,8 @@
     "vite": "^8.3.5"
   },
   "devDependencies": {
+    "bip39": "^3.1.2",
+    "ed25519-hd-key": "^2.0.0",
     "puppeteer-core": "^25.16.0"
   }
 }

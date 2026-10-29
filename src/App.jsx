@@ -264,8 +264,8 @@ const SKINS = {
   },
   stella: {
     id: 'stella',
-    name: 'ステラの守護オーラ ⭐',
-    nameEn: "Stella's Aura (Secret)",
+    name: '限定VIPカード【宇宙浮遊ステラ】⭐',
+    nameEn: "VIP Card: Floating Stella",
     icon: '🪐',
     isSpecial: true,
     previewGradient: 'from-[#160f2e] via-[#0d162d] to-[#070b18]',
@@ -280,8 +280,8 @@ const SKINS = {
   },
   chibi: {
     id: 'chibi',
-    name: 'ちびステラ ＆ お星さま 🌟',
-    nameEn: 'Chibi Stella & Star',
+    name: '限定VIPカード【ちびステラ ＆ お星さま】🌟',
+    nameEn: 'VIP Card: Chibi Stella & Star',
     icon: '🌟',
     isSpecial: true,
     previewGradient: 'from-[#1c1836] via-[#10243d] to-[#0a1526]',
@@ -1495,49 +1495,10 @@ export default function App() {
       <div className={`fixed top-[-80px] left-[-80px] w-72 h-72 ${skin.glow1} rounded-full blur-3xl pointer-events-none transition-all duration-700`} />
       <div className={`fixed bottom-[-80px] right-[-80px] w-72 h-72 ${skin.glow2} rounded-full blur-3xl pointer-events-none transition-all duration-700`} />
 
-      {/* 🪐 FLOATING STELLA AURA SKIN BACKGROUND */}
-      {currentSkin === 'stella' && (
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-center justify-center">
-          <div className="absolute w-[360px] h-[520px] rounded-full bg-gradient-to-br from-purple-600/20 via-cyan-500/15 to-transparent blur-3xl pointer-events-none" />
-          <img
-            src="/stella_techwear_skin.jpg"
-            alt="Floating Stella Aura"
-            className="max-h-[78vh] w-auto object-contain opacity-22 mix-blend-screen pointer-events-none select-none animate-float-stella"
-            style={{
-              filter: 'drop-shadow(0 0 25px rgba(168, 85, 247, 0.35)) drop-shadow(0 0 45px rgba(6, 182, 212, 0.25))'
-            }}
-          />
-          {/* Dark Gradient & Radial Vignette Overlay for Clear Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#090c15]/50 via-[#090c15]/30 to-[#090c15]/80 pointer-events-none" />
-          <div 
-            className="absolute inset-0 pointer-events-none" 
-            style={{
-              background: 'radial-gradient(ellipse at center, transparent 30%, rgba(9, 12, 21, 0.75) 100%)'
-            }}
-          />
-        </div>
-      )}
-
-      {/* 🌟 FLOATING CHIBI STELLA SKIN BACKGROUND */}
-      {currentSkin === 'chibi' && (
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden flex items-center justify-center">
-          <div className="absolute w-[360px] h-[520px] rounded-full bg-gradient-to-br from-cyan-400/20 via-purple-400/15 to-amber-300/10 blur-3xl pointer-events-none" />
-          <img
-            src="/chibi_stella_skin.jpg"
-            alt="Floating Chibi Stella"
-            className="max-h-[80vh] w-auto object-contain opacity-24 mix-blend-screen pointer-events-none select-none animate-float-stella"
-            style={{
-              filter: 'drop-shadow(0 0 25px rgba(56, 189, 248, 0.4)) drop-shadow(0 0 45px rgba(251, 191, 36, 0.25))'
-            }}
-          />
-          {/* Dark Gradient & Radial Vignette Overlay for Clear Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#090c15]/50 via-[#090c15]/30 to-[#090c15]/80 pointer-events-none" />
-          <div 
-            className="absolute inset-0 pointer-events-none" 
-            style={{
-              background: 'radial-gradient(ellipse at center, transparent 30%, rgba(9, 12, 21, 0.75) 100%)'
-            }}
-          />
+      {/* Ambient background aura (Clean deep cosmos for 100% text readability) */}
+      {(currentSkin === 'stella' || currentSkin === 'chibi') && (
+        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[420px] h-[360px] rounded-full bg-gradient-to-b from-purple-900/10 via-cyan-900/10 to-transparent blur-3xl" />
         </div>
       )}
 
@@ -1674,76 +1635,159 @@ export default function App() {
         {/* ========================================================= */}
         {activeTab === 'wallet' && (
           <div className="space-y-3 animate-in fade-in duration-200">
-            {/* MAIN BALANCE CARD */}
-            <div className="glass-panel rounded-2xl p-5 border border-amber-400/25 relative overflow-hidden shadow-2xl">
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                <span className="flex items-center gap-1.5 font-semibold text-slate-300">
-                  <Coins className="w-4 h-4 text-amber-400" />
-                  {t('totalBalance')}
-                </span>
-                <button 
-                  onClick={() => fetchAll(activeAddress)} 
-                  className="hover:text-cyan-400 transition-colors flex items-center gap-1 text-[11px] cursor-pointer"
+            {/* MAIN BALANCE CARD (LIMITED VIP CARD EDITION) */}
+            <div className={`glass-panel rounded-2xl p-5 relative overflow-hidden shadow-2xl transition-all duration-300 ${
+              currentSkin === 'stella'
+                ? 'border border-purple-400/50 shadow-purple-950/40 bg-gradient-to-br from-[#13112b] via-[#0d1326] to-[#070b18]'
+                : currentSkin === 'chibi'
+                  ? 'border border-cyan-400/50 shadow-cyan-950/40 bg-gradient-to-br from-[#0c182c] via-[#0d1428] to-[#080d1a]'
+                  : 'border border-amber-400/25'
+            }`}>
+              {/* 💳 VIP Character Card Face Artwork (Tap to view full body) */}
+              {currentSkin === 'stella' && (
+                <div 
+                  onClick={() => {
+                    setShowcaseSkin('stella');
+                    setShowcaseModal(true);
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+                  }}
+                  className="absolute right-0 top-0 bottom-14 w-44 pointer-events-auto cursor-pointer group select-none overflow-hidden"
+                  title={lang === 'ja' ? 'タップで全身イラスト鑑賞' : 'Tap to view full body art'}
                 >
-                  <RefreshCw className={`w-3 h-3 ${loadingBalance ? 'animate-spin text-cyan-400' : ''}`} />
-                  {loadingBalance ? t('updating') : t('refresh')}
-                </button>
-              </div>
+                  {/* Subtle fade so the balance text on the left stays 100% solid & readable */}
+                  <div className="absolute inset-0 bg-gradient-to-l from-transparent via-[#0d1326]/75 to-[#0d1326] z-10 pointer-events-none" />
+                  <div className="absolute top-2 right-2 w-28 h-28 bg-purple-500/25 rounded-full blur-xl pointer-events-none" />
+                  <img
+                    src="/stella_techwear_skin.jpg"
+                    alt="Stella VIP Card Art"
+                    className="w-full h-full object-cover object-top opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+                  />
+                  {/* VIP Edition Badge & Eye Icon */}
+                  <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1 bg-purple-950/85 border border-purple-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-sm backdrop-blur-sm group-hover:border-cyan-300 group-hover:scale-105 transition">
+                    <Eye className="w-2.5 h-2.5 text-cyan-300 animate-pulse" />
+                    <span>STELLA VIP</span>
+                  </div>
+                </div>
+              )}
 
-              <div className="flex items-center gap-2.5 my-2 flex-wrap">
-                <span className="text-4xl font-extrabold tracking-tight text-white font-mono leading-none">
-                  {balance}
-                </span>
-                <div className="inline-flex items-center gap-1.5 bg-amber-400/15 border border-amber-400/30 px-2.5 py-1 rounded-xl shadow-sm">
-                  <XlmIcon className="w-4 h-4 rounded-md shrink-0 shadow-sm" />
-                  <span className="text-xs font-black text-amber-300 font-mono tracking-wide leading-none">
-                    XLM
+              {currentSkin === 'chibi' && (
+                <div 
+                  onClick={() => {
+                    setShowcaseSkin('chibi');
+                    setShowcaseModal(true);
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+                  }}
+                  className="absolute right-0 top-0 bottom-14 w-44 pointer-events-auto cursor-pointer group select-none overflow-hidden"
+                  title={lang === 'ja' ? 'タップで全身イラスト鑑賞' : 'Tap to view full body art'}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-l from-transparent via-[#0d1428]/75 to-[#0d1428] z-10 pointer-events-none" />
+                  <div className="absolute top-2 right-2 w-28 h-28 bg-cyan-400/25 rounded-full blur-xl pointer-events-none" />
+                  <img
+                    src="/chibi_stella_skin.jpg"
+                    alt="Chibi Stella VIP Card Art"
+                    className="w-full h-full object-cover object-top opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(56,189,248,0.4)]"
+                  />
+                  {/* VIP Edition Badge & Eye Icon */}
+                  <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1 bg-cyan-950/85 border border-cyan-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-amber-300 shadow-sm backdrop-blur-sm group-hover:border-amber-300 group-hover:scale-105 transition">
+                    <Eye className="w-2.5 h-2.5 text-amber-300 animate-pulse" />
+                    <span>CHIBI VIP</span>
+                  </div>
+                </div>
+              )}
+
+              {/* CARD FOREGROUND CONTENT */}
+              <div className="relative z-20">
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span className="flex items-center gap-1.5 font-semibold text-slate-300">
+                    <Coins className="w-4 h-4 text-amber-400" />
+                    {t('totalBalance')}
                   </span>
+                  <div className="flex items-center gap-2">
+                    {(currentSkin === 'stella' || currentSkin === 'chibi') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowcaseSkin(currentSkin);
+                          setShowcaseModal(true);
+                          if (window.Telegram?.WebApp?.HapticFeedback) {
+                            window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                          }
+                        }}
+                        className="text-[10px] text-cyan-300 hover:text-white bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/40 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-sm"
+                      >
+                        <Eye className="w-2.5 h-2.5 text-cyan-300 animate-pulse" />
+                        <span>{lang === 'ja' ? '全身鑑賞' : 'Showcase'}</span>
+                      </button>
+                    )}
+                    <button 
+                      onClick={() => fetchAll(activeAddress)} 
+                      className="hover:text-cyan-400 transition-colors flex items-center gap-1 text-[11px] cursor-pointer"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${loadingBalance ? 'animate-spin text-cyan-400' : ''}`} />
+                      {loadingBalance ? t('updating') : t('refresh')}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-400">
-                <div className="flex items-center gap-2">
-                  <span>≈ ${(parseFloat(balance) * 0.135).toFixed(2)} USD</span>
-                  <span>•</span>
-                  <span className="text-emerald-400">{t('nearZeroFee')}</span>
+                <div className="flex items-center gap-2.5 my-2 flex-wrap">
+                  <span className="text-4xl font-extrabold tracking-tight text-white font-mono leading-none drop-shadow-sm">
+                    {balance}
+                  </span>
+                  <div className="inline-flex items-center gap-1.5 bg-amber-400/15 border border-amber-400/30 px-2.5 py-1 rounded-xl shadow-sm">
+                    <XlmIcon className="w-4 h-4 rounded-md shrink-0 shadow-sm" />
+                    <span className="text-xs font-black text-amber-300 font-mono tracking-wide leading-none">
+                      XLM
+                    </span>
+                  </div>
                 </div>
-                {(parseFloat(balance) === 0 || isNaN(parseFloat(balance))) && (
+
+                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">≈ ${(parseFloat(balance) * 0.135).toFixed(2)} USD</span>
+                    <span>•</span>
+                    <span className="text-emerald-400 font-medium">{t('nearZeroFee')}</span>
+                  </div>
+                  {(parseFloat(balance) === 0 || isNaN(parseFloat(balance))) && (
+                    <button
+                      type="button"
+                      disabled={fundingFriendbot}
+                      onClick={handleFriendbotFund}
+                      className="text-[10px] text-amber-300 bg-amber-400/15 border border-amber-400/40 hover:bg-amber-400/25 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 disabled:opacity-50"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-400" />
+                      <span>{fundingFriendbot ? '...' : (lang === 'ja' ? '🚀 10,000 XLM 受取' : '🚀 Get 10k XLM')}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* ACTION BUTTONS (Send / Receive / Swap) */}
+                <div className="grid grid-cols-3 gap-1.5 mt-4 pt-3 border-t border-slate-800/80">
                   <button
-                    type="button"
-                    disabled={fundingFriendbot}
-                    onClick={handleFriendbotFund}
-                    className="text-[10px] text-amber-300 bg-amber-400/15 border border-amber-400/40 hover:bg-amber-400/25 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 disabled:opacity-50"
+                    onClick={() => setShowReceiveModal(true)}
+                    className="py-2 px-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 flex items-center justify-center gap-1 text-[11px] font-bold text-slate-200 transition cursor-pointer active:scale-95 shadow-sm"
                   >
-                    <Sparkles className="w-3 h-3 text-amber-400" />
-                    <span>{fundingFriendbot ? '...' : (lang === 'ja' ? '🚀 10,000 XLM 受取' : '🚀 Get 10k XLM')}</span>
+                    <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-400" />
+                    {t('btnReceive')}
                   </button>
-                )}
-              </div>
-
-              {/* ACTION BUTTONS (Send / Receive / Swap) */}
-              <div className="grid grid-cols-3 gap-1.5 mt-4 pt-3 border-t border-slate-800/80">
-                <button
-                  onClick={() => setShowReceiveModal(true)}
-                  className="py-2 px-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 flex items-center justify-center gap-1 text-[11px] font-bold text-slate-200 transition cursor-pointer"
-                >
-                  <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-400" />
-                  {t('btnReceive')}
-                </button>
-                <button
-                  onClick={() => setShowSendModal(true)}
-                  className="py-2 px-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 flex items-center justify-center gap-1 text-[11px] font-bold text-slate-200 transition cursor-pointer"
-                >
-                  <ArrowUpRight className="w-3.5 h-3.5 text-amber-400" />
-                  {t('btnSend')}
-                </button>
-                <button
-                  onClick={() => setActiveTab('swap')}
-                  className="py-2 px-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 flex items-center justify-center gap-1 text-[11px] font-bold text-emerald-300 transition cursor-pointer"
-                >
-                  <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-400" />
-                  {t('btnSwap')}
-                </button>
+                  <button
+                    onClick={() => setShowSendModal(true)}
+                    className="py-2 px-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 flex items-center justify-center gap-1 text-[11px] font-bold text-slate-200 transition cursor-pointer active:scale-95 shadow-sm"
+                  >
+                    <ArrowUpRight className="w-3.5 h-3.5 text-amber-400" />
+                    {t('btnSend')}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('swap')}
+                    className="py-2 px-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 flex items-center justify-center gap-1 text-[11px] font-bold text-emerald-300 transition cursor-pointer active:scale-95 shadow-sm"
+                  >
+                    <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-400" />
+                    {t('btnSwap')}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -3378,8 +3422,8 @@ export default function App() {
                             {item.id === 'cyber' && 'Neon Cyan & Hot Pink'}
                             {item.id === 'sakura' && 'Midnight Plum & Sakura'}
                             {item.id === 'retro' && '8-Bit Dot GameBoy LCD'}
-                            {item.id === 'stella' && (lang === 'ja' ? '✨ 宇宙浮遊ステラ ＆ ネオンオーラ背景' : "✨ Floating Stella & Nebula Aura BG")}
-                            {item.id === 'chibi' && (lang === 'ja' ? '🌟 お星さまを抱っこしたちびステラ浮遊背景 (150 SP)' : "🌟 Floating Chibi Stella & Star BG (150 SP)")}
+                            {item.id === 'stella' && (lang === 'ja' ? '✨ 限定カード券面【宇宙浮遊ステラ】＆ 全身鑑賞' : "✨ VIP Card Face: Floating Stella & Full View")}
+                            {item.id === 'chibi' && (lang === 'ja' ? '🌟 限定カード券面【ちびステラ ＆ お星さま】(150 SP)' : "🌟 VIP Card Face: Chibi Stella & Star (150 SP)")}
                           </div>
                         </div>
                       </div>
