@@ -1673,16 +1673,13 @@ export default function App() {
                   <img
                     src="/stella_techwear_skin.jpg"
                     alt="Stella VIP Card Art"
-                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]"
-                    style={{ objectPosition: 'center 26%' }}
+                    className="w-full h-full object-cover opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+                    style={{ objectPosition: 'center 18%' }}
                   />
-                  {/* VIP Edition Badge & Eye Icon */}
-                  <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 bg-purple-950/90 border border-purple-400/60 hover:border-cyan-300 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold text-cyan-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer">
-                    <Eye className="w-3 h-3 text-cyan-300 animate-pulse" />
-                    <span>STELLA VIP</span>
-                    <span className="text-[9px] text-purple-300 font-normal font-sans border-l border-purple-500/50 pl-1.5">
-                      {lang === 'ja' ? '全身鑑賞' : 'Full Art'}
-                    </span>
+                  {/* Bottom-right Full Art Hint (Keeps Stella's face 100% clear & uncovered) */}
+                  <div className="absolute bottom-2 right-2.5 z-20 flex items-center gap-1 bg-purple-950/85 border border-purple-400/60 hover:border-cyan-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer">
+                    <Eye className="w-2.5 h-2.5 text-cyan-300 animate-pulse" />
+                    <span>{lang === 'ja' ? '全身鑑賞' : 'Full Art'}</span>
                   </div>
                 </div>
               )}
@@ -1704,16 +1701,13 @@ export default function App() {
                   <img
                     src="/chibi_stella_skin.jpg"
                     alt="Chibi Stella VIP Card Art"
-                    className="w-full h-full object-cover opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(56,189,248,0.4)]"
-                    style={{ objectPosition: 'center 42%' }}
+                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(56,189,248,0.4)]"
+                    style={{ objectPosition: 'center 38%' }}
                   />
-                  {/* VIP Edition Badge & Eye Icon */}
-                  <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 bg-cyan-950/90 border border-cyan-400/60 hover:border-amber-300 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold text-amber-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer">
-                    <Eye className="w-3 h-3 text-amber-300 animate-pulse" />
-                    <span>CHIBI VIP</span>
-                    <span className="text-[9px] text-cyan-300 font-normal font-sans border-l border-cyan-500/50 pl-1.5">
-                      {lang === 'ja' ? '全身鑑賞' : 'Full Art'}
-                    </span>
+                  {/* Bottom-right Full Art Hint (Keeps Chibi's face 100% clear & uncovered) */}
+                  <div className="absolute bottom-2 right-2.5 z-20 flex items-center gap-1 bg-cyan-950/85 border border-cyan-400/60 hover:border-amber-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-amber-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer">
+                    <Eye className="w-2.5 h-2.5 text-amber-300 animate-pulse" />
+                    <span>{lang === 'ja' ? '全身鑑賞' : 'Full Art'}</span>
                   </div>
                 </div>
               )}
@@ -1721,7 +1715,7 @@ export default function App() {
               {/* CARD FOREGROUND CONTENT */}
               <div className="relative z-20">
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="flex items-center gap-1.5 font-semibold text-slate-300">
                       <Coins className="w-4 h-4 text-amber-400" />
                       {t('totalBalance')}
@@ -1732,8 +1726,21 @@ export default function App() {
                       title={t('refresh')}
                     >
                       <RefreshCw className={`w-3 h-3 ${loadingBalance ? 'animate-spin text-cyan-400' : ''}`} />
-                      {loadingBalance ? t('updating') : t('refresh')}
+                      <span>{loadingBalance ? t('updating') : t('refresh')}</span>
                     </button>
+                    {/* VIP Edition Badge in Header Row */}
+                    {currentCardFace === 'stella' && (
+                      <div className="flex items-center gap-1 bg-purple-950/80 border border-purple-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-sm backdrop-blur-sm">
+                        <Sparkles className="w-2.5 h-2.5 text-purple-300" />
+                        <span>STELLA VIP</span>
+                      </div>
+                    )}
+                    {currentCardFace === 'chibi' && (
+                      <div className="flex items-center gap-1 bg-cyan-950/80 border border-cyan-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-amber-300 shadow-sm backdrop-blur-sm">
+                        <Sparkles className="w-2.5 h-2.5 text-amber-300" />
+                        <span>CHIBI VIP</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1747,14 +1754,6 @@ export default function App() {
                       XLM
                     </span>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-slate-400">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono">≈ ${(parseFloat(balance) * 0.135).toFixed(2)} USD</span>
-                    <span>•</span>
-                    <span className="text-emerald-400 font-medium">{t('nearZeroFee')}</span>
-                  </div>
                   {(parseFloat(balance) === 0 || isNaN(parseFloat(balance))) && (
                     <button
                       type="button"
@@ -1766,6 +1765,12 @@ export default function App() {
                       <span>{fundingFriendbot ? '...' : (lang === 'ja' ? '🚀 10,000 XLM 受取' : '🚀 Get 10k XLM')}</span>
                     </button>
                   )}
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                  <span className="font-mono">≈ ${(parseFloat(balance) * 0.135).toFixed(2)} USD</span>
+                  <span>•</span>
+                  <span className="text-emerald-400 font-medium">{t('nearZeroFee')}</span>
                 </div>
 
                 {/* ACTION BUTTONS (Send / Receive / Swap) */}
