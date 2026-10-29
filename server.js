@@ -230,26 +230,70 @@ function savePersistedData() {
 
 loadPersistedData();
 
-function getUserGamification(destination) {
-  const today = getTodayString();
-  const currentDay = new Date().getUTCDate(); // 1 - 31
+function getJstDateInfo(targetDate = new Date()) {
+  const formatter = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const parts = formatter.format(targetDate).split('/');
+  const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`;
+  const monthKey = `${parts[0]}-${parts[1]}`;
+  const day = parseInt(parts[2], 10);
+  return { dateStr, monthKey, day };
+}
+
+function getUserGamification(destination, clientBackup = null) {
+  const jst = getJstDateInfo();
   let data = userGamificationData.get(destination);
+
+  // If server restarted / ephemeral memory lost, attempt recovery from client sync backup
+  if (!data && clientBackup && (clientBackup.destination === destination || !clientBackup.destination)) {
+    console.log(`[Gamification] Restoring state from client backup for ${destination.slice(0, 8)}...`);
+    data = {
+      destination,
+      starPoints: typeof clientBackup.starPoints === 'number' ? clientBackup.starPoints : 50,
+      streak: typeof clientBackup.streak === 'number' ? clientBackup.streak : 0,
+      lastCheckinDate: clientBackup.lastCheckinDate || null,
+      checkinDays: Array.isArray(clientBackup.checkinDays) ? clientBackup.checkinDays : [],
+      currentMonth: clientBackup.currentMonth || jst.monthKey,
+      perks: Array.isArray(clientBackup.perks) ? clientBackup.perks : [],
+      hasCompleted31: !!clientBackup.hasCompleted31
+    };
+    userGamificationData.set(destination, data);
+    savePersistedData();
+  }
+
   if (!data) {
     data = {
       destination,
       starPoints: 50, // Welcome bonus 50 SP!
-      streak: 1,
-      lastCheckinDate: today,
-      checkinDays: [currentDay],
+      streak: 0,
+      lastCheckinDate: null,
+      checkinDays: [],
+      currentMonth: jst.monthKey,
       perks: [],
       hasCompleted31: false
     };
     userGamificationData.set(destination, data);
+    savePersistedData();
   }
+
+  // Monthly rollover for 31-day constellation calendar view
+  if (data.currentMonth !== jst.monthKey) {
+    data.currentMonth = jst.monthKey;
+    data.checkinDays = [];
+    userGamificationData.set(destination, data);
+    savePersistedData();
+  }
+
+  const checkedInToday = data.lastCheckinDate === jst.dateStr;
+
   return {
     ...data,
-    checkedInToday: data.lastCheckinDate === today,
-    currentDayOfMonth: currentDay
+    checkedInToday,
+    currentDayOfMonth: jst.day
   };
 }
 
@@ -257,6 +301,7 @@ function addStarPoints(destination, amount, reason = '') {
   const data = getUserGamification(destination);
   data.starPoints = Math.max(0, (data.starPoints || 0) + amount);
   userGamificationData.set(destination, data);
+  savePersistedData();
   console.log(`[StarPoints] +${amount} SP to ${destination.slice(0, 8)}... (Total: ${data.starPoints} SP, Reason: ${reason})`);
   return data.starPoints;
 }
@@ -267,20 +312,26 @@ app.get('/api/gamification/:address', (req, res) => {
   if (!address || !StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
     return res.status(400).json({ error: 'Invalid Stellar Public Key' });
   }
-  res.json(getUserGamification(address));
+  let clientBackup = null;
+  if (req.query.sync) {
+    try {
+      clientBackup = JSON.parse(decodeURIComponent(req.query.sync));
+    } catch (e) {}
+  }
+  res.json(getUserGamification(address, clientBackup));
 });
 
 // POST /api/gamification/checkin - daily checkin
 app.post('/api/gamification/checkin', (req, res) => {
-  const { address } = req.body;
+  const { address, clientBackup } = req.body;
   if (!address || !StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
     return res.status(400).json({ error: 'Invalid Stellar Public Key' });
   }
-  const today = getTodayString();
-  const currentDay = new Date().getUTCDate();
-  const data = getUserGamification(address);
+  const jstToday = getJstDateInfo();
+  const jstYesterday = getJstDateInfo(new Date(Date.now() - 86400000));
+  const data = getUserGamification(address, clientBackup);
 
-  if (data.lastCheckinDate === today) {
+  if (data.lastCheckinDate === jstToday.dateStr) {
     return res.json({
       success: true,
       alreadyCheckedIn: true,
@@ -290,18 +341,19 @@ app.post('/api/gamification/checkin', (req, res) => {
   }
 
   // Calculate streak: check if lastCheckinDate was yesterday
-  const yesterday = new Date(Date.now() - 86400000);
-  const yesterdayStr = `${yesterday.getUTCFullYear()}-${String(yesterday.getUTCMonth() + 1).padStart(2, '0')}-${String(yesterday.getUTCDate()).padStart(2, '0')}`;
-  
-  if (data.lastCheckinDate === yesterdayStr) {
+  if (data.lastCheckinDate === jstYesterday.dateStr) {
     data.streak = (data.streak || 0) + 1;
   } else {
     data.streak = 1;
   }
 
-  data.lastCheckinDate = today;
-  if (!data.checkinDays.includes(currentDay)) {
-    data.checkinDays.push(currentDay);
+  data.lastCheckinDate = jstToday.dateStr;
+  data.currentMonth = jstToday.monthKey;
+  if (!Array.isArray(data.checkinDays)) {
+    data.checkinDays = [];
+  }
+  if (!data.checkinDays.includes(jstToday.day)) {
+    data.checkinDays.push(jstToday.day);
   }
 
   // Points rewards
@@ -321,6 +373,7 @@ app.post('/api/gamification/checkin', (req, res) => {
 
   data.starPoints = (data.starPoints || 0) + earnedSp;
   userGamificationData.set(address, data);
+  savePersistedData();
 
   res.json({
     success: true,

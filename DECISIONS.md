@@ -647,6 +647,33 @@
    - 未解放時は「🔒 未解放（ウォレットにXLMチャージで解放 / 星広場で150 SPと交換）」と鍵マーク付きで表示。
    - タップするとアンロック条件をトースト案内。全身鑑賞プレビューは未解放でも楽しめる神仕様に。
 
+---
+
+### 38. ログインスタンプ＆ストリーク継続バグ修正（Renderフリープラン再起動＆JSTタイムゾーン対策）
+**決定日時:** 2026-10-29 18:20 JST  
+**背景:** 「ログインスタンプ継続されてないな……サーバーの仕様？？ｗ」という報告の調査。  
+**根本原因:**
+1. **Renderフリープランのエフェメラルストレージ特性:**
+   - Render無料枠は15分無アクセスでスリープし、コンテナ再起動時に未コミット・未保存のメモリ状態がリセットされる。
+   - `server.js` の `/api/gamification/checkin` で `savePersistedData()` の呼び出しが抜けていたため、チェックインした履歴がディスクに即座に同期されていなかった。
+2. **新規ユーザー自動チェックイン済みバグ:**
+   - `getUserGamification` で初回来訪時の初期値として `lastCheckinDate: today` が代入されており、自らチェックインボタンを押す前から「本日チェックイン済み」と判定されていた。
+3. **UTC vs JST (日本標準時) ズレ:**
+   - `getTodayString()` は JST (Asia/Tokyo) だったのに対し、ストリーク判定の `yesterdayStr` や `currentDay` に `getUTCDate()` が使われており、午前0時〜9時の間に日付不整合が発生していた。
+4. **クライアント側のバックアップ欠如:**
+   - ウォレットスキンやアドレス帳と同様に `localStorage` への永続化とクライアント同期を行っていなかった。
+
+**実施した恒久対策:**
+1. **JST基準の完全統一 (`getJstDateInfo`):**
+   - 日本標準時（`Asia/Tokyo`）に基づく `dateStr` (YYYY-MM-DD)、`monthKey` (YYYY-MM)、`day` (1-31) を統一管理。
+   - `yesterday` の判定も JST 24時間前基準で正しく `yesterdayStr === lastCheckinDate` を計算。
+2. **2重の永続化アーキテクチャ (Server + LocalStorage Sync):**
+   - サーバー側: `savePersistedData()` をチェックイン・ポイント付与・ユーザー初期化の全タイミングで確実に実行。
+   - クライアント側: `localStorage.getItem('starpocket_gamification_' + address)` に即時キャッシュし、サーバーリクエスト時に `clientBackup` として自動同期。Renderがスリープ・再起動しても過去のストリークやSPが即座に復元される完全耐性を実現。
+3. **初期値のクリーン化:**
+   - 未チェックイン状態は `streak: 0`, `lastCheckinDate: null`, `checkinDays: []`, `checkedInToday: false` から開始。初日でも気持ちよく「本日のログインスタンプを押す (+10 SP)」を押下可能に。
+
+
 
 
 

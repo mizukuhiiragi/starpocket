@@ -732,14 +732,23 @@ export default function App() {
   };
 
   // Gamification: Star Points & 31-Day Login Calendar
-  const [gamification, setGamification] = useState({
-    starPoints: 50,
-    streak: 1,
-    checkedInToday: false,
-    checkinDays: [new Date().getUTCDate()],
-    currentDayOfMonth: new Date().getUTCDate(),
-    perks: [],
-    hasCompleted31: false
+  const [gamification, setGamification] = useState(() => {
+    try {
+      const pub = localStorage.getItem('starpocket_stellar_pub') || localStorage.getItem('lumendrop_stellar_pub');
+      if (pub) {
+        const raw = localStorage.getItem(`starpocket_gamification_${pub}`);
+        if (raw) return JSON.parse(raw);
+      }
+    } catch (e) {}
+    return {
+      starPoints: 50,
+      streak: 0,
+      checkedInToday: false,
+      checkinDays: [],
+      currentDayOfMonth: new Date().getDate(),
+      perks: [],
+      hasCompleted31: false
+    };
   });
   const [checkinLoading, setCheckinLoading] = useState(false);
   const [redeemLoading, setRedeemLoading] = useState(null);
@@ -811,10 +820,16 @@ export default function App() {
   const fetchGamification = async (addr) => {
     if (!addr) return;
     try {
-      const res = await fetch(`/api/gamification/${addr}`);
+      const cached = localStorage.getItem(`starpocket_gamification_${addr}`);
+      let url = `/api/gamification/${addr}`;
+      if (cached) {
+        url += `?sync=${encodeURIComponent(cached)}`;
+      }
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setGamification(data);
+        localStorage.setItem(`starpocket_gamification_${addr}`, JSON.stringify(data));
       }
     } catch (err) {
       console.log('Gamification fetch fallback:', err);
@@ -829,14 +844,20 @@ export default function App() {
       if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
       }
+      const cached = localStorage.getItem(`starpocket_gamification_${activeAddress}`);
+      let clientBackup = null;
+      if (cached) {
+        try { clientBackup = JSON.parse(cached); } catch (e) {}
+      }
       const res = await fetch('/api/gamification/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: activeAddress })
+        body: JSON.stringify({ address: activeAddress, clientBackup })
       });
       const data = await res.json();
       if (data.success) {
         setGamification(data);
+        localStorage.setItem(`starpocket_gamification_${activeAddress}`, JSON.stringify(data));
         setGamificationNotice(data.message || '+10 SP ⭐');
         setTimeout(() => setGamificationNotice(null), 4000);
       }
@@ -863,6 +884,7 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         setGamification(data);
+        localStorage.setItem(`starpocket_gamification_${activeAddress}`, JSON.stringify(data));
         if (perkId === 'chibi_skin') {
           localStorage.setItem('starpocket_skin_chibi_unlocked', 'true');
           handleSelectCardFace('chibi');
