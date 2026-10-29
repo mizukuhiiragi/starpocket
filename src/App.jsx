@@ -38,8 +38,13 @@ import {
   Bookmark,
   Trash2,
   Plus,
-  Eye
+  Eye,
+  ScanLine,
+  Camera,
+  Upload
 } from 'lucide-react';
+import QRCode from 'qrcode';
+import jsQR from 'jsqr';
 import { Keypair, StrKey, Horizon, Networks, TransactionBuilder, Operation, Asset, Memo } from '@stellar/stellar-sdk';
 import { translations } from './i18n.js';
 
@@ -631,6 +636,15 @@ export default function App() {
   const [sendMemoType, setSendMemoType] = useState('auto'); // 'auto' | 'text' | 'id' (Auto-detects exchange numeric IDs vs messages)
   const [sending, setSending] = useState(false);
   const [sendMsg, setSendMsg] = useState('');
+
+  // QR Code Generation & Scanner
+  const [receiveQrUrl, setReceiveQrUrl] = useState('');
+  const [showQrScannerModal, setShowQrScannerModal] = useState(false);
+  const [scannerCameraError, setScannerCameraError] = useState(null);
+  const scannerVideoRef = useRef(null);
+  const scannerStreamRef = useRef(null);
+  const scannerAnimFrameRef = useRef(null);
+  const qrFileInputRef = useRef(null);
   
   // Claiming State
   const [claiming, setClaiming] = useState(false);
@@ -801,6 +815,13 @@ export default function App() {
   useEffect(() => {
     if (activeAddress && StrKey.isValidEd25519PublicKey(activeAddress)) {
       fetchAll(activeAddress);
+      QRCode.toDataURL(activeAddress, { 
+        margin: 1, 
+        width: 240, 
+        color: { dark: '#090d16', light: '#ffffff' } 
+      })
+        .then(url => setReceiveQrUrl(url))
+        .catch(err => console.error('QR generation error:', err));
     }
   }, [activeAddress]);
 
@@ -1409,6 +1430,199 @@ export default function App() {
     } finally {
       setClaiming(false);
     }
+  };
+
+  // Process scanned text (SEP-0007 / Stellar payment URI, plain address, etc.)
+  const processScannedQrData = (text) => {
+    if (!text || typeof text !== 'string') return;
+    const trimmed = text.trim();
+
+    // 1. Check if SEP-0007 / Stellar payment URI: web+stellar:pay?... or stellar:...
+    if (trimmed.startsWith('web+stellar:') || trimmed.startsWith('stellar:')) {
+      try {
+        const cleanUri = trimmed.replace(/^web\+stellar:/, '').replace(/^stellar:/, '');
+        if (cleanUri.startsWith('pay?') || cleanUri.includes('?')) {
+          const queryString = cleanUri.includes('?') ? cleanUri.split('?')[1] : cleanUri;
+          const params = new URLSearchParams(queryString);
+          const destination = params.get('destination');
+          const amount = params.get('amount');
+          const memo = params.get('memo');
+          const memoType = params.get('memo_type');
+
+          if (destination && StrKey.isValidEd25519PublicKey(destination)) {
+            setSendDest(destination);
+            if (amount && !isNaN(parseFloat(amount))) {
+              setSendAmount(amount);
+            }
+            if (memo) {
+              setSendMemo(memo);
+              if (memoType === 'MEMO_ID' || memoType === 'id') {
+                setSendMemoType('id');
+              } else {
+                setSendMemoType('text');
+              }
+            }
+            if (window.Telegram?.WebApp?.HapticFeedback) {
+              window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            }
+            return;
+          }
+        } else if (StrKey.isValidEd25519PublicKey(cleanUri)) {
+          setSendDest(cleanUri);
+          if (window.Telegram?.WebApp?.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+          }
+          return;
+        }
+      } catch (e) {
+        console.warn('Failed to parse Stellar URI:', e);
+      }
+    }
+
+    // 2. Direct public key check
+    if (StrKey.isValidEd25519PublicKey(trimmed)) {
+      setSendDest(trimmed);
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+      return;
+    }
+
+    // 3. Regex match any 56-char Stellar public key
+    const match = trimmed.match(/G[A-Z2-7]{55}/);
+    if (match && StrKey.isValidEd25519PublicKey(match[0])) {
+      setSendDest(match[0]);
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+      return;
+    }
+
+    alert(lang === 'ja'
+      ? `スキャンしたデータから有効なStellarアドレスが見つかりませんでした:\n${trimmed.slice(0, 80)}`
+      : `No valid Stellar address detected in scanned QR code:\n${trimmed.slice(0, 80)}`);
+  };
+
+  // Trigger QR Scanner (Native TMA if in Telegram, else In-App Web Scanner Modal)
+  const handleScanQr = () => {
+    if (window.Telegram?.WebApp?.showScanQrPopup) {
+      if (window.Telegram.WebApp.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+      }
+      window.Telegram.WebApp.showScanQrPopup(
+        {
+          text: lang === 'ja'
+            ? 'Stellar送金先アドレスのQRコードをスキャン'
+            : 'Scan Stellar recipient QR code'
+        },
+        (scannedText) => {
+          if (!scannedText) return;
+          processScannedQrData(scannedText);
+          return true; // Closes Telegram native popup
+        }
+      );
+    } else {
+      setShowQrScannerModal(true);
+    }
+  };
+
+  const stopQrScanner = () => {
+    if (scannerAnimFrameRef.current) {
+      cancelAnimationFrame(scannerAnimFrameRef.current);
+      scannerAnimFrameRef.current = null;
+    }
+    if (scannerStreamRef.current) {
+      scannerStreamRef.current.getTracks().forEach(track => track.stop());
+      scannerStreamRef.current = null;
+    }
+    setShowQrScannerModal(false);
+    setScannerCameraError(null);
+  };
+
+  // In-App Web Camera Scanner Effect
+  useEffect(() => {
+    if (!showQrScannerModal) return;
+
+    let active = true;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    const scanFrame = () => {
+      if (!active || !scannerVideoRef.current) return;
+      const video = scannerVideoRef.current;
+      if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert',
+        });
+        if (code && code.data) {
+          processScannedQrData(code.data);
+          stopQrScanner();
+          return;
+        }
+      }
+      scannerAnimFrameRef.current = requestAnimationFrame(scanFrame);
+    };
+
+    navigator.mediaDevices?.getUserMedia?.({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        if (!active) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+        scannerStreamRef.current = stream;
+        if (scannerVideoRef.current) {
+          scannerVideoRef.current.srcObject = stream;
+          scannerVideoRef.current.play().catch(e => console.warn('Video play error:', e));
+        }
+        scannerAnimFrameRef.current = requestAnimationFrame(scanFrame);
+      })
+      .catch(err => {
+        console.warn('Camera access error:', err);
+        setScannerCameraError(lang === 'ja'
+          ? 'カメラへのアクセスが許可されていません。下のボタンからQR画像を選択するか、Telegramアプリ内から起動してください。'
+          : 'Camera access denied. Please upload a QR image below or open inside Telegram.');
+      });
+
+    return () => {
+      active = false;
+      if (scannerAnimFrameRef.current) cancelAnimationFrame(scannerAnimFrameRef.current);
+      if (scannerStreamRef.current) scannerStreamRef.current.getTracks().forEach(t => t.stop());
+    };
+  }, [showQrScannerModal]);
+
+  // Image file upload scanner
+  const handleQrImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        if (code && code.data) {
+          processScannedQrData(code.data);
+          stopQrScanner();
+        } else {
+          alert(lang === 'ja'
+            ? '画像からQRコードを読み取れませんでした。'
+            : 'Could not detect a valid QR code from this image.');
+        }
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   // Direct On-Chain Send (Non-custodial Wallet feature)
@@ -2911,8 +3125,12 @@ export default function App() {
               </button>
             </div>
 
-            <div className="bg-white p-4 rounded-xl flex items-center justify-center mx-auto my-3 w-40 h-40">
-              <QrCode className="w-32 h-32 text-slate-900" />
+            <div className="bg-white p-3 rounded-2xl flex items-center justify-center mx-auto my-3 w-44 h-44 shadow-lg shadow-cyan-950/40 border border-cyan-400/30">
+              {receiveQrUrl ? (
+                <img src={receiveQrUrl} alt="Wallet Address QR" className="w-38 h-38 object-contain" />
+              ) : (
+                <QrCode className="w-32 h-32 text-slate-900 animate-pulse" />
+              )}
             </div>
 
             <p className="text-[11px] text-slate-400 text-center mb-2">
@@ -2985,14 +3203,25 @@ export default function App() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-[11px] text-slate-400 block">{t('recipientLabel')}</label>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddressBookModal(true)}
-                    className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono cursor-pointer"
-                  >
-                    <BookOpen className="w-3 h-3" />
-                    <span>{lang === 'ja' ? `アドレス帳 (${addressBook.length})` : `Contacts (${addressBook.length})`}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleScanQr}
+                      className="text-[10px] text-amber-400 hover:text-amber-300 flex items-center gap-1 font-mono cursor-pointer bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 px-2 py-0.5 rounded-md transition active:scale-95"
+                      title={lang === 'ja' ? 'QRコードをカメラで読み取る' : 'Scan recipient QR code'}
+                    >
+                      <ScanLine className="w-3 h-3 text-amber-400" />
+                      <span>{lang === 'ja' ? 'QR読取' : 'Scan QR'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddressBookModal(true)}
+                      className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono cursor-pointer"
+                    >
+                      <BookOpen className="w-3 h-3" />
+                      <span>{lang === 'ja' ? `アドレス帳 (${addressBook.length})` : `Contacts (${addressBook.length})`}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Quick Contact Chips */}
@@ -3029,18 +3258,28 @@ export default function App() {
                     value={sendDest}
                     onChange={(e) => setSendDest(e.target.value.trim())}
                     required
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-amber-400 outline-none pr-14"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-white font-mono focus:border-amber-400 outline-none pr-20"
                   />
-                  {sendDest && StrKey.isValidEd25519PublicKey(sendDest) && !getContactName(sendDest) && (
+                  <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={() => openAddContactWithPrefill(sendDest, sendMemo, sendMemoType)}
-                      className="absolute right-2 top-2 text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded font-bold cursor-pointer flex items-center gap-1"
+                      onClick={handleScanQr}
+                      className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition cursor-pointer active:scale-95"
+                      title={lang === 'ja' ? 'QRコードをカメラで読み取る' : 'Scan QR Code'}
                     >
-                      <Plus className="w-2.5 h-2.5" />
-                      <span>{lang === 'ja' ? '保存' : 'Save'}</span>
+                      <ScanLine className="w-3.5 h-3.5 text-amber-300" />
                     </button>
-                  )}
+                    {sendDest && StrKey.isValidEd25519PublicKey(sendDest) && !getContactName(sendDest) && (
+                      <button
+                        type="button"
+                        onClick={() => openAddContactWithPrefill(sendDest, sendMemo, sendMemoType)}
+                        className="text-[10px] bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-2 py-1 rounded font-bold cursor-pointer flex items-center gap-1"
+                      >
+                        <Plus className="w-2.5 h-2.5" />
+                        <span>{lang === 'ja' ? '保存' : 'Save'}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {getContactName(sendDest) && (
@@ -4665,6 +4904,77 @@ export default function App() {
             <p className="text-[10px] text-slate-500 font-mono text-center">
               {lang === 'ja' ? '画面をタップするとウォレットに戻ります' : 'Tap anywhere to return to wallet'}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 📸 QR CODE SCANNER MODAL (Fallback for Browser & File Upload) */}
+      {/* ========================================================= */}
+      {showQrScannerModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#121627] border border-cyan-500/40 rounded-2xl p-5 max-w-sm w-full shadow-2xl relative text-center">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
+                <ScanLine className="w-4 h-4 text-cyan-400" />
+                <span>{lang === 'ja' ? 'QRコードをスキャン' : 'Scan QR Code'}</span>
+              </h3>
+              <button onClick={stopQrScanner} className="p-1 rounded-full text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 mb-3">
+              {lang === 'ja' 
+                ? '送金先のStellarアドレスQRコードを枠内に映してください' 
+                : 'Align recipient Stellar address QR code within the frame'}
+            </p>
+
+            {/* Video Viewport / Scanner Frame */}
+            <div className="relative w-full aspect-square bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center mb-3">
+              {scannerCameraError ? (
+                <div className="p-4 text-center">
+                  <Camera className="w-10 h-10 text-slate-600 mx-auto mb-2" />
+                  <p className="text-xs text-rose-300 mb-2 leading-relaxed">{scannerCameraError}</p>
+                </div>
+              ) : (
+                <>
+                  <video 
+                    ref={scannerVideoRef} 
+                    className="w-full h-full object-cover" 
+                    playsInline 
+                    muted 
+                  />
+                  {/* Glowing Laser Scan Frame */}
+                  <div className="absolute inset-8 border-2 border-cyan-400/80 rounded-xl pointer-events-none shadow-[0_0_20px_rgba(56,189,248,0.3)]">
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-300 to-transparent animate-pulse" />
+                    <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-cyan-400" />
+                    <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-cyan-400" />
+                    <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-cyan-400" />
+                    <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-cyan-400" />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Alternative: Image File Upload */}
+            <div className="space-y-2">
+              <input 
+                type="file" 
+                ref={qrFileInputRef} 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleQrImageUpload} 
+              />
+              <button
+                type="button"
+                onClick={() => qrFileInputRef.current?.click()}
+                className="w-full py-2.5 px-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400/50 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95"
+              >
+                <Upload className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{lang === 'ja' ? '写真・画像ファイルからQR読取' : 'Upload QR Image File'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
