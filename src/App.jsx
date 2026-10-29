@@ -1700,8 +1700,9 @@ export default function App() {
             <div 
               onClick={(e) => {
                 if (e.target.closest('button, a, input')) return;
-                if (currentCardFace === 'stella' || currentCardFace === 'chibi') {
-                  setShowcaseSkin(currentCardFace);
+                const targetSkin = (currentCardFace === 'cyber_matrix') ? 'shooting_star' : currentCardFace;
+                if (targetSkin === 'stella' || targetSkin === 'chibi' || targetSkin === 'shooting_star') {
+                  setShowcaseSkin(targetSkin);
                   setShowcaseModal(true);
                   if (window.Telegram?.WebApp?.HapticFeedback) {
                     window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
@@ -1720,7 +1721,7 @@ export default function App() {
                       : `${skin.accentBorder} bg-slate-900/80`
               }`}
             >
-              {/* 💳 VIP Character Card Face Artwork (Tap to view full body) */}
+              {/* 💳 VIP Character Card Face Artwork (Tap anywhere on card to view full art) */}
               {currentCardFace === 'stella' && (
                 <div 
                   onClick={() => {
@@ -1730,7 +1731,7 @@ export default function App() {
                       window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                     }
                   }}
-                  className="absolute right-0 top-0 bottom-12 w-44 sm:w-48 pointer-events-auto cursor-pointer group select-none overflow-hidden z-10"
+                  className="absolute right-0 top-0 bottom-0 w-44 sm:w-48 pointer-events-auto cursor-pointer group select-none overflow-hidden z-10"
                   title={lang === 'ja' ? 'タップで全身イラスト鑑賞' : 'Tap to view full body art'}
                 >
                   {/* Subtle fade so the balance text on the left stays 100% solid & readable */}
@@ -1742,22 +1743,6 @@ export default function App() {
                     className="w-full h-full object-cover opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]"
                     style={{ objectPosition: 'center 18%' }}
                   />
-                  {/* Bottom-right Full Art Hint (Keeps Stella's face 100% clear & uncovered) */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowcaseSkin('stella');
-                      setShowcaseModal(true);
-                      if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-                      }
-                    }}
-                    className="absolute bottom-2 right-2.5 z-30 flex items-center gap-1 bg-purple-950/90 border border-purple-400/60 hover:border-cyan-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer active:scale-95"
-                  >
-                    <Eye className="w-2.5 h-2.5 text-cyan-300 animate-pulse" />
-                    <span>{lang === 'ja' ? '全身鑑賞' : 'Full Art'}</span>
-                  </button>
                 </div>
               )}
 
@@ -1770,7 +1755,7 @@ export default function App() {
                       window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                     }
                   }}
-                  className="absolute right-0 top-0 bottom-12 w-44 sm:w-48 pointer-events-auto cursor-pointer group select-none overflow-hidden z-10"
+                  className="absolute right-0 top-0 bottom-0 w-44 sm:w-48 pointer-events-auto cursor-pointer group select-none overflow-hidden z-10"
                   title={lang === 'ja' ? 'タップで全身イラスト鑑賞' : 'Tap to view full body art'}
                 >
                   <div className="absolute inset-0 bg-gradient-to-l from-transparent via-[#0d1428]/75 to-[#0d1428] z-10 pointer-events-none" />
@@ -1781,22 +1766,6 @@ export default function App() {
                     className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(56,189,248,0.4)]"
                     style={{ objectPosition: 'center 38%' }}
                   />
-                  {/* Bottom-right Full Art Hint (Keeps Chibi's face 100% clear & uncovered) */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowcaseSkin('chibi');
-                      setShowcaseModal(true);
-                      if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-                      }
-                    }}
-                    className="absolute bottom-2 right-2.5 z-30 flex items-center gap-1 bg-cyan-950/90 border border-cyan-400/60 hover:border-amber-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-amber-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer active:scale-95"
-                  >
-                    <Eye className="w-2.5 h-2.5 text-amber-300 animate-pulse" />
-                    <span>{lang === 'ja' ? '全身鑑賞' : 'Full Art'}</span>
-                  </button>
                 </div>
               )}
 
@@ -1832,24 +1801,6 @@ export default function App() {
                   <div className="absolute top-4 right-20 text-[10px] text-cyan-300 animate-twinkle pointer-events-none">✦</div>
                   <div className="absolute top-12 right-10 text-[8px] text-amber-300 animate-twinkle pointer-events-none" style={{ animationDelay: '1.2s' }}>✧</div>
                   <div className="absolute bottom-8 right-32 text-[9px] text-fuchsia-300 animate-twinkle pointer-events-none" style={{ animationDelay: '2.1s' }}>✦</div>
-
-                  {/* Bottom-right Full Art Hint & VIP badge */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowcaseSkin('shooting_star');
-                      setShowcaseModal(true);
-                      if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-                      }
-                    }}
-                    className="absolute bottom-2 right-2.5 z-30 flex items-center gap-1 bg-cyan-950/90 border border-cyan-400/60 hover:border-amber-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 hover:text-amber-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer active:scale-95"
-                    title={lang === 'ja' ? 'タップでアート全景鑑賞' : 'Tap to view full art'}
-                  >
-                    <Sparkles className="w-2.5 h-2.5 text-cyan-300 animate-pulse" />
-                    <span>SHOOTING STAR</span>
-                  </button>
                 </div>
               )}
 
@@ -1907,10 +1858,22 @@ export default function App() {
                       </button>
                     )}
                     {(currentCardFace === 'shooting_star' || currentCardFace === 'cyber_matrix') && (
-                      <div className="flex items-center gap-1 bg-cyan-950/80 border border-cyan-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-sm backdrop-blur-sm">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowcaseSkin('shooting_star');
+                          setShowcaseModal(true);
+                          if (window.Telegram?.WebApp?.HapticFeedback) {
+                            window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                          }
+                        }}
+                        className="flex items-center gap-1 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-400/50 hover:border-cyan-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-sm backdrop-blur-sm cursor-pointer transition active:scale-95"
+                        title={lang === 'ja' ? 'タップで流星鑑賞' : 'Tap to view art'}
+                      >
                         <Sparkles className="w-2.5 h-2.5 text-cyan-400" />
                         <span>METEOR VIP</span>
-                      </div>
+                      </button>
                     )}
                   </div>
                 </div>
