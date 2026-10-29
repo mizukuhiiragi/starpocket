@@ -71,7 +71,7 @@ export const translations = {
     // Daily Drop Tab
     dailyDropTitle: "Daily Star Drop",
     dropsLeft: "Drops Left",
-    dailyDropDesc: "Watch a 5-second sponsor clip every 3 minutes to receive 0.05 XLM directly into your pocket.",
+    dailyDropDesc: "Watch a short sponsor clip every 3 minutes to receive 0.05 XLM directly into your pocket.",
     allClaimedToday: "✨ All 5 drops claimed for today! See you tomorrow ⭐",
     nextDropIn: "Next drop in",
     cooldownNote: "※ 3-minute cooldown protects high eCPM and prevents invalid traffic flags.",
@@ -208,7 +208,7 @@ export const translations = {
     // Daily Drop Tab
     dailyDropTitle: "デイリー星集め",
     dropsLeft: "回 残り",
-    dailyDropDesc: "5秒のスポンサー動画を見ると、3分おきに0.05 XLMがポケットに直接舞い降ります。",
+    dailyDropDesc: "短いスポンサー動画を見ると、3分おきに0.05 XLMがポケットに直接舞い降ります。",
     allClaimedToday: "✨ 本日の星集め（5回）は完了しました！また明日来てね⭐",
     nextDropIn: "次の星まで あと",
     cooldownNote: "※ 高単価リワード維持とBAN防止のため3分クールダウンを設けています。",
