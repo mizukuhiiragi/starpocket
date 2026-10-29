@@ -1647,13 +1647,27 @@ export default function App() {
         {activeTab === 'wallet' && (
           <div className="space-y-3 animate-in fade-in duration-200">
             {/* MAIN BALANCE CARD (LIMITED VIP CARD EDITION) */}
-            <div className={`glass-panel rounded-2xl p-5 relative overflow-hidden shadow-2xl transition-all duration-300 ${
-              currentCardFace === 'stella'
-                ? 'border border-purple-400/50 shadow-purple-950/40 bg-gradient-to-br from-[#13112b] via-[#0d1326] to-[#070b18]'
-                : currentCardFace === 'chibi'
-                  ? 'border border-cyan-400/50 shadow-cyan-950/40 bg-gradient-to-br from-[#0c182c] via-[#0d1428] to-[#080d1a]'
-                  : `${skin.accentBorder} bg-slate-900/80`
-            }`}>
+            <div 
+              onClick={(e) => {
+                if (e.target.closest('button, a, input')) return;
+                if (currentCardFace === 'stella' || currentCardFace === 'chibi') {
+                  setShowcaseSkin(currentCardFace);
+                  setShowcaseModal(true);
+                  if (window.Telegram?.WebApp?.HapticFeedback) {
+                    window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                  }
+                }
+              }}
+              className={`glass-panel rounded-2xl p-5 relative overflow-hidden shadow-2xl transition-all duration-300 ${
+                (currentCardFace === 'stella' || currentCardFace === 'chibi') ? 'cursor-pointer group' : ''
+              } ${
+                currentCardFace === 'stella'
+                  ? 'border border-purple-400/50 shadow-purple-950/40 bg-gradient-to-br from-[#13112b] via-[#0d1326] to-[#070b18]'
+                  : currentCardFace === 'chibi'
+                    ? 'border border-cyan-400/50 shadow-cyan-950/40 bg-gradient-to-br from-[#0c182c] via-[#0d1428] to-[#080d1a]'
+                    : `${skin.accentBorder} bg-slate-900/80`
+              }`}
+            >
               {/* 💳 VIP Character Card Face Artwork (Tap to view full body) */}
               {currentCardFace === 'stella' && (
                 <div 
@@ -1664,7 +1678,7 @@ export default function App() {
                       window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                     }
                   }}
-                  className="absolute right-0 top-0 bottom-12 w-44 sm:w-48 pointer-events-auto cursor-pointer group select-none overflow-hidden"
+                  className="absolute right-0 top-0 bottom-12 w-44 sm:w-48 pointer-events-auto cursor-pointer group select-none overflow-hidden z-10"
                   title={lang === 'ja' ? 'タップで全身イラスト鑑賞' : 'Tap to view full body art'}
                 >
                   {/* Subtle fade so the balance text on the left stays 100% solid & readable */}
@@ -1677,10 +1691,21 @@ export default function App() {
                     style={{ objectPosition: 'center 18%' }}
                   />
                   {/* Bottom-right Full Art Hint (Keeps Stella's face 100% clear & uncovered) */}
-                  <div className="absolute bottom-2 right-2.5 z-20 flex items-center gap-1 bg-purple-950/85 border border-purple-400/60 hover:border-cyan-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowcaseSkin('stella');
+                      setShowcaseModal(true);
+                      if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                      }
+                    }}
+                    className="absolute bottom-2 right-2.5 z-30 flex items-center gap-1 bg-purple-950/90 border border-purple-400/60 hover:border-cyan-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer active:scale-95"
+                  >
                     <Eye className="w-2.5 h-2.5 text-cyan-300 animate-pulse" />
                     <span>{lang === 'ja' ? '全身鑑賞' : 'Full Art'}</span>
-                  </div>
+                  </button>
                 </div>
               )}
 
@@ -1693,7 +1718,7 @@ export default function App() {
                       window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                     }
                   }}
-                  className="absolute right-0 top-0 bottom-12 w-44 sm:w-48 pointer-events-auto cursor-pointer group select-none overflow-hidden"
+                  className="absolute right-0 top-0 bottom-12 w-44 sm:w-48 pointer-events-auto cursor-pointer group select-none overflow-hidden z-10"
                   title={lang === 'ja' ? 'タップで全身イラスト鑑賞' : 'Tap to view full body art'}
                 >
                   <div className="absolute inset-0 bg-gradient-to-l from-transparent via-[#0d1428]/75 to-[#0d1428] z-10 pointer-events-none" />
@@ -1705,17 +1730,28 @@ export default function App() {
                     style={{ objectPosition: 'center 38%' }}
                   />
                   {/* Bottom-right Full Art Hint (Keeps Chibi's face 100% clear & uncovered) */}
-                  <div className="absolute bottom-2 right-2.5 z-20 flex items-center gap-1 bg-cyan-950/85 border border-cyan-400/60 hover:border-amber-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-amber-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowcaseSkin('chibi');
+                      setShowcaseModal(true);
+                      if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                      }
+                    }}
+                    className="absolute bottom-2 right-2.5 z-30 flex items-center gap-1 bg-cyan-950/90 border border-cyan-400/60 hover:border-amber-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-amber-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer active:scale-95"
+                  >
                     <Eye className="w-2.5 h-2.5 text-amber-300 animate-pulse" />
                     <span>{lang === 'ja' ? '全身鑑賞' : 'Full Art'}</span>
-                  </div>
+                  </button>
                 </div>
               )}
 
               {/* CARD FOREGROUND CONTENT */}
-              <div className="relative z-20">
+              <div className="relative z-20 pointer-events-none">
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap pointer-events-auto">
                     <span className="flex items-center gap-1.5 font-semibold text-slate-300">
                       <Coins className="w-4 h-4 text-amber-400" />
                       {t('totalBalance')}
@@ -1730,21 +1766,45 @@ export default function App() {
                     </button>
                     {/* VIP Edition Badge in Header Row */}
                     {currentCardFace === 'stella' && (
-                      <div className="flex items-center gap-1 bg-purple-950/80 border border-purple-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-sm backdrop-blur-sm">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowcaseSkin('stella');
+                          setShowcaseModal(true);
+                          if (window.Telegram?.WebApp?.HapticFeedback) {
+                            window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                          }
+                        }}
+                        className="flex items-center gap-1 bg-purple-950/80 hover:bg-purple-900 border border-purple-400/50 hover:border-cyan-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-sm backdrop-blur-sm cursor-pointer transition active:scale-95"
+                        title={lang === 'ja' ? 'タップで全身鑑賞' : 'Tap to view full art'}
+                      >
                         <Sparkles className="w-2.5 h-2.5 text-purple-300" />
                         <span>STELLA VIP</span>
-                      </div>
+                      </button>
                     )}
                     {currentCardFace === 'chibi' && (
-                      <div className="flex items-center gap-1 bg-cyan-950/80 border border-cyan-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-amber-300 shadow-sm backdrop-blur-sm">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowcaseSkin('chibi');
+                          setShowcaseModal(true);
+                          if (window.Telegram?.WebApp?.HapticFeedback) {
+                            window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                          }
+                        }}
+                        className="flex items-center gap-1 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-400/50 hover:border-amber-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-amber-300 shadow-sm backdrop-blur-sm cursor-pointer transition active:scale-95"
+                        title={lang === 'ja' ? 'タップで全身鑑賞' : 'Tap to view full art'}
+                      >
                         <Sparkles className="w-2.5 h-2.5 text-amber-300" />
                         <span>CHIBI VIP</span>
-                      </div>
+                      </button>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 my-2 flex-wrap">
+                <div className="flex items-center gap-2.5 my-2 flex-wrap pointer-events-auto">
                   <span className="text-4xl font-extrabold tracking-tight text-white font-mono leading-none drop-shadow-sm">
                     {balance}
                   </span>
@@ -1767,14 +1827,14 @@ export default function App() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 pointer-events-auto">
                   <span className="font-mono">≈ ${(parseFloat(balance) * 0.135).toFixed(2)} USD</span>
                   <span>•</span>
                   <span className="text-emerald-400 font-medium">{t('nearZeroFee')}</span>
                 </div>
 
                 {/* ACTION BUTTONS (Send / Receive / Swap) */}
-                <div className="grid grid-cols-3 gap-1.5 mt-4 pt-3 border-t border-slate-800/80">
+                <div className="grid grid-cols-3 gap-1.5 mt-4 pt-3 border-t border-slate-800/80 pointer-events-auto">
                   <button
                     onClick={() => setShowReceiveModal(true)}
                     className="py-2 px-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 flex items-center justify-center gap-1 text-[11px] font-bold text-slate-200 transition cursor-pointer active:scale-95 shadow-sm"
