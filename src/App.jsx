@@ -1521,24 +1521,6 @@ export default function App() {
 
         {/* Right Header items: Compact Star Points & Unified Settings */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* Character Full-Body Showcase Button */}
-          {(currentSkin === 'stella' || currentSkin === 'chibi') && (
-            <button
-              onClick={() => {
-                setShowcaseSkin(currentSkin);
-                setShowcaseModal(true);
-                if (window.Telegram?.WebApp?.HapticFeedback) {
-                  window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-                }
-              }}
-              className="flex items-center gap-1 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-cyan-500/20 hover:from-purple-500/30 hover:to-cyan-500/30 border border-purple-400/50 px-2 py-1 rounded-full text-xs font-bold text-cyan-300 hover:text-white transition cursor-pointer active:scale-95 shadow-sm shadow-purple-500/20"
-              title={lang === 'ja' ? '全身イラスト鑑賞' : 'View Full Illustration'}
-            >
-              <Eye className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
-              <span className="text-[10px] font-mono font-bold">{lang === 'ja' ? '全身' : 'View'}</span>
-            </button>
-          )}
-
           {/* Star Points Badge (Click to open Rewards / Calendar) */}
           <button
             onClick={() => {
@@ -1666,9 +1648,12 @@ export default function App() {
                     style={{ objectPosition: 'center 26%' }}
                   />
                   {/* VIP Edition Badge & Eye Icon */}
-                  <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1 bg-purple-950/85 border border-purple-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-sm backdrop-blur-sm group-hover:border-cyan-300 group-hover:scale-105 transition">
-                    <Eye className="w-2.5 h-2.5 text-cyan-300 animate-pulse" />
+                  <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 bg-purple-950/90 border border-purple-400/60 hover:border-cyan-300 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold text-cyan-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer">
+                    <Eye className="w-3 h-3 text-cyan-300 animate-pulse" />
                     <span>STELLA VIP</span>
+                    <span className="text-[9px] text-purple-300 font-normal font-sans border-l border-purple-500/50 pl-1.5">
+                      {lang === 'ja' ? '全身鑑賞' : 'Full Art'}
+                    </span>
                   </div>
                 </div>
               )}
@@ -1694,9 +1679,12 @@ export default function App() {
                     style={{ objectPosition: 'center 42%' }}
                   />
                   {/* VIP Edition Badge & Eye Icon */}
-                  <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1 bg-cyan-950/85 border border-cyan-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-amber-300 shadow-sm backdrop-blur-sm group-hover:border-amber-300 group-hover:scale-105 transition">
-                    <Eye className="w-2.5 h-2.5 text-amber-300 animate-pulse" />
+                  <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 bg-cyan-950/90 border border-cyan-400/60 hover:border-amber-300 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold text-amber-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer">
+                    <Eye className="w-3 h-3 text-amber-300 animate-pulse" />
                     <span>CHIBI VIP</span>
+                    <span className="text-[9px] text-cyan-300 font-normal font-sans border-l border-cyan-500/50 pl-1.5">
+                      {lang === 'ja' ? '全身鑑賞' : 'Full Art'}
+                    </span>
                   </div>
                 </div>
               )}
@@ -1704,30 +1692,15 @@ export default function App() {
               {/* CARD FOREGROUND CONTENT */}
               <div className="relative z-20">
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                  <span className="flex items-center gap-1.5 font-semibold text-slate-300">
-                    <Coins className="w-4 h-4 text-amber-400" />
-                    {t('totalBalance')}
-                  </span>
                   <div className="flex items-center gap-2">
-                    {(currentSkin === 'stella' || currentSkin === 'chibi') && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowcaseSkin(currentSkin);
-                          setShowcaseModal(true);
-                          if (window.Telegram?.WebApp?.HapticFeedback) {
-                            window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-                          }
-                        }}
-                        className="text-[10px] text-cyan-300 hover:text-white bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/40 px-2 py-0.5 rounded-full font-bold flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-sm"
-                      >
-                        <Eye className="w-2.5 h-2.5 text-cyan-300 animate-pulse" />
-                        <span>{lang === 'ja' ? '全身鑑賞' : 'Showcase'}</span>
-                      </button>
-                    )}
+                    <span className="flex items-center gap-1.5 font-semibold text-slate-300">
+                      <Coins className="w-4 h-4 text-amber-400" />
+                      {t('totalBalance')}
+                    </span>
                     <button 
                       onClick={() => fetchAll(activeAddress)} 
-                      className="hover:text-cyan-400 transition-colors flex items-center gap-1 text-[11px] cursor-pointer"
+                      className="hover:text-cyan-400 transition-colors flex items-center gap-1 text-[11px] text-slate-400 cursor-pointer"
+                      title={t('refresh')}
                     >
                       <RefreshCw className={`w-3 h-3 ${loadingBalance ? 'animate-spin text-cyan-400' : ''}`} />
                       {loadingBalance ? t('updating') : t('refresh')}
