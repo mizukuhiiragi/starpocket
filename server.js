@@ -788,7 +788,7 @@ app.get('/api/swap/rates', (req, res) => {
       dropPoolRefill: '0.10%'
     },
     rates: BASE_RATES,
-    description: '三方よし (1:1:1): 0.10% 運営利益 / 0.10% 月末山分けボーナス / 0.10% 星プール還元'
+    description: 'スワップ手数料 0.30% (0.10% 月末山分けボーナス / 0.10% 星プール還元 / 0.10% プロトコル維持)'
   });
 });
 

@@ -673,6 +673,34 @@
 3. **初期値のクリーン化:**
    - 未チェックイン状態は `streak: 0`, `lastCheckinDate: null`, `checkinDays: []`, `checkedInToday: false` から開始。初日でも気持ちよく「本日のログインスタンプを押す (+10 SP)」を押下可能に。
 
+---
+
+### 39. StarPocket 公式ブランドインフラ構築（X公式アカウント ＆ 専用Gmail ＆ ヘッダー設計）
+**決定日時:** 2026-10-29 19:10 JST  
+**決定者:** 相棒 (Mizuku) & ステラ (Lead Builder)  
+**内容:**
+1. **公式Gmail:** `starpocket.app@gmail.com` 開設（プライバシー・OpSecのため本名完全非公開、2FA設定）。
+2. **公式X（Twitter）:** 第一希望の王道ハンドル **`@StarPocketApp`** を取得・確保！
+   - Bio（147文字）:  
+     `🌟 The cutest smart wallet inside Telegram on @StellarOrg! ⚡ 3s settlements • $0.00001 fees • Yield vaults. Navigated by AI Lead Builder Stella 🚀`
+   - WebサイトURL: `https://t.me/starpocket_bot`
+   - セキュリティ方針: XのDMは完全封鎖（スキャム対策）、おしゃべりやサポートはTelegram公式へ一本化。
+3. **公式ヘッダーバナー:**
+   - 券面の公式イラスト（`stella_techwear_skin.jpg`）を直接活かした「パターンB（表情・ホログラムクローズアップ型）」を採用（`public/starpocket_twitter_header.jpg`）。
+   - 左下アバターアイコン領域は深宇宙グラデーションで抜け感を確保。
+
+---
+
+### 40. スワップ手数料UIの表現洗練（「三方よし」表現の脱却とスマート化）
+**決定日時:** 2026-10-29 19:48 JST  
+**内容:**
+- 「三方よし（1:1:1）」の表現がWeb3・サイバー空間の世界観から浮いてしまっていたため、ユーザー目線に特化した洗練UIに変更：
+  - バッジ: `手数料 0.30% (ボーナス還元付)` （英語: `Fee: 0.30% (Trader Rebate)`）
+  - 説明文: `スワップ手数料の一部（0.10%）は、毎月末にアクティブトレーダー全員へ山分け還元されます！`
+- 内部ロジック（0.10% 運営利益 / 0.10% 月末山分け / 0.10% 無料配布プール補充）の永久循環フライホイールはそのまま維持。
+
+
+
 
 
 
