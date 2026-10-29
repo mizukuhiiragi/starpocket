@@ -282,6 +282,14 @@ const CARD_FACES = {
     description: 'マスコットちびステラ＆サイバーシアン仕様',
     descriptionEn: 'Mascot Chibi Stella with Cyber Cyan VIP styling'
   },
+  cyber_matrix: {
+    id: 'cyber_matrix',
+    name: '近未来サイバー・グリッド ⚡',
+    nameEn: 'Cyber Matrix Grid',
+    icon: '⚡',
+    description: 'キャラ無しのSF幾何学＆サイバーグリッド仕様',
+    descriptionEn: 'Futuristic geometric cyber grid without character art'
+  },
   none: {
     id: 'none',
     name: 'スタンダード（イラストなし）',
@@ -1703,7 +1711,9 @@ export default function App() {
                   ? 'border border-purple-400/50 shadow-purple-950/40 bg-gradient-to-br from-[#13112b] via-[#0d1326] to-[#070b18]'
                   : currentCardFace === 'chibi'
                     ? 'border border-cyan-400/50 shadow-cyan-950/40 bg-gradient-to-br from-[#0c182c] via-[#0d1428] to-[#080d1a]'
-                    : `${skin.accentBorder} bg-slate-900/80`
+                    : currentCardFace === 'cyber_matrix'
+                      ? 'border border-cyan-400/60 shadow-cyan-950/50 bg-gradient-to-br from-[#050918] via-[#0a122c] to-[#040714]'
+                      : `${skin.accentBorder} bg-slate-900/80`
               }`}
             >
               {/* 💳 VIP Character Card Face Artwork (Tap to view full body) */}
@@ -1786,6 +1796,22 @@ export default function App() {
                 </div>
               )}
 
+              {/* ⚡ Cyber Matrix Geometric Grid Artwork (Clean sci-fi luxury without anime character) */}
+              {currentCardFace === 'cyber_matrix' && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-10">
+                  <div className="absolute -right-14 -top-14 w-64 h-64 rounded-full border border-cyan-400/30 animate-pulse" />
+                  <div className="absolute -right-8 -top-8 w-52 h-52 rounded-full border border-fuchsia-400/25" />
+                  <div className="absolute -right-2 -top-2 w-40 h-40 rounded-full border border-cyan-400/20" />
+                  <div className="absolute right-12 top-6 w-28 h-28 border border-cyan-400/25 rotate-45" />
+                  <div className="absolute right-16 top-10 w-20 h-20 border border-fuchsia-400/20 rotate-12" />
+                  <div className="absolute top-2 right-2 w-36 h-36 bg-cyan-500/15 rounded-full blur-2xl" />
+                  <div className="absolute bottom-2 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-950/90 border border-cyan-400/40 text-[9px] font-mono text-cyan-300 shadow-sm backdrop-blur-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                    <span>CYBER MATRIX</span>
+                  </div>
+                </div>
+              )}
+
               {/* CARD FOREGROUND CONTENT */}
               <div className="relative z-20 pointer-events-none">
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
@@ -1838,6 +1864,12 @@ export default function App() {
                         <Sparkles className="w-2.5 h-2.5 text-amber-300" />
                         <span>CHIBI VIP</span>
                       </button>
+                    )}
+                    {currentCardFace === 'cyber_matrix' && (
+                      <div className="flex items-center gap-1 bg-cyan-950/80 border border-cyan-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-sm backdrop-blur-sm">
+                        <Sparkles className="w-2.5 h-2.5 text-cyan-400" />
+                        <span>CYBER VIP</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -2628,24 +2660,37 @@ export default function App() {
                     icon: '🌟' 
                   },
                   { id: 'vault_boost', name: t('perkVaultBoost'), desc: t('perkVaultBoostDesc'), cost: 200, icon: '🏦' },
-                  { id: 'pet_candy', name: t('perkPetCandy'), desc: t('perkPetCandyDesc'), cost: 80, icon: '🍭' },
                   { id: 'swap_discount', name: t('perkSwapDiscount'), desc: t('perkSwapDiscountDesc'), cost: 150, icon: '🔄' },
-                  { id: 'cyber_skin', name: t('perkCyberSkin'), desc: t('perkCyberSkinDesc'), cost: 300, icon: '🎨' },
+                  { id: 'boost_ticket', name: t('perkBoostTicket'), desc: t('perkBoostTicketDesc'), cost: 120, icon: '🚀' },
+                  { id: 'streak_shield', name: t('perkStreakShield'), desc: t('perkStreakShieldDesc'), cost: 200, icon: '🛡️' },
+                  { id: 'pet_candy', name: t('perkPetCandy'), desc: t('perkPetCandyDesc'), cost: 80, icon: '🍭', comingSoon: true },
                 ].map((item) => {
                   const unlocked = gamification.perks?.includes(item.id);
                   const canAfford = (gamification.starPoints || 0) >= item.cost;
                   return (
-                    <div key={item.id} className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex flex-col justify-between">
+                    <div 
+                      key={item.id} 
+                      className={`p-2.5 rounded-xl bg-slate-950/60 border flex flex-col justify-between transition ${
+                        item.comingSoon 
+                          ? 'border-dashed border-slate-800 opacity-60' 
+                          : 'border-slate-800/80 hover:border-slate-700'
+                      }`}
+                    >
                       <div>
                         <div className="flex items-center gap-1.5 mb-1">
                           <span className="text-sm">{item.icon}</span>
-                          <span className="text-[11px] font-extrabold text-white truncate">{item.name}</span>
+                          <span className={`text-[11px] font-extrabold truncate ${item.comingSoon ? 'text-slate-400' : 'text-white'}`}>{item.name}</span>
                         </div>
                         <p className="text-[9px] text-slate-400 leading-tight mb-2 line-clamp-2">{item.desc}</p>
                       </div>
                       <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
                         <span className="text-[10px] font-black font-mono text-amber-300">{item.cost} SP</span>
-                        {unlocked ? (
+                        {item.comingSoon ? (
+                          <span className="text-[9px] font-bold text-slate-400 bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700/60 flex items-center gap-0.5">
+                            <Lock className="w-2.5 h-2.5 text-slate-400" />
+                            {t('perkComingSoon')}
+                          </span>
+                        ) : unlocked ? (
                           <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
                             {t('redeemedBadge')}
                           </span>

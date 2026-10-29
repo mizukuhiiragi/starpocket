@@ -348,8 +348,14 @@ app.post('/api/gamification/checkin', (req, res) => {
   }
 
   // Calculate streak: check if lastCheckinDate was yesterday
+  let streakSavedByShield = false;
   if (data.lastCheckinDate === jstYesterday.dateStr) {
     data.streak = (data.streak || 0) + 1;
+  } else if (Array.isArray(data.perks) && data.perks.includes('streak_shield') && (data.streak || 0) > 0) {
+    // Shield protects streak from breaking!
+    data.streak = (data.streak || 0) + 1;
+    data.perks = data.perks.filter(p => p !== 'streak_shield');
+    streakSavedByShield = true;
   } else {
     data.streak = 1;
   }
@@ -365,7 +371,9 @@ app.post('/api/gamification/checkin', (req, res) => {
 
   // Points rewards
   let earnedSp = 10;
-  let bonusMsg = '+10 SP earned!';
+  let bonusMsg = streakSavedByShield 
+    ? '+10 SP! 🛡️ ストリーク保護シールドが発動し、連続日数が守られました！'
+    : '+10 SP earned!';
   if (data.streak === 7) {
     earnedSp += 50;
     bonusMsg += ' 🎉 7-Day Streak Bonus: +50 SP!';
@@ -401,14 +409,19 @@ app.post('/api/gamification/redeem', (req, res) => {
   const PERK_CATALOG = {
     chibi_skin: { name: '限定スキン【ちびステラ ＆ お星さま ⭐】', cost: 150 },
     vault_boost: { name: '星の金庫 +1.0% APYブースト (30日)', cost: 200 },
-    pet_candy: { name: 'StarPet 彗星キャンディ 🍭', cost: 80 },
     swap_discount: { name: 'Star Swap 手数料50%OFFチケット', cost: 150 },
-    cyber_skin: { name: '限定サイバー星空ウォレットスキン', cost: 300 }
+    boost_ticket: { name: '星のダブルブーストチケット 🚀', cost: 120 },
+    streak_shield: { name: 'ログインストリーク保護シールド 🛡️', cost: 200 },
+    pet_candy: { name: 'StarPet 彗星キャンディ 🍭', cost: 80, comingSoon: true }
   };
 
   const perk = PERK_CATALOG[perkId];
   if (!perk) {
     return res.status(400).json({ error: '無効なアイテムです' });
+  }
+
+  if (perk.comingSoon) {
+    return res.status(400).json({ error: 'このアイテムはStarPet機能の公開まで準備中です 🍭' });
   }
 
   const data = getUserGamification(address);
@@ -417,6 +430,9 @@ app.post('/api/gamification/redeem', (req, res) => {
   }
 
   data.starPoints -= perk.cost;
+  if (!Array.isArray(data.perks)) {
+    data.perks = [];
+  }
   if (!data.perks.includes(perkId)) {
     data.perks.push(perkId);
   }
@@ -1021,9 +1037,20 @@ app.post('/api/claim', async (req, res) => {
       }
     }
 
+    const gamificationData = getUserGamification(destination);
+    const userPerks = Array.isArray(gamificationData.perks) ? gamificationData.perks : [];
     const isFirstClaimToday = (status.claimsToday === 0);
-    const rewardAmount = isFirstClaimToday ? '0.10' : '0.05';
-    const earnedSp = isFirstClaimToday ? 40 : 20;
+    const hasBoostTicket = userPerks.includes('boost_ticket');
+    const isBoostActive = isFirstClaimToday || hasBoostTicket;
+    const rewardAmount = isBoostActive ? '0.10' : '0.05';
+    const earnedSp = isBoostActive ? 40 : 20;
+    let ticketConsumed = false;
+
+    if (!isFirstClaimToday && hasBoostTicket) {
+      gamificationData.perks = userPerks.filter(p => p !== 'boost_ticket');
+      userGamificationData.set(destination, gamificationData);
+      ticketConsumed = true;
+    }
 
     let operation;
     if (!destExists) {
@@ -1033,7 +1060,7 @@ app.post('/api/claim', async (req, res) => {
         startingBalance: '1.0'
       });
     } else {
-      // Payment of 0.10 XLM (if 1st claim of the day) or 0.05 XLM
+      // Payment of 0.10 XLM (if boost active) or 0.05 XLM
       operation = StellarSdk.Operation.payment({
         destination: destination,
         asset: StellarSdk.Asset.native(),
@@ -1049,7 +1076,7 @@ app.post('/api/claim', async (req, res) => {
       console.warn('Failed to fetch dynamic base fee, fallback to default BASE_FEE:', e.message);
     }
 
-    const memoText = isFirstClaimToday ? 'StarPocket 2x Drop' : 'StarPocket Reward';
+    const memoText = isFirstClaimToday ? 'StarPocket 2x Drop' : (ticketConsumed ? 'StarPocket 2x Boost' : 'StarPocket Reward');
 
     const tx = new StellarSdk.TransactionBuilder(faucetAcc, {
       fee: dynamicFee,
@@ -1078,7 +1105,7 @@ app.post('/api/claim', async (req, res) => {
     savePersistedData();
 
     const updatedStatus = getUserClaimStatus(destination);
-    const updatedSp = addStarPoints(destination, earnedSp, isFirstClaimToday ? 'Daily First 2x Drop Claim' : 'Daily Drop Claim');
+    const updatedSp = addStarPoints(destination, earnedSp, isFirstClaimToday ? 'Daily First 2x Drop Claim' : (ticketConsumed ? 'Double Boost Ticket Drop' : 'Daily Drop Claim'));
 
     const isJa = req.body.lang === 'ja';
     const message = destExists
@@ -1086,9 +1113,13 @@ app.post('/api/claim', async (req, res) => {
           ? (isJa
               ? '🔥 本日初回 2倍ブースト！ 0.10 XLM がポケットに着金しました！⭐ (+40 SP獲得！)'
               : '🔥 2x Daily First Boost! 0.10 XLM deposited directly to your StarPocket! ⭐ (+40 SP earned!)')
-          : (isJa
-              ? '0.05 XLM がポケットに着金しました！⭐ (+20 SP獲得！)'
-              : '0.05 XLM deposited directly to your StarPocket! ⭐ (+20 SP earned!)'))
+          : ticketConsumed
+            ? (isJa
+                ? '🚀 ダブルブーストチケット発動！ 0.10 XLM がポケットに着金しました！⭐ (+40 SP獲得！)'
+                : '🚀 Double Boost Ticket Applied! 0.10 XLM deposited directly to your StarPocket! ⭐ (+40 SP earned!)')
+            : (isJa
+                ? '0.05 XLM がポケットに着金しました！⭐ (+20 SP獲得！)'
+                : '0.05 XLM deposited directly to your StarPocket! ⭐ (+20 SP earned!)'))
       : (isJa
           ? '新しいウォレットが 1.0 XLM のウェルカムボーナスで開設されました！⭐ (+20 SP獲得！)'
           : 'New wallet activated with a 1.0 XLM welcome bonus! ⭐ (+20 SP earned!)');
