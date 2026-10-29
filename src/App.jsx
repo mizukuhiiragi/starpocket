@@ -1653,7 +1653,7 @@ export default function App() {
                       window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                     }
                   }}
-                  className="absolute right-0 top-0 bottom-14 w-44 pointer-events-auto cursor-pointer group select-none overflow-hidden"
+                  className="absolute right-0 top-0 bottom-12 w-44 sm:w-48 pointer-events-auto cursor-pointer group select-none overflow-hidden"
                   title={lang === 'ja' ? 'タップで全身イラスト鑑賞' : 'Tap to view full body art'}
                 >
                   {/* Subtle fade so the balance text on the left stays 100% solid & readable */}
@@ -1662,7 +1662,8 @@ export default function App() {
                   <img
                     src="/stella_techwear_skin.jpg"
                     alt="Stella VIP Card Art"
-                    className="w-full h-full object-cover object-top opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+                    style={{ objectPosition: 'center 26%' }}
                   />
                   {/* VIP Edition Badge & Eye Icon */}
                   <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1 bg-purple-950/85 border border-purple-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-sm backdrop-blur-sm group-hover:border-cyan-300 group-hover:scale-105 transition">
@@ -1681,7 +1682,7 @@ export default function App() {
                       window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
                     }
                   }}
-                  className="absolute right-0 top-0 bottom-14 w-44 pointer-events-auto cursor-pointer group select-none overflow-hidden"
+                  className="absolute right-0 top-0 bottom-12 w-44 sm:w-48 pointer-events-auto cursor-pointer group select-none overflow-hidden"
                   title={lang === 'ja' ? 'タップで全身イラスト鑑賞' : 'Tap to view full body art'}
                 >
                   <div className="absolute inset-0 bg-gradient-to-l from-transparent via-[#0d1428]/75 to-[#0d1428] z-10 pointer-events-none" />
@@ -1689,7 +1690,8 @@ export default function App() {
                   <img
                     src="/chibi_stella_skin.jpg"
                     alt="Chibi Stella VIP Card Art"
-                    className="w-full h-full object-cover object-top opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(56,189,248,0.4)]"
+                    className="w-full h-full object-cover opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300 drop-shadow-[0_0_15px_rgba(56,189,248,0.4)]"
+                    style={{ objectPosition: 'center 42%' }}
                   />
                   {/* VIP Edition Badge & Eye Icon */}
                   <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1 bg-cyan-950/85 border border-cyan-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-amber-300 shadow-sm backdrop-blur-sm group-hover:border-amber-300 group-hover:scale-105 transition">
