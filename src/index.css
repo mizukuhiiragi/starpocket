@@ -95,3 +95,43 @@ body {
 .animate-float-stella {
   animation: floatStella 6s ease-in-out infinite;
 }
+
+/* 🌠 Shooting Star Animations for Cyber Shooting Star Card */
+@keyframes shootingStarAnime {
+  0% {
+    transform: translateX(100px) translateY(-50px) rotate(-35deg) scaleX(0.2);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+    transform: translateX(30px) translateY(-15px) rotate(-35deg) scaleX(1);
+  }
+  65% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(-180px) translateY(90px) rotate(-35deg) scaleX(0.3);
+    opacity: 0;
+  }
+}
+
+.animate-shooting-star-1 {
+  animation: shootingStarAnime 2.8s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+}
+
+.animate-shooting-star-2 {
+  animation: shootingStarAnime 3.8s cubic-bezier(0.25, 0.1, 0.25, 1) infinite 1.4s;
+}
+
+.animate-shooting-star-3 {
+  animation: shootingStarAnime 5.0s cubic-bezier(0.25, 0.1, 0.25, 1) infinite 0.7s;
+}
+
+@keyframes twinkleSlow {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.25); }
+}
+
+.animate-twinkle {
+  animation: twinkleSlow 3s ease-in-out infinite;
+}

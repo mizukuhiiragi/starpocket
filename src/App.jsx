@@ -282,13 +282,13 @@ const CARD_FACES = {
     description: 'マスコットちびステラ＆サイバーシアン仕様',
     descriptionEn: 'Mascot Chibi Stella with Cyber Cyan VIP styling'
   },
-  cyber_matrix: {
-    id: 'cyber_matrix',
-    name: '近未来サイバー・グリッド ⚡',
-    nameEn: 'Cyber Matrix Grid',
-    icon: '⚡',
-    description: 'キャラ無しのSF幾何学＆サイバーグリッド仕様',
-    descriptionEn: 'Futuristic geometric cyber grid without character art'
+  shooting_star: {
+    id: 'shooting_star',
+    name: 'サイバー・シューティングスター 🌠',
+    nameEn: 'Cyber Shooting Star',
+    icon: '🌠',
+    description: '流星群が疾走する近未来サイバー星空仕様',
+    descriptionEn: 'Futuristic shooting stars streaking through a cyber cosmos'
   },
   none: {
     id: 'none',
@@ -410,6 +410,10 @@ export default function App() {
   // Active VIP Card Face (stella | chibi | none)
   const [currentCardFace, setCurrentCardFace] = useState(() => {
     const saved = localStorage.getItem('starpocket_card_face');
+    if (saved === 'cyber_matrix') {
+      localStorage.setItem('starpocket_card_face', 'shooting_star');
+      return 'shooting_star';
+    }
     if (saved && CARD_FACES[saved]) return saved;
     const legacy = localStorage.getItem('starpocket_skin');
     if (legacy === 'chibi') return 'chibi';
@@ -1705,14 +1709,14 @@ export default function App() {
                 }
               }}
               className={`glass-panel rounded-2xl p-5 relative overflow-hidden shadow-2xl transition-all duration-300 ${
-                (currentCardFace === 'stella' || currentCardFace === 'chibi') ? 'cursor-pointer group' : ''
+                (currentCardFace === 'stella' || currentCardFace === 'chibi' || currentCardFace === 'shooting_star' || currentCardFace === 'cyber_matrix') ? 'cursor-pointer group' : ''
               } ${
                 currentCardFace === 'stella'
                   ? 'border border-purple-400/50 shadow-purple-950/40 bg-gradient-to-br from-[#13112b] via-[#0d1326] to-[#070b18]'
                   : currentCardFace === 'chibi'
                     ? 'border border-cyan-400/50 shadow-cyan-950/40 bg-gradient-to-br from-[#0c182c] via-[#0d1428] to-[#080d1a]'
-                    : currentCardFace === 'cyber_matrix'
-                      ? 'border border-cyan-400/60 shadow-cyan-950/50 bg-gradient-to-br from-[#050918] via-[#0a122c] to-[#040714]'
+                    : (currentCardFace === 'shooting_star' || currentCardFace === 'cyber_matrix')
+                      ? 'border border-cyan-400/60 shadow-lg shadow-cyan-950/70 bg-[#060818]'
                       : `${skin.accentBorder} bg-slate-900/80`
               }`}
             >
@@ -1796,19 +1800,56 @@ export default function App() {
                 </div>
               )}
 
-              {/* ⚡ Cyber Matrix Geometric Grid Artwork (Clean sci-fi luxury without anime character) */}
-              {currentCardFace === 'cyber_matrix' && (
-                <div className="absolute inset-0 pointer-events-none overflow-hidden select-none z-10">
-                  <div className="absolute -right-14 -top-14 w-64 h-64 rounded-full border border-cyan-400/30 animate-pulse" />
-                  <div className="absolute -right-8 -top-8 w-52 h-52 rounded-full border border-fuchsia-400/25" />
-                  <div className="absolute -right-2 -top-2 w-40 h-40 rounded-full border border-cyan-400/20" />
-                  <div className="absolute right-12 top-6 w-28 h-28 border border-cyan-400/25 rotate-45" />
-                  <div className="absolute right-16 top-10 w-20 h-20 border border-fuchsia-400/20 rotate-12" />
-                  <div className="absolute top-2 right-2 w-36 h-36 bg-cyan-500/15 rounded-full blur-2xl" />
-                  <div className="absolute bottom-2 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-950/90 border border-cyan-400/40 text-[9px] font-mono text-cyan-300 shadow-sm backdrop-blur-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                    <span>CYBER MATRIX</span>
-                  </div>
+              {/* 🌠 Cyber Shooting Star Artwork (Cosmic shooting star & cyber constellations without character) */}
+              {(currentCardFace === 'shooting_star' || currentCardFace === 'cyber_matrix') && (
+                <div 
+                  onClick={() => {
+                    setShowcaseSkin('shooting_star');
+                    setShowcaseModal(true);
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+                  }}
+                  className="absolute inset-0 pointer-events-auto cursor-pointer group select-none overflow-hidden rounded-2xl z-10"
+                  title={lang === 'ja' ? 'タップで流星アート全景鑑賞' : 'Tap to view cosmic art'}
+                >
+                  {/* High-res Cyber Shooting Star Background */}
+                  <img
+                    src="/cyber_shooting_star_card.jpg"
+                    alt="Cyber Shooting Star Card Art"
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-95 group-hover:scale-105 transition-all duration-500"
+                  />
+                  {/* Left & bottom gradients ensure balance figures & action buttons stay 100% crisp & readable */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#060818]/95 via-[#060818]/60 to-transparent z-10 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#060818]/85 via-transparent to-transparent z-10 pointer-events-none" />
+
+                  {/* Dynamic animated shooting stars crossing the sky */}
+                  <div className="absolute top-2 right-12 w-36 h-[1.5px] bg-gradient-to-l from-white via-cyan-300 to-transparent rotate-[-35deg] animate-shooting-star-1 blur-[0.5px] shadow-[0_0_8px_#38bdf8] z-20 pointer-events-none" />
+                  <div className="absolute top-8 right-28 w-28 h-[1.5px] bg-gradient-to-l from-amber-200 via-cyan-400 to-transparent rotate-[-35deg] animate-shooting-star-2 blur-[0.5px] shadow-[0_0_8px_#38bdf8] z-20 pointer-events-none" />
+                  <div className="absolute top-4 right-4 w-44 h-[1.5px] bg-gradient-to-l from-white via-fuchsia-400 to-transparent rotate-[-35deg] animate-shooting-star-3 blur-[0.5px] shadow-[0_0_8px_#c084fc] z-20 pointer-events-none" />
+
+                  {/* Twinkling star nodes */}
+                  <div className="absolute top-4 right-20 text-[10px] text-cyan-300 animate-twinkle pointer-events-none">✦</div>
+                  <div className="absolute top-12 right-10 text-[8px] text-amber-300 animate-twinkle pointer-events-none" style={{ animationDelay: '1.2s' }}>✧</div>
+                  <div className="absolute bottom-8 right-32 text-[9px] text-fuchsia-300 animate-twinkle pointer-events-none" style={{ animationDelay: '2.1s' }}>✦</div>
+
+                  {/* Bottom-right Full Art Hint & VIP badge */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowcaseSkin('shooting_star');
+                      setShowcaseModal(true);
+                      if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                      }
+                    }}
+                    className="absolute bottom-2 right-2.5 z-30 flex items-center gap-1 bg-cyan-950/90 border border-cyan-400/60 hover:border-amber-300 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 hover:text-amber-300 shadow-md backdrop-blur-md group-hover:scale-105 transition cursor-pointer active:scale-95"
+                    title={lang === 'ja' ? 'タップでアート全景鑑賞' : 'Tap to view full art'}
+                  >
+                    <Sparkles className="w-2.5 h-2.5 text-cyan-300 animate-pulse" />
+                    <span>SHOOTING STAR</span>
+                  </button>
                 </div>
               )}
 
@@ -1865,10 +1906,10 @@ export default function App() {
                         <span>CHIBI VIP</span>
                       </button>
                     )}
-                    {currentCardFace === 'cyber_matrix' && (
+                    {(currentCardFace === 'shooting_star' || currentCardFace === 'cyber_matrix') && (
                       <div className="flex items-center gap-1 bg-cyan-950/80 border border-cyan-400/50 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold text-cyan-300 shadow-sm backdrop-blur-sm">
                         <Sparkles className="w-2.5 h-2.5 text-cyan-400" />
-                        <span>CYBER VIP</span>
+                        <span>METEOR VIP</span>
                       </div>
                     )}
                   </div>
@@ -4493,13 +4534,23 @@ export default function App() {
               </div>
               <div>
                 <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
-                  <span>{showcaseSkin === 'chibi' ? (lang === 'ja' ? 'ちびステラ ＆ お星さま' : 'Chibi Stella & Star') : (lang === 'ja' ? '宇宙浮遊ステラ' : 'Techwear Stella')}</span>
+                  <span>{
+                    showcaseSkin === 'chibi' 
+                      ? (lang === 'ja' ? 'ちびステラ ＆ お星さま' : 'Chibi Stella & Star') 
+                      : showcaseSkin === 'shooting_star'
+                        ? (lang === 'ja' ? 'サイバー・シューティングスター' : 'Cyber Shooting Star')
+                        : (lang === 'ja' ? '宇宙浮遊ステラ' : 'Techwear Stella')
+                  }</span>
                   <span className="text-[9px] bg-cyan-400/20 border border-cyan-400/40 text-cyan-300 px-1.5 py-0.2 rounded-full font-bold">
-                    {lang === 'ja' ? '全身鑑賞' : 'Full Showcase'}
+                    {lang === 'ja' ? 'アート鑑賞' : 'Art Showcase'}
                   </span>
                 </h3>
                 <p className="text-[10px] text-slate-400 font-mono">
-                  {showcaseSkin === 'chibi' ? 'Chibi Stella Character Art' : 'Official Techwear Illustration'}
+                  {showcaseSkin === 'chibi' 
+                    ? 'Chibi Stella Character Art' 
+                    : showcaseSkin === 'shooting_star'
+                      ? 'Cosmic Meteor & Cyber Constellation Art'
+                      : 'Official Techwear Illustration'}
                 </p>
               </div>
             </div>
@@ -4518,13 +4569,23 @@ export default function App() {
             <div className={`absolute w-[340px] h-[480px] rounded-full blur-3xl ${
               showcaseSkin === 'chibi' 
                 ? 'bg-gradient-to-br from-cyan-400/30 via-purple-400/25 to-amber-300/20' 
-                : 'bg-gradient-to-br from-purple-600/35 via-cyan-500/25 to-pink-500/20'
+                : showcaseSkin === 'shooting_star'
+                  ? 'bg-gradient-to-br from-cyan-500/30 via-blue-600/25 to-purple-600/20'
+                  : 'bg-gradient-to-br from-purple-600/35 via-cyan-500/25 to-pink-500/20'
             }`} />
 
             <img
-              src={showcaseSkin === 'chibi' ? '/chibi_stella_skin.jpg' : '/stella_techwear_skin.jpg'}
+              src={
+                showcaseSkin === 'chibi' 
+                  ? '/chibi_stella_skin.jpg' 
+                  : showcaseSkin === 'shooting_star'
+                    ? '/cyber_shooting_star_card.jpg'
+                    : '/stella_techwear_skin.jpg'
+              }
               alt="Character Showcase"
-              className="max-h-[58vh] max-w-[90vw] object-contain drop-shadow-[0_0_35px_rgba(56,189,248,0.5)] animate-float-stella select-none"
+              className={`max-h-[58vh] max-w-[90vw] object-contain drop-shadow-[0_0_35px_rgba(56,189,248,0.5)] select-none ${
+                showcaseSkin === 'shooting_star' ? 'rounded-2xl border border-cyan-400/40 shadow-2xl' : 'animate-float-stella'
+              }`}
             />
 
             {/* Character Dialogue Quote */}
@@ -4532,7 +4593,9 @@ export default function App() {
               <p className="text-xs font-bold text-amber-200 leading-relaxed font-sans">
                 {showcaseSkin === 'chibi' 
                   ? (lang === 'ja' ? '『ちびもいっしょだよー！お星さまたくさん集めてぎゅーってしよ🌟』' : '"Chibi is right here! Let\'s collect shining stars together!🌟"')
-                  : (lang === 'ja' ? '『相棒、いつもStarPocketを使ってくれてありがとう！宇宙の果てまで一緒に行こうね⭐』' : '"Always by your side, partner! Let\'s venture across the cosmos together!⭐"')
+                  : showcaseSkin === 'shooting_star'
+                    ? (lang === 'ja' ? '『星屑の彼方へ一直線！サイバー空間を疾走するシューティングスター🌠』' : '"Streaking straight across the starlit cyber cosmos!🌠"')
+                    : (lang === 'ja' ? '『相棒、いつもStarPocketを使ってくれてありがとう！宇宙の果てまで一緒に行こうね⭐』' : '"Always by your side, partner! Let\'s venture across the cosmos together!⭐"')
                 }
               </p>
             </div>
@@ -4574,6 +4637,23 @@ export default function App() {
               >
                 <span>🌟</span>
                 <span>{lang === 'ja' ? 'ちびステラ' : 'Chibi Stella'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowcaseSkin('shooting_star');
+                  if (window.Telegram?.WebApp?.HapticFeedback) {
+                    window.Telegram.WebApp.HapticFeedback.selectionChanged();
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  showcaseSkin === 'shooting_star'
+                    ? 'bg-cyan-400 text-slate-950 font-black shadow-md shadow-cyan-300/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>🌠</span>
+                <span>{lang === 'ja' ? '流星' : 'Meteor'}</span>
               </button>
             </div>
 
