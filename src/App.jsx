@@ -578,7 +578,7 @@ export default function App() {
           const today = jstFormatter.format(new Date()).replace(/\//g, '-');
           if (rec.dateStr === today) {
             const elapsed = Date.now() - (rec.lastClaimTime || 0);
-            const cooldown = Math.max(0, Math.ceil((15 * 60 * 1000 - elapsed) / 1000));
+            const cooldown = Math.max(0, Math.ceil((3 * 60 * 1000 - elapsed) / 1000));
             return {
               maxDaily: 5,
               claimsToday: rec.count,
@@ -953,7 +953,7 @@ export default function App() {
             const rec = JSON.parse(raw);
             if (rec.dateStr === today && rec.count > data.claimsToday) {
               const elapsed = Date.now() - (rec.lastClaimTime || 0);
-              const cooldown = Math.max(0, Math.ceil((15 * 60 * 1000 - elapsed) / 1000));
+              const cooldown = Math.max(0, Math.ceil((3 * 60 * 1000 - elapsed) / 1000));
               effectiveStatus = {
                 ...data,
                 claimsToday: rec.count,

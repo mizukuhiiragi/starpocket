@@ -67,7 +67,7 @@ async function fundViaFriendbot(pubKey) {
 
 // Daily limit & cooldown management
 const MAX_DAILY_CLAIMS = 5;
-const COOLDOWN_SECONDS = process.env.COOLDOWN_SECONDS ? parseInt(process.env.COOLDOWN_SECONDS) : 15 * 60; // 15 minutes default
+const COOLDOWN_SECONDS = process.env.COOLDOWN_SECONDS ? parseInt(process.env.COOLDOWN_SECONDS) : 3 * 60; // 3 minutes default
 const COOLDOWN_MS = COOLDOWN_SECONDS * 1000;
 
 // Store user claim records in-memory & file storage: destination -> { dateStr, count, lastClaimTime }
