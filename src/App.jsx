@@ -1343,7 +1343,8 @@ export default function App() {
         body: JSON.stringify({
           destination: activeAddress,
           adWatched: true,
-          clientClaimCount: localCount
+          clientClaimCount: localCount,
+          lang: lang
         })
       });
 
@@ -2685,26 +2686,50 @@ export default function App() {
               </p>
 
               {/* 5-STAR STAMINA GAUGE */}
-              <div className="flex items-center justify-center gap-2.5 py-2 mb-4 bg-slate-950/40 rounded-xl border border-slate-800/60">
+              <div className="flex items-center justify-center gap-2.5 py-2 mb-3 bg-slate-950/40 rounded-xl border border-slate-800/60">
                 {[1, 2, 3, 4, 5].map((starIdx) => {
                   const isAvailable = starIdx <= userStatus.remainingToday;
+                  const isFirstStar = (starIdx === 1);
+                  const isFirstBoostReady = isFirstStar && (userStatus.claimsToday === 0);
                   return (
                     <div 
                       key={starIdx} 
-                      className={`flex flex-col items-center transition-all duration-300 ${isAvailable ? 'scale-100 opacity-100' : 'scale-90 opacity-30'}`}
+                      className={`relative flex flex-col items-center transition-all duration-300 ${isAvailable ? 'scale-100 opacity-100' : 'scale-90 opacity-30'}`}
                     >
+                      {isFirstBoostReady && (
+                        <span className="absolute -top-1.5 -right-1 text-[8px] bg-gradient-to-r from-amber-500 to-rose-500 text-slate-950 font-black px-1 rounded-full shadow-sm animate-pulse z-10">
+                          2x
+                        </span>
+                      )}
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        isAvailable 
-                          ? 'bg-amber-400/20 text-amber-400 border border-amber-400/40 shadow-sm shadow-amber-400/30' 
-                          : 'bg-slate-800 text-slate-600 border border-slate-700'
+                        isFirstBoostReady
+                          ? 'bg-gradient-to-br from-amber-400/30 to-rose-500/30 text-amber-300 border-2 border-amber-400 shadow-md shadow-amber-400/40 animate-pulse'
+                          : isAvailable 
+                            ? 'bg-amber-400/20 text-amber-400 border border-amber-400/40 shadow-sm shadow-amber-400/30' 
+                            : 'bg-slate-800 text-slate-600 border border-slate-700'
                       }`}>
                         <Star className={`w-4 h-4 ${isAvailable ? 'fill-amber-400' : ''}`} />
                       </div>
-                      <span className="text-[9px] text-slate-500 mt-1 font-mono">#{starIdx}</span>
+                      <span className="text-[9px] text-slate-500 mt-1 font-mono">
+                        {isFirstBoostReady ? '🔥 2x' : `#${starIdx}`}
+                      </span>
                     </div>
                   );
                 })}
               </div>
+
+              {/* FIRST BOOST BANNER */}
+              {userStatus.claimsToday === 0 && userStatus.remainingToday > 0 && cooldownSec === 0 && (
+                <div className="mb-3 py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-amber-500/20 border border-amber-400/50 flex items-center justify-between text-xs animate-pulse shadow-sm shadow-amber-500/10">
+                  <span className="font-extrabold text-amber-200 text-[11px] flex items-center gap-1.5">
+                    <span>🔥</span>
+                    <span>{t('firstDropBonusBadge')}</span>
+                  </span>
+                  <span className="font-mono font-black text-slate-950 bg-gradient-to-r from-amber-400 to-yellow-300 px-2 py-0.5 rounded-full text-[10px] shadow">
+                    0.10 XLM + 40 SP
+                  </span>
+                </div>
+              )}
 
               {/* REWARD ACTION OR COOLDOWN */}
               {userStatus.remainingToday <= 0 ? (
@@ -2728,10 +2753,14 @@ export default function App() {
                 <button
                   onClick={handleStartDailyBonus}
                   disabled={claiming}
-                  className="w-full py-3.5 px-4 rounded-xl cta-button flex items-center justify-center gap-2 text-sm shadow-lg shadow-amber-500/25 cursor-pointer disabled:opacity-50"
+                  className={`w-full py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg cursor-pointer disabled:opacity-50 transition active:scale-[0.99] font-black ${
+                    userStatus.claimsToday === 0
+                      ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 shadow-amber-500/35 border-t border-amber-200'
+                      : 'cta-button text-slate-950 shadow-amber-500/25'
+                  }`}
                 >
                   <Sparkles className="w-4 h-4 fill-slate-950 text-slate-950" />
-                  <span>{t('btnClaimDrop')}</span>
+                  <span>{userStatus.claimsToday === 0 ? t('btnClaimDropFirstBoost') : t('btnClaimDrop')}</span>
                 </button>
               )}
             </div>

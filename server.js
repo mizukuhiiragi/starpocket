@@ -99,6 +99,10 @@ function getUserClaimStatus(destination) {
   const remainingToday = Math.max(0, MAX_DAILY_CLAIMS - record.count);
   const canClaim = remainingToday > 0 && cooldownRemainingSec === 0;
 
+  const isFirstClaimToday = (record.count === 0);
+  const nextRewardAmount = isFirstClaimToday ? '0.10' : '0.05';
+  const nextEarnedSp = isFirstClaimToday ? 40 : 20;
+
   return {
     destination,
     maxDaily: MAX_DAILY_CLAIMS,
@@ -106,6 +110,9 @@ function getUserClaimStatus(destination) {
     remainingToday,
     cooldownRemainingSec,
     canClaim,
+    isFirstClaimToday,
+    nextRewardAmount,
+    nextEarnedSp,
     nextAvailableAt: cooldownRemainingSec > 0 ? new Date(now + cooldownRemainingSec * 1000).toISOString() : null
   };
 }
@@ -1014,9 +1021,11 @@ app.post('/api/claim', async (req, res) => {
       }
     }
 
-    let operation;
-    const rewardAmount = '0.05';
+    const isFirstClaimToday = (status.claimsToday === 0);
+    const rewardAmount = isFirstClaimToday ? '0.10' : '0.05';
+    const earnedSp = isFirstClaimToday ? 40 : 20;
 
+    let operation;
     if (!destExists) {
       // Account doesn't exist yet on ledger. Activate it with 1.0 XLM on Testnet!
       operation = StellarSdk.Operation.createAccount({
@@ -1024,7 +1033,7 @@ app.post('/api/claim', async (req, res) => {
         startingBalance: '1.0'
       });
     } else {
-      // Normal payment of 0.05 XLM
+      // Payment of 0.10 XLM (if 1st claim of the day) or 0.05 XLM
       operation = StellarSdk.Operation.payment({
         destination: destination,
         asset: StellarSdk.Asset.native(),
@@ -1040,12 +1049,14 @@ app.post('/api/claim', async (req, res) => {
       console.warn('Failed to fetch dynamic base fee, fallback to default BASE_FEE:', e.message);
     }
 
+    const memoText = isFirstClaimToday ? 'StarPocket 2x Drop' : 'StarPocket Reward';
+
     const tx = new StellarSdk.TransactionBuilder(faucetAcc, {
       fee: dynamicFee,
       networkPassphrase: StellarSdk.Networks.TESTNET
     })
     .addOperation(operation)
-    .addMemo(StellarSdk.Memo.text('StarPocket Reward'))
+    .addMemo(StellarSdk.Memo.text(memoText))
     .setTimeout(30)
     .build();
 
@@ -1067,7 +1078,20 @@ app.post('/api/claim', async (req, res) => {
     savePersistedData();
 
     const updatedStatus = getUserClaimStatus(destination);
-    const updatedSp = addStarPoints(destination, 20, 'Daily Drop Claim');
+    const updatedSp = addStarPoints(destination, earnedSp, isFirstClaimToday ? 'Daily First 2x Drop Claim' : 'Daily Drop Claim');
+
+    const isJa = req.body.lang === 'ja';
+    const message = destExists
+      ? (isFirstClaimToday
+          ? (isJa
+              ? '🔥 本日初回 2倍ブースト！ 0.10 XLM がポケットに着金しました！⭐ (+40 SP獲得！)'
+              : '🔥 2x Daily First Boost! 0.10 XLM deposited directly to your StarPocket! ⭐ (+40 SP earned!)')
+          : (isJa
+              ? '0.05 XLM がポケットに着金しました！⭐ (+20 SP獲得！)'
+              : '0.05 XLM deposited directly to your StarPocket! ⭐ (+20 SP earned!)'))
+      : (isJa
+          ? '新しいウォレットが 1.0 XLM のウェルカムボーナスで開設されました！⭐ (+20 SP獲得！)'
+          : 'New wallet activated with a 1.0 XLM welcome bonus! ⭐ (+20 SP earned!)');
 
     res.json({
       success: true,
@@ -1077,10 +1101,9 @@ app.post('/api/claim', async (req, res) => {
       explorerUrl: `https://stellar.expert/explorer/testnet/tx/${txResult.hash}`,
       status: updatedStatus,
       starPoints: updatedSp,
-      earnedSp: 20,
-      message: destExists
-        ? '0.05 XLM deposited directly to your StarPocket! ⭐ (+20 SP earned!)'
-        : 'New wallet activated with a 1.0 XLM welcome bonus! ⭐ (+20 SP earned!)'
+      earnedSp,
+      isFirstClaimToday,
+      message
     });
   } catch (err) {
     console.error('Claim error:', err);
