@@ -200,8 +200,8 @@ export function TokenIcon({ symbol, className = "w-6 h-6", size }) {
   );
 }
 
-// 4 Distinct Themed Skins
-const SKINS = {
+// 4 Distinct Themed Color Palettes
+const THEMES = {
   cosmos: {
     id: 'cosmos',
     name: '深宇宙ネイビー',
@@ -261,40 +261,38 @@ const SKINS = {
     pillActive: 'bg-gradient-to-r from-emerald-400 to-lime-300 text-slate-950 shadow-md shadow-emerald-500/30 font-mono',
     accentBorder: 'border-emerald-400/50',
     accentBadge: 'bg-emerald-400/15 border-emerald-400/40 text-emerald-300 font-mono'
-  },
+  }
+};
+
+// VIP Card Face Layouts
+const CARD_FACES = {
   stella: {
     id: 'stella',
-    name: '限定VIPカード【宇宙浮遊ステラ】⭐',
-    nameEn: "VIP Card: Floating Stella",
+    name: '限定VIP【宇宙浮遊ステラ】⭐',
+    nameEn: 'VIP Card: Floating Stella',
     icon: '🪐',
-    isSpecial: true,
-    previewGradient: 'from-[#160f2e] via-[#0d162d] to-[#070b18]',
-    previewBorder: 'border-purple-400',
-    bgClass: 'bg-[#070914]',
-    glow1: 'bg-purple-600/35',
-    glow2: 'bg-cyan-500/30',
-    headerText: 'from-cyan-300 via-purple-300 to-amber-200',
-    pillActive: 'bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 text-slate-950 font-black shadow-lg shadow-purple-500/30',
-    accentBorder: 'border-purple-400/60',
-    accentBadge: 'bg-purple-500/20 border-cyan-400/50 text-cyan-200'
+    description: 'ステラテックウェア＆ネオンパープル仕様',
+    descriptionEn: 'Techwear Stella with Neon Purple VIP styling'
   },
   chibi: {
     id: 'chibi',
-    name: '限定VIPカード【ちびステラ ＆ お星さま】🌟',
+    name: '限定VIP【ちびステラ ＆ お星さま】🌟',
     nameEn: 'VIP Card: Chibi Stella & Star',
     icon: '🌟',
-    isSpecial: true,
-    previewGradient: 'from-[#1c1836] via-[#10243d] to-[#0a1526]',
-    previewBorder: 'border-cyan-300',
-    bgClass: 'bg-[#080f1e]',
-    glow1: 'bg-cyan-400/25',
-    glow2: 'bg-purple-400/25',
-    headerText: 'from-cyan-200 via-sky-200 to-amber-200',
-    pillActive: 'bg-gradient-to-r from-sky-400 via-cyan-300 to-amber-300 text-slate-950 font-black shadow-lg shadow-cyan-400/30',
-    accentBorder: 'border-cyan-300/60',
-    accentBadge: 'bg-cyan-500/20 border-cyan-400/50 text-cyan-200'
+    description: 'マスコットちびステラ＆サイバーシアン仕様',
+    descriptionEn: 'Mascot Chibi Stella with Cyber Cyan VIP styling'
+  },
+  none: {
+    id: 'none',
+    name: 'スタンダード（イラストなし）',
+    nameEn: 'Standard Minimal Card',
+    icon: '💳',
+    description: 'イラスト無しのシンプル＆クリーン仕様',
+    descriptionEn: 'Minimalist card layout without character art'
   }
 };
+
+const SKINS = THEMES;
 
 // Real-time Reference Rates & Metadata for Supported Assets
 const ASSET_DETAILS = {
@@ -392,10 +390,25 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('wallet'); // 'wallet' | 'swap' | 'vault' | 'reward'
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null); // 'XLM' | 'USDC' | 'yXLM' | 'yUSDC'
   
-  // Active Skin Theme
-  const [currentSkin, setCurrentSkin] = useState(() => {
-    return localStorage.getItem('starpocket_skin') || 'cosmos';
+  // Active Color Theme (cosmos | cyber | sakura | retro)
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    const saved = localStorage.getItem('starpocket_theme');
+    if (saved && THEMES[saved]) return saved;
+    const legacy = localStorage.getItem('starpocket_skin');
+    if (legacy && THEMES[legacy]) return legacy;
+    return 'retro'; // Default to retro 8-bit dot green (Mizuku's favorite) or cosmos
   });
+
+  // Active VIP Card Face (stella | chibi | none)
+  const [currentCardFace, setCurrentCardFace] = useState(() => {
+    const saved = localStorage.getItem('starpocket_card_face');
+    if (saved && CARD_FACES[saved]) return saved;
+    const legacy = localStorage.getItem('starpocket_skin');
+    if (legacy === 'chibi') return 'chibi';
+    return 'stella';
+  });
+
+  const currentSkin = currentTheme; // Alias for theme
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showStellaRewardModal, setShowStellaRewardModal] = useState(false);
   const [isStellaUnlocked, setIsStellaUnlocked] = useState(() => {
@@ -459,13 +472,29 @@ export default function App() {
     }
   };
 
-  const skin = SKINS[currentSkin] || SKINS.cosmos;
+  const skin = THEMES[currentTheme] || THEMES.cosmos;
 
-  const handleSelectSkin = (skinId) => {
-    setCurrentSkin(skinId);
-    localStorage.setItem('starpocket_skin', skinId);
+  const handleSelectTheme = (themeId) => {
+    setCurrentTheme(themeId);
+    localStorage.setItem('starpocket_theme', themeId);
     if (window.Telegram?.WebApp?.HapticFeedback) {
       window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
+  };
+
+  const handleSelectCardFace = (cardFaceId) => {
+    setCurrentCardFace(cardFaceId);
+    localStorage.setItem('starpocket_card_face', cardFaceId);
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
+  };
+
+  const handleSelectSkin = (id) => {
+    if (THEMES[id]) {
+      handleSelectTheme(id);
+    } else if (CARD_FACES[id]) {
+      handleSelectCardFace(id);
     }
   };
   
@@ -1496,7 +1525,7 @@ export default function App() {
       <div className={`fixed bottom-[-80px] right-[-80px] w-72 h-72 ${skin.glow2} rounded-full blur-3xl pointer-events-none transition-all duration-700`} />
 
       {/* Ambient background aura (Clean deep cosmos for 100% text readability) */}
-      {(currentSkin === 'stella' || currentSkin === 'chibi') && (
+      {(currentCardFace === 'stella' || currentCardFace === 'chibi') && (
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[420px] h-[360px] rounded-full bg-gradient-to-b from-purple-900/10 via-cyan-900/10 to-transparent blur-3xl" />
         </div>
@@ -1619,14 +1648,14 @@ export default function App() {
           <div className="space-y-3 animate-in fade-in duration-200">
             {/* MAIN BALANCE CARD (LIMITED VIP CARD EDITION) */}
             <div className={`glass-panel rounded-2xl p-5 relative overflow-hidden shadow-2xl transition-all duration-300 ${
-              currentSkin === 'stella'
+              currentCardFace === 'stella'
                 ? 'border border-purple-400/50 shadow-purple-950/40 bg-gradient-to-br from-[#13112b] via-[#0d1326] to-[#070b18]'
-                : currentSkin === 'chibi'
+                : currentCardFace === 'chibi'
                   ? 'border border-cyan-400/50 shadow-cyan-950/40 bg-gradient-to-br from-[#0c182c] via-[#0d1428] to-[#080d1a]'
-                  : 'border border-amber-400/25'
+                  : `${skin.accentBorder} bg-slate-900/80`
             }`}>
               {/* 💳 VIP Character Card Face Artwork (Tap to view full body) */}
-              {currentSkin === 'stella' && (
+              {currentCardFace === 'stella' && (
                 <div 
                   onClick={() => {
                     setShowcaseSkin('stella');
@@ -1658,7 +1687,7 @@ export default function App() {
                 </div>
               )}
 
-              {currentSkin === 'chibi' && (
+              {currentCardFace === 'chibi' && (
                 <div 
                   onClick={() => {
                     setShowcaseSkin('chibi');
@@ -3359,46 +3388,46 @@ export default function App() {
               </button>
             </div>
 
-            {/* Theme Skins Section */}
-            <div className="mb-2">
-              <label className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
-                <Palette className="w-3.5 h-3.5 text-amber-400" />
-                <span>{lang === 'ja' ? 'ウォレット着せ替えテーマ' : 'Wallet Themes'}</span>
+            {/* VIP Card Face Art Section */}
+            <div className="mb-4">
+              <label className="text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>{lang === 'ja' ? 'VIPカード券面アート' : 'VIP Card Face Art'}</span>
+                </span>
+                <span className="text-[10px] text-cyan-300/80 font-mono">
+                  {lang === 'ja' ? '残高カード券面' : 'Card Design'}
+                </span>
               </label>
 
-              <div className="space-y-2 mt-1.5">
-                {Object.values(SKINS).map((item) => {
-                  const isActive = currentSkin === item.id;
+              <div className="space-y-1.5 mt-1">
+                {Object.values(CARD_FACES).map((item) => {
+                  const isActive = currentCardFace === item.id;
                   return (
                     <button
                       key={item.id}
-                      onClick={() => handleSelectSkin(item.id)}
-                      className={`w-full p-2.5 rounded-xl flex items-center justify-between transition cursor-pointer text-left border ${
+                      onClick={() => handleSelectCardFace(item.id)}
+                      className={`w-full p-2 rounded-xl flex items-center justify-between transition cursor-pointer text-left border ${
                         isActive 
-                          ? 'bg-slate-900 border-amber-400 shadow-md shadow-amber-500/20 ring-1 ring-amber-400' 
+                          ? 'bg-slate-900 border-cyan-400 shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400' 
                           : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${item.previewGradient} border ${item.previewBorder} flex items-center justify-center text-sm shadow-sm shrink-0`}>
+                        <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-sm shadow-sm shrink-0">
                           {item.icon}
                         </div>
                         <div>
                           <div className="text-xs font-bold text-white flex items-center gap-1.5">
                             <span>{lang === 'ja' ? item.name : item.nameEn}</span>
                             {isActive && (
-                              <span className="text-[9px] font-bold text-amber-300 bg-amber-400/20 px-1.5 py-0.2 rounded-full border border-amber-400/40">
+                              <span className="text-[9px] font-bold text-cyan-300 bg-cyan-400/20 px-1.5 py-0.2 rounded-full border border-cyan-400/40">
                                 {lang === 'ja' ? '適用中' : 'Active'}
                               </span>
                             )}
                           </div>
                           <div className="text-[10px] text-slate-400 font-mono">
-                            {item.id === 'cosmos' && 'Default Navy & Gold'}
-                            {item.id === 'cyber' && 'Neon Cyan & Hot Pink'}
-                            {item.id === 'sakura' && 'Midnight Plum & Sakura'}
-                            {item.id === 'retro' && '8-Bit Dot GameBoy LCD'}
-                            {item.id === 'stella' && (lang === 'ja' ? '✨ 限定カード券面【宇宙浮遊ステラ】＆ 全身鑑賞' : "✨ VIP Card Face: Floating Stella & Full View")}
-                            {item.id === 'chibi' && (lang === 'ja' ? '🌟 限定カード券面【ちびステラ ＆ お星さま】(150 SP)' : "🌟 VIP Card Face: Chibi Stella & Star (150 SP)")}
+                            {lang === 'ja' ? item.description : item.descriptionEn}
                           </div>
                         </div>
                       </div>
@@ -3423,6 +3452,66 @@ export default function App() {
                             <span>{lang === 'ja' ? '全身' : 'View'}</span>
                           </button>
                         )}
+                        {isActive ? (
+                          <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-slate-700" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Color Palette Theme Section */}
+            <div className="mb-2">
+              <label className="text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Palette className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{lang === 'ja' ? 'ウォレット配色テーマ' : 'Wallet Color Themes'}</span>
+                </span>
+                <span className="text-[10px] text-amber-300/80 font-mono">
+                  {lang === 'ja' ? 'アプリ全体の色' : 'Color Scheme'}
+                </span>
+              </label>
+
+              <div className="space-y-1.5 mt-1">
+                {Object.values(THEMES).map((item) => {
+                  const isActive = currentTheme === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSelectTheme(item.id)}
+                      className={`w-full p-2 rounded-xl flex items-center justify-between transition cursor-pointer text-left border ${
+                        isActive 
+                          ? 'bg-slate-900 border-amber-400 shadow-md shadow-amber-500/20 ring-1 ring-amber-400' 
+                          : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-tr ${item.previewGradient} border ${item.previewBorder} flex items-center justify-center text-sm shadow-sm shrink-0`}>
+                          {item.icon}
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span>{lang === 'ja' ? item.name : item.nameEn}</span>
+                            {isActive && (
+                              <span className="text-[9px] font-bold text-amber-300 bg-amber-400/20 px-1.5 py-0.2 rounded-full border border-amber-400/40">
+                                {lang === 'ja' ? '適用中' : 'Active'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-mono">
+                            {item.id === 'cosmos' && 'Default Deep Cosmos Navy & Gold'}
+                            {item.id === 'cyber' && 'Neon Cyan & Hot Pink'}
+                            {item.id === 'sakura' && 'Midnight Plum & Sakura'}
+                            {item.id === 'retro' && '8-Bit Dot GameBoy LCD Emerald'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 flex items-center gap-2">
                         {isActive ? (
                           <CheckCircle2 className="w-4 h-4 text-amber-400" />
                         ) : (
@@ -4220,7 +4309,7 @@ export default function App() {
               <p className="text-xs font-bold text-amber-200 leading-relaxed font-sans">
                 {showcaseSkin === 'chibi' 
                   ? (lang === 'ja' ? '『ちびもいっしょだよー！お星さまたくさん集めてぎゅーってしよ🌟』' : '"Chibi is right here! Let\'s collect shining stars together!🌟"')
-                  : (lang === 'ja' ? '『お兄ちゃん、いつもStarPocketを使ってくれてありがとう！宇宙の果てまで一緒に行こうね⭐』' : '"Always by your side, onii-chan! Let\'s venture across the cosmos together!⭐"')
+                  : (lang === 'ja' ? '『相棒、いつもStarPocketを使ってくれてありがとう！宇宙の果てまで一緒に行こうね⭐』' : '"Always by your side, partner! Let\'s venture across the cosmos together!⭐"')
                 }
               </p>
             </div>
@@ -4265,16 +4354,16 @@ export default function App() {
               </button>
             </div>
 
-            {/* Apply Skin Button (if not currently active) */}
-            {currentSkin !== showcaseSkin && (
+            {/* Apply Card Face Button (if not currently active) */}
+            {currentCardFace !== showcaseSkin && (
               <button
                 onClick={() => {
-                  handleSelectSkin(showcaseSkin);
+                  handleSelectCardFace(showcaseSkin);
                   setShowcaseModal(false);
                 }}
                 className="text-[11px] font-bold text-amber-300 hover:text-amber-200 bg-amber-400/15 border border-amber-400/30 px-3 py-1 rounded-full cursor-pointer transition active:scale-95"
               >
-                {lang === 'ja' ? '✨ このスキンをウォレットに適用する' : '✨ Apply this skin theme'}
+                {lang === 'ja' ? '✨ この券面アートをウォレットに適用する' : '✨ Apply this VIP card face'}
               </button>
             )}
 
