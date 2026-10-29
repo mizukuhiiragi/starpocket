@@ -70,12 +70,17 @@ const MAX_DAILY_CLAIMS = 5;
 const COOLDOWN_SECONDS = process.env.COOLDOWN_SECONDS ? parseInt(process.env.COOLDOWN_SECONDS) : 15 * 60; // 15 minutes default
 const COOLDOWN_MS = COOLDOWN_SECONDS * 1000;
 
-// Store user claim records in-memory: destination -> { dateStr, count, lastClaimTime }
+// Store user claim records in-memory & file storage: destination -> { dateStr, count, lastClaimTime }
 const userClaimRecords = new Map();
 
-function getTodayString() {
-  const d = new Date();
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+function getTodayString(targetDate = new Date()) {
+  const jstFormatter = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  return jstFormatter.format(targetDate).replace(/\//g, '-');
 }
 
 function getUserClaimStatus(destination) {
@@ -105,12 +110,59 @@ function getUserClaimStatus(destination) {
   };
 }
 
+// On-chain fallback sync in case Render instance rebooted/spun down
+async function syncClaimStatusFromChain(destination) {
+  try {
+    const payments = await server.payments().forAccount(destination).limit(25).order('desc').call();
+    const today = getTodayString();
+    let todayClaims = 0;
+    let latestTime = 0;
+    const faucetPub = faucetKeypair ? faucetKeypair.publicKey() : null;
+
+    for (const p of payments.records) {
+      const fromAddr = p.from || p.funder;
+      if (fromAddr && faucetPub && fromAddr === faucetPub) {
+        const txDate = new Date(p.created_at);
+        const pDateStr = getTodayString(txDate);
+        if (pDateStr === today) {
+          todayClaims++;
+          if (txDate.getTime() > latestTime) {
+            latestTime = txDate.getTime();
+          }
+        }
+      }
+    }
+
+    if (todayClaims > 0) {
+      const existing = userClaimRecords.get(destination) || { dateStr: today, count: 0, lastClaimTime: 0 };
+      if (todayClaims > (existing.count || 0) || existing.dateStr !== today) {
+        userClaimRecords.set(destination, {
+          dateStr: today,
+          count: Math.min(MAX_DAILY_CLAIMS, Math.max(existing.count || 0, todayClaims)),
+          lastClaimTime: Math.max(existing.lastClaimTime || 0, latestTime)
+        });
+        savePersistedData();
+      }
+    }
+  } catch (e) {
+    // Account might be newly created or not on chain yet; safely ignore
+  }
+}
+
 // GET /api/user-status/:address - get user's daily quota and cooldown
-app.get('/api/user-status/:address', (req, res) => {
+app.get('/api/user-status/:address', async (req, res) => {
   const { address } = req.params;
   if (!address || !StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
     return res.status(400).json({ error: 'Invalid Stellar Public Key' });
   }
+
+  // If in-memory claim record is missing or 0 for today, attempt an on-chain fallback sync
+  const today = getTodayString();
+  const existing = userClaimRecords.get(address);
+  if (!existing || existing.dateStr !== today || existing.count === 0) {
+    await syncClaimStatusFromChain(address);
+  }
+
   res.json(getUserClaimStatus(address));
 });
 
@@ -150,6 +202,11 @@ function loadPersistedData() {
           userGamificationData.set(k, v);
         }
       }
+      if (data.claims) {
+        for (const [k, v] of Object.entries(data.claims)) {
+          userClaimRecords.set(k, v);
+        }
+      }
       console.log(`[Storage] Loaded persistent state from ${DATA_FILE}`);
     }
   } catch (e) {
@@ -162,7 +219,8 @@ function savePersistedData() {
     const data = {
       usdc: Object.fromEntries(userUsdcBalances),
       vaults: Object.fromEntries(starVaults),
-      gamification: Object.fromEntries(userGamificationData)
+      gamification: Object.fromEntries(userGamificationData),
+      claims: Object.fromEntries(userClaimRecords)
     };
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
   } catch (e) {
@@ -863,6 +921,13 @@ app.post('/api/claim', async (req, res) => {
     return res.status(400).json({ error: '広告視聴が完了していません' });
   }
 
+  // Ensure on-chain fallback sync if container recently rebooted
+  const today = getTodayString();
+  const existingCheck = userClaimRecords.get(destination);
+  if (!existingCheck || existingCheck.dateStr !== today || existingCheck.count === 0) {
+    await syncClaimStatusFromChain(destination);
+  }
+
   const status = getUserClaimStatus(destination);
 
   if (status.remainingToday <= 0) {
@@ -935,15 +1000,18 @@ app.post('/api/claim', async (req, res) => {
     const txResult = await server.submitTransaction(tx);
 
     // Update claim count & last claim time
-    const today = getTodayString();
     const existing = userClaimRecords.get(destination) || { dateStr: today, count: 0, lastClaimTime: 0 };
     if (existing.dateStr !== today) {
       existing.dateStr = today;
       existing.count = 0;
     }
+    if (req.body.clientClaimCount && req.body.clientClaimCount > existing.count) {
+      existing.count = req.body.clientClaimCount;
+    }
     existing.count += 1;
     existing.lastClaimTime = Date.now();
     userClaimRecords.set(destination, existing);
+    savePersistedData();
 
     const updatedStatus = getUserClaimStatus(destination);
     const updatedSp = addStarPoints(destination, 20, 'Daily Drop Claim');

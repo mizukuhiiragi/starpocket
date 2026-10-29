@@ -536,14 +536,38 @@ export default function App() {
   const [vaultMsg, setVaultMsg] = useState('');
 
   // Daily Quota & Cooldown State (DECISIONS.md)
-  const [userStatus, setUserStatus] = useState({
-    maxDaily: 5,
-    claimsToday: 0,
-    remainingToday: 5,
-    cooldownRemainingSec: 0,
-    canClaim: true
+  const [userStatus, setUserStatus] = useState(() => {
+    try {
+      const addr = localStorage.getItem('starpocket_stellar_pub') || localStorage.getItem('lumendrop_stellar_pub');
+      if (addr) {
+        const raw = localStorage.getItem(`starpocket_claim_${addr}`);
+        if (raw) {
+          const rec = JSON.parse(raw);
+          const jstFormatter = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+          const today = jstFormatter.format(new Date()).replace(/\//g, '-');
+          if (rec.dateStr === today) {
+            const elapsed = Date.now() - (rec.lastClaimTime || 0);
+            const cooldown = Math.max(0, Math.ceil((15 * 60 * 1000 - elapsed) / 1000));
+            return {
+              maxDaily: 5,
+              claimsToday: rec.count,
+              remainingToday: Math.max(0, 5 - rec.count),
+              cooldownRemainingSec: cooldown,
+              canClaim: rec.count < 5 && cooldown === 0
+            };
+          }
+        }
+      }
+    } catch (e) {}
+    return {
+      maxDaily: 5,
+      claimsToday: 0,
+      remainingToday: 5,
+      cooldownRemainingSec: 0,
+      canClaim: true
+    };
   });
-  const [cooldownSec, setCooldownSec] = useState(0);
+  const [cooldownSec, setCooldownSec] = useState(() => userStatus.cooldownRemainingSec || 0);
 
   const [faucetInfo, setFaucetInfo] = useState(null);
   const [claimHistory, setClaimHistory] = useState([]);
@@ -830,7 +854,17 @@ export default function App() {
     let interval = null;
     if (cooldownSec > 0) {
       interval = setInterval(() => {
-        setCooldownSec(prev => Math.max(0, prev - 1));
+        setCooldownSec(prev => {
+          const next = Math.max(0, prev - 1);
+          if (next === 0) {
+            setUserStatus(curr => ({
+              ...curr,
+              cooldownRemainingSec: 0,
+              canClaim: curr.remainingToday > 0
+            }));
+          }
+          return next;
+        });
       }, 1000);
     }
     return () => clearInterval(interval);
@@ -853,8 +887,32 @@ export default function App() {
       const res = await fetch(`/api/user-status/${addr}`);
       if (res.ok) {
         const data = await res.json();
-        setUserStatus(data);
-        setCooldownSec(data.cooldownRemainingSec || 0);
+
+        // Merge with local storage record if local record has higher claim count for today
+        const jstFormatter = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+        const today = jstFormatter.format(new Date()).replace(/\//g, '-');
+        let effectiveStatus = data;
+
+        try {
+          const raw = localStorage.getItem(`starpocket_claim_${addr}`);
+          if (raw) {
+            const rec = JSON.parse(raw);
+            if (rec.dateStr === today && rec.count > data.claimsToday) {
+              const elapsed = Date.now() - (rec.lastClaimTime || 0);
+              const cooldown = Math.max(0, Math.ceil((15 * 60 * 1000 - elapsed) / 1000));
+              effectiveStatus = {
+                ...data,
+                claimsToday: rec.count,
+                remainingToday: Math.max(0, 5 - rec.count),
+                cooldownRemainingSec: Math.max(data.cooldownRemainingSec || 0, cooldown),
+                canClaim: rec.count < 5 && cooldown === 0
+              };
+            }
+          }
+        } catch (e) {}
+
+        setUserStatus(effectiveStatus);
+        setCooldownSec(effectiveStatus.cooldownRemainingSec || 0);
       }
     } catch (e) {
       console.error('User status fetch failed:', e);
@@ -1202,12 +1260,24 @@ export default function App() {
     setClaimError('');
 
     try {
+      let localCount = userStatus.claimsToday || 0;
+      const jstFormatter = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
+      const today = jstFormatter.format(new Date()).replace(/\//g, '-');
+      try {
+        const raw = localStorage.getItem(`starpocket_claim_${activeAddress}`);
+        if (raw) {
+          const rec = JSON.parse(raw);
+          if (rec.dateStr === today) localCount = Math.max(localCount, rec.count || 0);
+        }
+      } catch (e) {}
+
       const res = await fetch('/api/claim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           destination: activeAddress,
-          adWatched: true
+          adWatched: true,
+          clientClaimCount: localCount
         })
       });
 
@@ -1220,6 +1290,14 @@ export default function App() {
       if (data.status) {
         setUserStatus(data.status);
         setCooldownSec(data.status.cooldownRemainingSec || 0);
+
+        try {
+          localStorage.setItem(`starpocket_claim_${activeAddress}`, JSON.stringify({
+            dateStr: today,
+            count: data.status.claimsToday,
+            lastClaimTime: Date.now()
+          }));
+        } catch (e) {}
       }
       if (data.starPoints) {
         setGamification(prev => ({ ...prev, starPoints: data.starPoints }));
