@@ -19,75 +19,22 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* 🌌 DYNAMIC COSMIC BACKGROUND */
-    .cosmic-bg-overlay {
+    /* 🌌 DYNAMIC CINEMATIC COSMIC BACKGROUND */
+    .cosmic-photo-bg {
       position: fixed;
       inset: 0;
       pointer-events: none;
       z-index: 0;
-      background: 
-        radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 40%),
-        radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.15) 0%, transparent 45%),
-        radial-gradient(circle at 50% 75%, rgba(251, 191, 36, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 80% 85%, rgba(16, 185, 129, 0.10) 0%, transparent 40%),
-        radial-gradient(1.5px 1.5px at 40px 60px, #ffffff, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 150px 220px, #38bdf8, rgba(0,0,0,0)),
-        radial-gradient(1.5px 1.5px at 280px 120px, #fde047, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 390px 380px, #c084fc, rgba(0,0,0,0));
-      background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 550px 550px, 420px 420px, 600px 600px, 480px 480px;
+      background: #060913 url('/cosmic_deck_bg.jpg') center center / cover no-repeat fixed;
+      opacity: 0.95;
     }
 
-    .cosmic-grid-overlay {
+    .cosmic-vignette-overlay {
       position: fixed;
       inset: 0;
       pointer-events: none;
       z-index: 0;
-      background-image: 
-        linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-      mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
-      -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
-    }
-
-    /* SHOOTING STAR ANIMATION */
-    @keyframes shootingStar {
-      0% {
-        transform: translate(-100px, -100px) rotate(45deg);
-        opacity: 0;
-      }
-      20% {
-        opacity: 0.8;
-      }
-      60% {
-        opacity: 0.8;
-      }
-      100% {
-        transform: translate(120vw, 120vh) rotate(45deg);
-        opacity: 0;
-      }
-    }
-    .meteor {
-      position: fixed;
-      top: 5%;
-      left: 10%;
-      width: 140px;
-      height: 2px;
-      background: linear-gradient(90deg, #ffffff, rgba(56, 189, 248, 0.8), transparent);
-      animation: shootingStar 11s infinite linear;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .meteor-2 {
-      position: fixed;
-      top: 30%;
-      left: -5%;
-      width: 180px;
-      height: 2px;
-      background: linear-gradient(90deg, #fde047, rgba(245, 158, 11, 0.8), transparent);
-      animation: shootingStar 16s infinite linear 6s;
-      pointer-events: none;
-      z-index: 0;
+      background: radial-gradient(circle at center, rgba(6, 9, 19, 0.4) 0%, rgba(6, 9, 19, 0.85) 100%);
     }
 
     @media print {
@@ -95,7 +42,7 @@
         background-color: #ffffff !important;
         color: #0f172a !important;
       }
-      .no-print, .cosmic-bg-overlay, .cosmic-grid-overlay, .meteor, .meteor-2 {
+      .no-print, .cosmic-photo-bg, .cosmic-vignette-overlay {
         display: none !important;
       }
       .page-break {
@@ -123,10 +70,8 @@
 <body class="min-h-screen p-4 md:p-8 max-w-4xl mx-auto selection:bg-amber-400 selection:text-slate-950 relative">
 
   <!-- BACKGROUND ELEMENTS -->
-  <div class="cosmic-bg-overlay"></div>
-  <div class="cosmic-grid-overlay"></div>
-  <div class="meteor"></div>
-  <div class="meteor-2"></div>
+  <div class="cosmic-photo-bg"></div>
+  <div class="cosmic-vignette-overlay"></div>
 
   <!-- CONTENT WRAPPER -->
   <div class="relative z-10">
