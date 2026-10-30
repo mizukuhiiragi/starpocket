@@ -33,7 +33,7 @@ export const translations = {
     // Star Swap Tab
     swapTitle: "Star Swap",
     swapSubtitle: "Stellar DEX Instant Liquidity",
-    swapFeeBadge: "Fee: 0.30% (Trader Rebate)",
+    swapFeeBadge: "Protocol Fee: 0% (Direct DEX)",
     flywheelBanner: "0.10% of every swap is pooled and distributed back to active traders at month-end!",
     monthlyBonusTitle: "🎁 Monthly Trader Dividend Pool",
     monthlyBonusDesc: "0.10% of every swap is pooled and distributed at month-end to active traders proportionally based on trade volume!",
@@ -176,7 +176,7 @@ export const translations = {
     // Star Swap Tab
     swapTitle: "星の交換所",
     swapSubtitle: "Stellar DEX 最安ルート即時交換",
-    swapFeeBadge: "手数料 0.30% (ボーナス還元付)",
+    swapFeeBadge: "プロトコル手数料: 0% (DEX直結・完全無料)",
     flywheelBanner: "スワップ手数料の一部（0.10%）は、毎月末にアクティブトレーダー全員へ山分け還元されます！",
     monthlyBonusTitle: "🎁 月末スワップ山分けボーナス",
     monthlyBonusDesc: "スワップ手数料の0.10%がプールに貯まり、毎月末に当月の取引ボリュームに応じてアクティブトレーダー全員へ山分け還元されます！",

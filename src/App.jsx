@@ -39,6 +39,9 @@ import {
   Trash2,
   Plus,
   Eye,
+  EyeOff,
+  KeyRound,
+  LogOut,
   ScanLine,
   Camera,
   Upload
@@ -47,6 +50,13 @@ import QRCode from 'qrcode';
 import jsQR from 'jsqr';
 import { Keypair, StrKey, Horizon, Networks, TransactionBuilder, Operation, Asset, Memo } from '@stellar/stellar-sdk';
 import { translations } from './i18n.js';
+import { 
+  generateNewMnemonic, 
+  validateMnemonic, 
+  validateSecretKey, 
+  deriveKeypairFromMnemonic, 
+  getKeypairFromSecret 
+} from './walletCrypto.js';
 
 const HORIZON_URL = 'https://horizon-testnet.stellar.org';
 const stellarServer = new Horizon.Server(HORIZON_URL);
@@ -536,10 +546,38 @@ export default function App() {
     }
   };
 
-  const [walletAddress, setWalletAddress] = useState('');
-  const [walletSecret, setWalletSecret] = useState('');
+  const [walletAddress, setWalletAddress] = useState(() => {
+    return localStorage.getItem('starpocket_stellar_pub') || localStorage.getItem('lumendrop_stellar_pub') || '';
+  });
+  const [walletSecret, setWalletSecret] = useState(() => {
+    return localStorage.getItem('starpocket_stellar_secret') || localStorage.getItem('lumendrop_stellar_secret') || '';
+  });
+  const [walletMnemonic, setWalletMnemonic] = useState(() => {
+    return localStorage.getItem('starpocket_stellar_mnemonic') || '';
+  });
+  const [hasWallet, setHasWallet] = useState(() => {
+    const pub = localStorage.getItem('starpocket_stellar_pub') || localStorage.getItem('lumendrop_stellar_pub');
+    const sec = localStorage.getItem('starpocket_stellar_secret') || localStorage.getItem('lumendrop_stellar_secret');
+    return !!(pub && sec);
+  });
   const [customAddress, setCustomAddress] = useState('');
   const [useCustom, setUseCustom] = useState(false);
+
+  // 🧭 Top / Onboarding Flow States
+  const [onboardingView, setOnboardingView] = useState('welcome'); // 'welcome' | 'create' | 'import'
+  const [newMnemonicWords, setNewMnemonicWords] = useState([]);
+  const [mnemonicConfirmed, setMnemonicConfirmed] = useState(false);
+  const [importInput, setImportInput] = useState('');
+  const [importError, setImportError] = useState('');
+  const [importLoading, setImportLoading] = useState(false);
+
+  // 🔑 Settings Backup & Import Modals
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [showSecretInBackup, setShowSecretInBackup] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+
+  // 💡 Vault / yXLM Tutorial Modal
+  const [showVaultTutorialModal, setShowVaultTutorialModal] = useState(false);
   
   // Balances & Multi-asset
   const [balance, setBalance] = useState('0.0000');
@@ -793,22 +831,141 @@ export default function App() {
 
     const storedSecret = localStorage.getItem('starpocket_stellar_secret') || localStorage.getItem('lumendrop_stellar_secret');
     const storedPub = localStorage.getItem('starpocket_stellar_pub') || localStorage.getItem('lumendrop_stellar_pub');
+    const storedMnemonic = localStorage.getItem('starpocket_stellar_mnemonic') || '';
 
     if (storedSecret && storedPub) {
       setWalletAddress(storedPub);
       setWalletSecret(storedSecret);
+      setWalletMnemonic(storedMnemonic);
+      setHasWallet(true);
     } else {
-      const pair = Keypair.random();
-      const pub = pair.publicKey();
-      const sec = pair.secret();
-      localStorage.setItem('starpocket_stellar_pub', pub);
-      localStorage.setItem('starpocket_stellar_secret', sec);
-      setWalletAddress(pub);
-      setWalletSecret(sec);
+      setHasWallet(false);
     }
 
     fetchFaucetInfo();
   }, []);
+
+  // 🧭 Wallet Creation & Import Handlers
+  const handleStartCreateWallet = () => {
+    try {
+      const mnemonic = generateNewMnemonic();
+      setNewMnemonicWords(mnemonic.split(' '));
+      setMnemonicConfirmed(false);
+      setOnboardingView('create');
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+      }
+    } catch (e) {
+      console.error('Failed to generate mnemonic:', e);
+    }
+  };
+
+  const handleFinishCreateWallet = () => {
+    if (!mnemonicConfirmed || newMnemonicWords.length === 0) return;
+    try {
+      const mnemonicStr = newMnemonicWords.join(' ');
+      const res = deriveKeypairFromMnemonic(mnemonicStr);
+
+      localStorage.setItem('starpocket_stellar_pub', res.publicKey);
+      localStorage.setItem('starpocket_stellar_secret', res.secret);
+      localStorage.setItem('starpocket_stellar_mnemonic', mnemonicStr);
+
+      setWalletAddress(res.publicKey);
+      setWalletSecret(res.secret);
+      setWalletMnemonic(mnemonicStr);
+      setHasWallet(true);
+      setOnboardingView('welcome');
+
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+    } catch (e) {
+      console.error('Failed to derive wallet from mnemonic:', e);
+    }
+  };
+
+  const handleExecuteImport = (inputStr, isFromSettings = false) => {
+    const raw = (inputStr !== undefined ? inputStr : importInput || '').trim();
+    setImportError('');
+    if (!raw) {
+      setImportError(lang === 'ja' ? '秘密鍵または12単語を入力してください' : 'Please enter secret key or 12 words');
+      return;
+    }
+
+    try {
+      setImportLoading(true);
+      let derivedPub = '';
+      let derivedSec = '';
+      let derivedMnemonic = '';
+
+      if (raw.startsWith('S') && raw.length === 56 && validateSecretKey(raw)) {
+        const res = getKeypairFromSecret(raw);
+        derivedPub = res.publicKey;
+        derivedSec = res.secret;
+      } else {
+        const words = raw.split(/\s+/).filter(Boolean);
+        if (words.length === 12 || words.length === 24) {
+          const joined = words.join(' ').toLowerCase();
+          if (validateMnemonic(joined)) {
+            const res = deriveKeypairFromMnemonic(joined);
+            derivedPub = res.publicKey;
+            derivedSec = res.secret;
+            derivedMnemonic = joined;
+          } else {
+            throw new Error(lang === 'ja' ? '無効なシードフレーズ（単語リスト）です' : 'Invalid seed phrase words');
+          }
+        } else {
+          throw new Error(lang === 'ja' ? '56文字の秘密鍵（S...）または12単語を入力してください' : 'Enter 56-char secret key (S...) or 12-word seed');
+        }
+      }
+
+      localStorage.setItem('starpocket_stellar_pub', derivedPub);
+      localStorage.setItem('starpocket_stellar_secret', derivedSec);
+      if (derivedMnemonic) {
+        localStorage.setItem('starpocket_stellar_mnemonic', derivedMnemonic);
+        setWalletMnemonic(derivedMnemonic);
+      } else {
+        localStorage.removeItem('starpocket_stellar_mnemonic');
+        setWalletMnemonic('');
+      }
+
+      setWalletAddress(derivedPub);
+      setWalletSecret(derivedSec);
+      setHasWallet(true);
+      setImportInput('');
+      setImportError('');
+
+      if (isFromSettings) {
+        setShowImportModal(false);
+        setShowSettingsModal(false);
+      } else {
+        setOnboardingView('welcome');
+      }
+
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+    } catch (err) {
+      console.error('Import error:', err);
+      setImportError(err.message || (lang === 'ja' ? 'インポートに失敗しました' : 'Import failed'));
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
+      }
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleSwitchAccount = () => {
+    const confirmMsg = lang === 'ja'
+      ? '現在のウォレットのバックアップ（12単語または秘密鍵）はお済みですか？\nバックアップがない場合、このウォレットを復元できなくなります。\nアカウントを切り替えますか？'
+      : 'Did you back up your 12 words or secret key?\nWithout backup, you cannot restore this wallet.\nSwitch account?';
+    if (window.confirm(confirmMsg)) {
+      setShowSettingsModal(false);
+      setHasWallet(false);
+      setOnboardingView('welcome');
+    }
+  };
 
   const activeAddress = useCustom && customAddress ? customAddress : walletAddress;
 
@@ -1781,6 +1938,320 @@ export default function App() {
     return `${mins}:${String(secs).padStart(2, '0')}`;
   };
 
+  // 🧭 TOP / ONBOARDING SCREEN (WHEN NO WALLET EXISTS OR SWITCHING)
+  if (!hasWallet) {
+    return (
+      <div className="min-h-screen bg-[#080b14] text-slate-100 flex flex-col justify-between max-w-md mx-auto relative px-5 py-6 font-sans select-none overflow-x-hidden">
+        {/* Ambient cosmic glows */}
+        <div className="fixed top-[-100px] left-[-100px] w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="fixed bottom-[-100px] right-[-100px] w-80 h-80 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="fixed top-[40%] right-[-80px] w-64 h-64 bg-purple-500/15 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Top Bar: Language toggle */}
+        <div className="flex items-center justify-between z-10 mb-4">
+          <div className="flex items-center gap-2">
+            <StarPocketLogo size={36} />
+            <span className="font-black text-sm tracking-wide bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent">
+              StarPocket
+            </span>
+          </div>
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-700/80 text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer active:scale-95 shadow-sm"
+          >
+            <Globe className="w-3.5 h-3.5 text-amber-400" />
+            <span>{lang === 'ja' ? '🇯🇵 日本語' : '🇺🇸 English'}</span>
+          </button>
+        </div>
+
+        {/* Main Step Switcher */}
+        {onboardingView === 'welcome' && (
+          <div className="my-auto py-4 space-y-5 z-10 animate-in fade-in zoom-in-95 duration-300">
+            {/* Hero Section */}
+            <div className="text-center space-y-2">
+              <div className="relative inline-block mx-auto mb-1">
+                <StarPocketLogo size={72} />
+                <div className="absolute -inset-2 bg-amber-400/20 rounded-3xl blur-xl -z-10 animate-pulse" />
+              </div>
+              <h1 className="text-2xl font-black tracking-tight leading-tight">
+                {lang === 'ja' ? (
+                  <>
+                    <span className="text-white block">ステラルーメンを愛する人達へ。</span>
+                    <span className="bg-gradient-to-r from-amber-300 via-yellow-200 to-cyan-300 bg-clip-text text-transparent text-lg font-extrabold mt-1 block">
+                      新しいウォレット始めませんか？
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-white block">For Stellar Lovers.</span>
+                    <span className="bg-gradient-to-r from-amber-300 via-yellow-200 to-cyan-300 bg-clip-text text-transparent text-lg font-extrabold mt-1 block">
+                      Ready for a New Wallet?
+                    </span>
+                  </>
+                )}
+              </h1>
+              <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
+                {lang === 'ja' 
+                  ? 'ウォレット×着せ替えが生む、Telegramで一番やさしい星空スマートウォレット' 
+                  : 'The most adorable, customizable Stellar smart wallet on Telegram.'}
+              </p>
+            </div>
+
+            {/* 3 Core Trust Badges */}
+            <div className="space-y-2.5">
+              <div className="bg-gradient-to-r from-slate-900/90 to-slate-900/60 border border-slate-800 rounded-2xl p-3 flex items-center gap-3 shadow-lg">
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-300 shrink-0">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-extrabold text-xs text-slate-100">
+                    {lang === 'ja' ? '完全非カストディアル（自由な鍵管理）' : 'Non-Custodial Freedom'}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 leading-normal">
+                    {lang === 'ja' ? '秘密鍵はあなたの手の中だけ。LOBSTR等への引越しも自由自在。' : 'Your keys, your crypto. Fully compatible with LOBSTR & Stellar SEP-0005.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-slate-900/90 to-slate-900/60 border border-slate-800 rounded-2xl p-3 flex items-center gap-3 shadow-lg">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-300 shrink-0">
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-extrabold text-xs text-slate-100">
+                    {lang === 'ja' ? 'プロトコル手数料 0%（DEX直結・無料）' : '0% Protocol Fees (Direct DEX)'}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 leading-normal">
+                    {lang === 'ja' ? '中抜き手数料なし。Stellar公式DEX直結の最安レートで即時交換。' : 'Zero middleman cut. Instant direct swap on Stellar Decentralized Exchange.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-slate-900/90 to-slate-900/60 border border-slate-800 rounded-2xl p-3 flex items-center gap-3 shadow-lg">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-purple-300 shrink-0">
+                  <Palette className="w-5 h-5" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-extrabold text-xs text-slate-100">
+                    {lang === 'ja' ? '星空カレンダー ＆ VIP券面着せ替え' : '31-Day Calendar & VIP Card Faces'}
+                  </h3>
+                  <p className="text-[10px] text-slate-400 leading-normal">
+                    {lang === 'ja' ? '毎日の星スタンプでステラ・ちびステラ・流星などの限定スキンを獲得！' : 'Earn Star Points daily to unlock Stella, Chibi, and Shooting Star card skins.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action CTA Buttons */}
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={handleStartCreateWallet}
+                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-xl shadow-amber-500/25 transition cursor-pointer active:scale-[0.99] border-t border-amber-200"
+              >
+                <Sparkles className="w-4 h-4 fill-slate-950 text-slate-950" />
+                <span>{lang === 'ja' ? '✨ 新しいウォレットを作成 (12単語発行)' : '✨ Create New Wallet (12 Words)'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setImportError('');
+                  setImportInput('');
+                  setOnboardingView('import');
+                }}
+                className="w-full py-3 px-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-[0.99]"
+              >
+                <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{lang === 'ja' ? '📥 他のウォレットから引越し (インポート)' : '📥 Import Wallet (LOBSTR / 12 Words)'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Create Flow: Mnemonic Generation */}
+        {onboardingView === 'create' && (
+          <div className="my-auto py-3 space-y-3.5 z-10 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="text-center space-y-1">
+              <div className="w-10 h-10 rounded-2xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 mx-auto mb-1">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              <h2 className="text-base font-black text-white">
+                {lang === 'ja' ? '12単語リカバリーフレーズ' : '12-Word Recovery Phrase'}
+              </h2>
+              <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
+                {lang === 'ja' 
+                  ? 'この12単語はあなたのお財布の鍵です。順番通りに紙などにメモし、他人に絶対見せないでください。' 
+                  : 'Write down these 12 words in order on paper. Never share them with anyone.'}
+              </p>
+            </div>
+
+            {/* Mnemonic Grid */}
+            <div className="grid grid-cols-3 gap-2 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 shadow-inner">
+              {newMnemonicWords.map((word, idx) => (
+                <div key={idx} className="bg-slate-900/90 border border-slate-800/80 rounded-xl px-2 py-1.5 flex items-center gap-1.5 shadow-sm">
+                  <span className="text-[9px] font-mono font-bold text-slate-500 w-4 text-right">
+                    {String(idx + 1).padStart(2, '0')}
+                  </span>
+                  <span className="text-xs font-bold font-mono text-amber-200 truncate select-all">
+                    {word}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Copy Button */}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(newMnemonicWords.join(' '));
+                if (window.Telegram?.WebApp?.HapticFeedback) {
+                  window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                }
+                alert(lang === 'ja' ? '12単語をクリップボードにコピーしました！' : '12 words copied to clipboard!');
+              }}
+              className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-400/50 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95"
+            >
+              <Copy className="w-3.5 h-3.5 text-amber-400" />
+              <span>{lang === 'ja' ? '12単語をコピーする' : 'Copy 12 Words'}</span>
+            </button>
+
+            {/* Confirmation Checkbox */}
+            <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 cursor-pointer select-none">
+              <input 
+                type="checkbox"
+                checked={mnemonicConfirmed}
+                onChange={(e) => setMnemonicConfirmed(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer accent-amber-500"
+              />
+              <span className="text-[11px] text-amber-200 leading-snug">
+                {lang === 'ja'
+                  ? '12単語を安全な場所にメモしました。（紛失するとウォレットや資産を二度と復元できないことを理解しました）'
+                  : 'I have backed up these 12 words in a safe place. (I understand lost phrases cannot be recovered)'}
+              </span>
+            </label>
+
+            {/* Finish Button & Back */}
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={handleFinishCreateWallet}
+                disabled={!mnemonicConfirmed}
+                className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
+                  mnemonicConfirmed
+                    ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 cursor-pointer shadow-amber-500/30'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 fill-current" />
+                <span>{lang === 'ja' ? 'StarPocket を起動する！' : 'Launch StarPocket!'}</span>
+              </button>
+
+              <button
+                onClick={() => setOnboardingView('welcome')}
+                className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+              >
+                {lang === 'ja' ? '← 戻る' : '← Back'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Import Flow */}
+        {onboardingView === 'import' && (
+          <div className="my-auto py-3 space-y-3.5 z-10 animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="text-center space-y-1">
+              <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 mx-auto mb-1">
+                <ArrowDownLeft className="w-5 h-5" />
+              </div>
+              <h2 className="text-base font-black text-white">
+                {lang === 'ja' ? 'ウォレットの引越し・インポート' : 'Import Existing Wallet'}
+              </h2>
+              <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
+                {lang === 'ja' 
+                  ? 'LOBSTRなどの既存ウォレットから、56文字の秘密鍵（S...）または12単語シードフレーズを入力してください。' 
+                  : 'Enter your 56-char secret key (S...) or 12-word seed phrase from LOBSTR or other Stellar wallets.'}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-300">
+                  {lang === 'ja' ? '秘密鍵（S...）または 12単語' : 'Secret Key (S...) or 12 Words'}
+                </label>
+                <button
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      if (text) setImportInput(text);
+                    } catch (e) {
+                      console.error('Clipboard read failed:', e);
+                    }
+                  }}
+                  className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>{lang === 'ja' ? '貼り付け' : 'Paste'}</span>
+                </button>
+              </div>
+
+              <textarea
+                value={importInput}
+                onChange={(e) => setImportInput(e.target.value)}
+                placeholder={lang === 'ja' ? '例: SXXXXXXXXXXXXXXXX... または\nword1 word2 word3 ... word12' : 'e.g. SXXXXX... or 12 words separated by spaces'}
+                rows={3}
+                className="w-full bg-slate-950 border border-slate-700/80 focus:border-cyan-400 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none resize-none transition"
+              />
+
+              {importError && (
+                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
+                  ⚠️ {importError}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={() => handleExecuteImport()}
+                disabled={importLoading || !importInput.trim()}
+                className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
+                  importInput.trim() && !importLoading
+                    ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-500 text-slate-950 cursor-pointer shadow-cyan-500/30'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                }`}
+              >
+                {importLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>{lang === 'ja' ? 'ウォレット読込中...' : 'Importing...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownLeft className="w-4 h-4" />
+                    <span>{lang === 'ja' ? 'ウォレットを引越して開始' : 'Import & Launch Wallet'}</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  setImportError('');
+                  setOnboardingView('welcome');
+                }}
+                className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+              >
+                {lang === 'ja' ? '← 戻る' : '← Back'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Footer info */}
+        <div className="text-center pt-3 z-10">
+          <p className="text-[10px] text-slate-400 font-medium">
+            StarPocket • Public Goods on Stellar Testnet • 100% Non-Custodial
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen ${skin.bgClass} text-slate-100 flex flex-col justify-between max-w-md mx-auto relative px-4 py-4 font-sans select-none transition-colors duration-500`}>
       
@@ -2431,9 +2902,19 @@ export default function App() {
                     <p className="text-[10px] text-emerald-300">{t('swapSubtitle')}</p>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400">
-                  {t('swapFeeBadge')}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowVaultTutorialModal(true)}
+                    className="text-[10px] text-cyan-300 hover:text-cyan-200 bg-cyan-950/60 border border-cyan-400/30 px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition active:scale-95"
+                  >
+                    <Info className="w-3 h-3 text-cyan-400" />
+                    <span>{lang === 'ja' ? '💡 金庫とは？' : '💡 What is Vault?'}</span>
+                  </button>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400">
+                    {t('swapFeeBadge')}
+                  </span>
+                </div>
               </div>
 
               {/* 🎁 MONTHLY TRADER DIVIDEND POOL (三方よし 1:1:1) */}
@@ -2638,9 +3119,19 @@ export default function App() {
                     <p className="text-[10px] text-cyan-300">{t('vaultSubtitle')}</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                  {t('apyBadge')}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowVaultTutorialModal(true)}
+                    className="text-[10px] text-cyan-300 hover:text-cyan-200 bg-cyan-950/60 border border-cyan-400/30 px-2 py-0.5 rounded-full flex items-center gap-1 cursor-pointer transition active:scale-95"
+                  >
+                    <Info className="w-3 h-3 text-cyan-400" />
+                    <span>{lang === 'ja' ? '💡 金庫の仕組み' : '💡 How It Works'}</span>
+                  </button>
+                  <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                    {t('apyBadge')}
+                  </span>
+                </div>
               </div>
 
               <p className="text-[11px] text-slate-300 my-2.5 leading-relaxed">
@@ -2932,100 +3423,19 @@ export default function App() {
               </div>
             </div>
 
-            {/* ⭐ 3. DAILY DROP SECTION */}
-            <div className="bg-gradient-to-b from-[#181c30] to-[#0f1220] rounded-2xl p-5 border border-amber-500/30 shadow-xl relative overflow-hidden">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-1.5">
-                  <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                  <h2 className="font-extrabold text-sm text-white">{t('dailyDropTitle')}</h2>
-                </div>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 font-mono">
-                  {userStatus.remainingToday} / {userStatus.maxDaily} {t('dropsLeft')}
+            {/* 🛡️ PUBLIC GOODS MANIFESTO CARD */}
+            <div className="bg-gradient-to-r from-slate-900/90 via-[#101728] to-slate-900/90 rounded-2xl p-4 border border-cyan-500/30 shadow-lg text-center relative overflow-hidden">
+              <div className="flex items-center justify-center gap-2 mb-1.5">
+                <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                <span className="font-extrabold text-xs text-cyan-200">
+                  {lang === 'ja' ? '広告ゼロ ＆ 完全手数料無料の公共財' : 'Zero Ads & Zero-Fee Public Goods'}
                 </span>
               </div>
-
-              <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
-                {t('dailyDropDesc')}
+              <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
+                {lang === 'ja'
+                  ? 'StarPocketはユーザーから手数料や広告収入を一切取らず、Stellar公式（SCF）グラントで運営される純粋な公共財です。'
+                  : 'StarPocket operates as a 100% non-profit public goods wallet supported by Stellar Community Grants.'}
               </p>
-
-              {/* 5-STAR STAMINA GAUGE */}
-              <div className="flex items-center justify-center gap-2.5 py-2 mb-3 bg-slate-950/40 rounded-xl border border-slate-800/60">
-                {[1, 2, 3, 4, 5].map((starIdx) => {
-                  const isAvailable = starIdx <= userStatus.remainingToday;
-                  const isFirstStar = (starIdx === 1);
-                  const isFirstBoostReady = isFirstStar && (userStatus.claimsToday === 0);
-                  return (
-                    <div 
-                      key={starIdx} 
-                      className={`relative flex flex-col items-center transition-all duration-300 ${isAvailable ? 'scale-100 opacity-100' : 'scale-90 opacity-30'}`}
-                    >
-                      {isFirstBoostReady && (
-                        <span className="absolute -top-1.5 -right-1 text-[8px] bg-gradient-to-r from-amber-500 to-rose-500 text-slate-950 font-black px-1 rounded-full shadow-sm animate-pulse z-10">
-                          2x
-                        </span>
-                      )}
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        isFirstBoostReady
-                          ? 'bg-gradient-to-br from-amber-400/30 to-rose-500/30 text-amber-300 border-2 border-amber-400 shadow-md shadow-amber-400/40 animate-pulse'
-                          : isAvailable 
-                            ? 'bg-amber-400/20 text-amber-400 border border-amber-400/40 shadow-sm shadow-amber-400/30' 
-                            : 'bg-slate-800 text-slate-600 border border-slate-700'
-                      }`}>
-                        <Star className={`w-4 h-4 ${isAvailable ? 'fill-amber-400' : ''}`} />
-                      </div>
-                      <span className="text-[9px] text-slate-500 mt-1 font-mono">
-                        {isFirstBoostReady ? '🔥 2x' : `#${starIdx}`}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* FIRST BOOST BANNER */}
-              {userStatus.claimsToday === 0 && userStatus.remainingToday > 0 && cooldownSec === 0 && (
-                <div className="mb-3 py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-amber-500/20 border border-amber-400/50 flex items-center justify-between text-xs animate-pulse shadow-sm shadow-amber-500/10">
-                  <span className="font-extrabold text-amber-200 text-[11px] flex items-center gap-1.5">
-                    <span>🔥</span>
-                    <span>{t('firstDropBonusBadge')}</span>
-                  </span>
-                  <span className="font-mono font-black text-slate-950 bg-gradient-to-r from-amber-400 to-yellow-300 px-2 py-0.5 rounded-full text-[10px] shadow">
-                    0.10 XLM + 40 SP
-                  </span>
-                </div>
-              )}
-
-              {/* REWARD ACTION OR COOLDOWN */}
-              {userStatus.remainingToday <= 0 ? (
-                <div className="py-3 px-4 rounded-xl bg-slate-900 border border-slate-800 text-center text-xs text-amber-300 font-medium">
-                  {t('allClaimedToday')}
-                </div>
-              ) : cooldownSec > 0 ? (
-                <div className="space-y-2">
-                  <button
-                    disabled
-                    className="w-full py-3.5 px-4 rounded-xl bg-slate-800/80 border border-slate-700 text-slate-400 flex items-center justify-center gap-2 text-xs font-mono font-bold cursor-not-allowed"
-                  >
-                    <Clock className="w-4 h-4 text-cyan-400 animate-spin" />
-                    <span>{t('nextDropIn')} {formatCooldown(cooldownSec)}</span>
-                  </button>
-                  <p className="text-[10px] text-center text-slate-500">
-                    {t('cooldownNote')}
-                  </p>
-                </div>
-              ) : (
-                <button
-                  onClick={handleStartDailyBonus}
-                  disabled={claiming}
-                  className={`w-full py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 text-sm shadow-lg cursor-pointer disabled:opacity-50 transition active:scale-[0.99] font-black ${
-                    userStatus.claimsToday === 0
-                      ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-slate-950 shadow-amber-500/35 border-t border-amber-200'
-                      : 'cta-button text-slate-950 shadow-amber-500/25'
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4 fill-slate-950 text-slate-950" />
-                  <span>{userStatus.claimsToday === 0 ? t('btnClaimDropFirstBoost') : t('btnClaimDrop')}</span>
-                </button>
-              )}
             </div>
 
             {/* VIRAL SHARE BUTTON */}
@@ -3974,6 +4384,53 @@ export default function App() {
               </div>
             </div>
 
+            {/* Wallet Security, Backup & Migration */}
+            <div className="mb-4 pt-3 border-t border-slate-800">
+              <label className="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{lang === 'ja' ? 'ウォレット管理 ＆ 引越し' : 'Wallet Security & Migration'}</span>
+              </label>
+
+              <div className="space-y-2 mt-2">
+                <button
+                  onClick={() => setShowBackupModal(true)}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-amber-400/50 text-slate-200 text-xs font-bold flex items-center justify-between transition cursor-pointer active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="w-4 h-4 text-amber-400" />
+                    <span>{lang === 'ja' ? '🔑 ウォレットのバックアップ (12単語/秘密鍵)' : '🔑 Backup Wallet (12 Words / Secret)'}</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setImportError('');
+                    setImportInput('');
+                    setShowImportModal(true);
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400/50 text-slate-200 text-xs font-bold flex items-center justify-between transition cursor-pointer active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-2">
+                    <ArrowDownLeft className="w-4 h-4 text-cyan-400" />
+                    <span>{lang === 'ja' ? '📥 他のウォレットから引越し (インポート)' : '📥 Import / Migrate Existing Wallet'}</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-500" />
+                </button>
+
+                <button
+                  onClick={handleSwitchAccount}
+                  className="w-full py-2.5 px-3 rounded-xl bg-rose-950/30 border border-rose-500/30 hover:border-rose-500/60 text-rose-300 text-xs font-bold flex items-center justify-between transition cursor-pointer active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-2">
+                    <LogOut className="w-4 h-4 text-rose-400" />
+                    <span>{lang === 'ja' ? '🚪 アカウントを切り替える (TOPへ)' : '🚪 Switch Account (Back to TOP)'}</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-rose-500/60" />
+                </button>
+              </div>
+            </div>
+
             {/* Close */}
             <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
               <span className="text-[10px] text-slate-500">StarPocket v1.0.0</span>
@@ -3984,6 +4441,288 @@ export default function App() {
                 {t('btnClose')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 🔑 WALLET BACKUP MODAL (12 WORDS & SECRET KEY) */}
+      {/* ========================================================= */}
+      {showBackupModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[#121626] border border-amber-400/50 rounded-3xl p-5 max-w-sm w-full shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-amber-400" />
+                <h3 className="font-extrabold text-sm text-white">
+                  {lang === 'ja' ? '🔑 ウォレットのバックアップ' : '🔑 Wallet Backup'}
+                </h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowBackupModal(false);
+                  setShowSecretInBackup(false);
+                }}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
+              {lang === 'ja'
+                ? '秘密鍵や12単語は他人に教えないでください。端末の紛失や故障時、これらを使っていつでもウォレットを復元できます。'
+                : 'Never share your secret key or 12 words. You can restore your wallet anytime with these.'}
+            </p>
+
+            {/* 12 Words (if available) */}
+            {walletMnemonic && (
+              <div className="space-y-1.5 mb-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-amber-300">
+                    {lang === 'ja' ? '12単語シードフレーズ' : '12-Word Seed Phrase'}
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(walletMnemonic);
+                      if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                      }
+                      alert(lang === 'ja' ? '12単語をコピーしました！' : '12 words copied!');
+                    }}
+                    className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Copy className="w-3 h-3" />
+                    <span>{lang === 'ja' ? 'コピー' : 'Copy'}</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                  {walletMnemonic.split(' ').map((word, idx) => (
+                    <div key={idx} className="bg-slate-900 border border-slate-800 rounded-lg px-1.5 py-1 flex items-center gap-1 text-[11px]">
+                      <span className="text-[9px] font-mono text-slate-500">{String(idx + 1).padStart(2, '0')}</span>
+                      <span className="font-mono font-bold text-amber-200 truncate select-all">{word}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Secret Key (S...) */}
+            <div className="space-y-1.5 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-300">
+                  {lang === 'ja' ? 'Stellar 秘密鍵 (Secret Key)' : 'Stellar Secret Key'}
+                </span>
+                <button
+                  onClick={() => setShowSecretInBackup(!showSecretInBackup)}
+                  className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  {showSecretInBackup ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                  <span>{showSecretInBackup ? (lang === 'ja' ? '隠す' : 'Hide') : (lang === 'ja' ? '表示' : 'Show')}</span>
+                </button>
+              </div>
+              <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
+                <span className="font-mono text-xs text-slate-300 break-all select-all">
+                  {showSecretInBackup ? walletSecret : (walletSecret ? `${walletSecret.slice(0, 6)}•••••••••••••••••••••••••••••••••••••••••••••${walletSecret.slice(-4)}` : 'None')}
+                </span>
+                <button
+                  onClick={() => {
+                    if (walletSecret) {
+                      navigator.clipboard.writeText(walletSecret);
+                      if (window.Telegram?.WebApp?.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                      }
+                      alert(lang === 'ja' ? '秘密鍵をコピーしました！' : 'Secret key copied!');
+                    }
+                  }}
+                  className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer shrink-0"
+                >
+                  <Copy className="w-3.5 h-3.5 text-cyan-400" />
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowBackupModal(false);
+                setShowSecretInBackup(false);
+              }}
+              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition cursor-pointer"
+            >
+              {t('btnClose')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 📥 IN-APP WALLET IMPORT / MIGRATION MODAL */}
+      {/* ========================================================= */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[#121626] border border-cyan-400/50 rounded-3xl p-5 max-w-sm w-full shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <ArrowDownLeft className="w-5 h-5 text-cyan-400" />
+                <h3 className="font-extrabold text-sm text-white">
+                  {lang === 'ja' ? '📥 ウォレット引越し・インポート' : '📥 Import / Migrate Wallet'}
+                </h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportError('');
+                }}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
+              {lang === 'ja'
+                ? 'LOBSTRなどの既存ウォレットから、56文字の秘密鍵（S...）または12単語を入力して引越します。'
+                : 'Import existing wallet from LOBSTR with 56-char secret (S...) or 12-word seed.'}
+            </p>
+
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-bold text-slate-300">
+                  {lang === 'ja' ? '秘密鍵または12単語' : 'Secret Key or 12 Words'}
+                </label>
+                <button
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      if (text) setImportInput(text);
+                    } catch (e) {
+                      console.error('Clipboard paste failed:', e);
+                    }
+                  }}
+                  className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Copy className="w-3 h-3" />
+                  <span>{lang === 'ja' ? '貼り付け' : 'Paste'}</span>
+                </button>
+              </div>
+
+              <textarea
+                value={importInput}
+                onChange={(e) => setImportInput(e.target.value)}
+                placeholder={lang === 'ja' ? '例: SXXXXXXXXXXXXXXXX... または\nword1 word2 word3 ... word12' : 'e.g. SXXXXX... or 12 words'}
+                rows={3}
+                className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl p-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none resize-none"
+              />
+
+              {importError && (
+                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
+                  ⚠️ {importError}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => handleExecuteImport(importInput, true)}
+                disabled={importLoading || !importInput.trim()}
+                className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
+                  importInput.trim() && !importLoading
+                    ? 'bg-gradient-to-r from-cyan-400 to-teal-400 text-slate-950 cursor-pointer shadow-cyan-500/30'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                }`}
+              >
+                {importLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>{lang === 'ja' ? 'インポート中...' : 'Importing...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownLeft className="w-4 h-4" />
+                    <span>{lang === 'ja' ? 'このウォレットに切り替える' : 'Switch to this Wallet'}</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportError('');
+                }}
+                className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+              >
+                {t('btnClose')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 💡 STAR VAULT / yXLM TUTORIAL MODAL */}
+      {/* ========================================================= */}
+      {showVaultTutorialModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[#0e172a] border border-cyan-400/40 rounded-3xl p-5 max-w-sm w-full shadow-2xl relative text-left">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Landmark className="w-5 h-5 text-cyan-400" />
+                <h3 className="font-extrabold text-sm text-white">
+                  {lang === 'ja' ? '💡 星の金庫（yXLM）の仕組み' : '💡 How Star Vault (yXLM) Works'}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setShowVaultTutorialModal(false)}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs leading-relaxed">
+              <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                <div className="flex items-center gap-2 font-bold text-cyan-300 mb-1">
+                  <span>1️⃣</span>
+                  <span>{lang === 'ja' ? '取引所に預けっぱなしにするリスクを解消' : 'Eliminate Centralized Exchange Risk'}</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  {lang === 'ja' 
+                    ? '暗号資産を取引所に置いたままだと倒産や出金停止のリスクがあります。StarPocketなら、資産は常にあなた自身のウォレットの中にあります。' 
+                    : 'Leaving funds on exchanges carries counterparty risks. With StarPocket, you always own your private keys.'}
+                </p>
+              </div>
+
+              <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                <div className="flex items-center gap-2 font-bold text-amber-300 mb-1">
+                  <span>2️⃣</span>
+                  <span>{lang === 'ja' ? 'yXLMは「利息付き引換券」' : 'yXLM = Yield-Bearing Certificate'}</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  {lang === 'ja' 
+                    ? '金庫に預けると、預けた証明として「yXLM」を受け取ります。このyXLMを持っているだけで、UltraStellarのオンチェーン運用により毎日年利5.0%の利息が自動で複利加算されます。' 
+                    : 'Depositing mints yXLM tokens directly to your wallet. Holding yXLM earns 5.0% APY compounded daily on-chain.'}
+                </p>
+              </div>
+
+              <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                <div className="flex items-center gap-2 font-bold text-emerald-300 mb-1">
+                  <span>3️⃣</span>
+                  <span>{lang === 'ja' ? 'いつでも1秒で元のXLMに戻せる' : 'Instant 1-Second Withdrawal'}</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  {lang === 'ja' 
+                    ? 'ロック期間や解約手数料は一切なし。必要なときはスワップや金庫画面からいつでも1秒で通常のXLMに戻せます。' 
+                    : 'Zero lockup period. Swap back from yXLM to standard XLM anytime instantly with zero penalty.'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowVaultTutorialModal(false)}
+              className="w-full mt-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-bold text-xs transition cursor-pointer shadow-lg shadow-cyan-500/20"
+            >
+              {lang === 'ja' ? 'なるほど、理解した！' : 'Got it!'}
+            </button>
           </div>
         </div>
       )}
@@ -4142,7 +4881,7 @@ export default function App() {
               </div>
               <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
                 <span className="text-[10px] text-slate-400 block">{lang === 'ja' ? '送金・取引手数料' : 'Fee'}</span>
-                <span className="font-bold text-emerald-400 font-mono">~0.00001 XLM (0.3% Swap)</span>
+                <span className="font-bold text-emerald-400 font-mono">~0.00001 XLM (DEX直結・手数料0%)</span>
               </div>
               <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
                 <span className="text-[10px] text-slate-400 block">{lang === 'ja' ? 'カストディ種別' : 'Custody Type'}</span>
