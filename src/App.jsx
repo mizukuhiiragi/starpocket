@@ -44,6 +44,7 @@ import {
   LogOut,
   ChevronDown,
   Edit2,
+  Calendar,
   ScanLine,
   Camera,
   Upload
@@ -2459,7 +2460,7 @@ export default function App() {
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Star className="w-3.5 h-3.5" />
+          <Calendar className="w-3.5 h-3.5" />
           <span>{t('tabDailyDrop')}</span>
         </button>
       </div>
@@ -3417,11 +3418,20 @@ export default function App() {
                     cost: 150, 
                     icon: '🌟' 
                   },
-                  { id: 'vault_boost', name: t('perkVaultBoost'), desc: t('perkVaultBoostDesc'), cost: 200, icon: '🏦' },
-                  { id: 'swap_discount', name: t('perkSwapDiscount'), desc: t('perkSwapDiscountDesc'), cost: 150, icon: '🔄' },
-                  { id: 'boost_ticket', name: t('perkBoostTicket'), desc: t('perkBoostTicketDesc'), cost: 120, icon: '🚀' },
-                  { id: 'streak_shield', name: t('perkStreakShield'), desc: t('perkStreakShieldDesc'), cost: 200, icon: '🛡️' },
-                  { id: 'pet_candy', name: t('perkPetCandy'), desc: t('perkPetCandyDesc'), cost: 80, icon: '🍭', comingSoon: true },
+                  { 
+                    id: 'shooting_star_skin', 
+                    name: lang === 'ja' ? 'サイバー流星スキン 🌠' : 'Cyber Shooting Star 🌠', 
+                    desc: lang === 'ja' ? '宇宙の星屑と流星が駆け抜けるサイバーカード券面！' : 'Cosmic stardust & meteor trails on your card face!', 
+                    cost: 150, 
+                    icon: '🌠' 
+                  },
+                  { 
+                    id: 'streak_shield', 
+                    name: t('perkStreakShield'), 
+                    desc: t('perkStreakShieldDesc'), 
+                    cost: 200, 
+                    icon: '🛡️' 
+                  },
                 ].map((item) => {
                   const unlocked = gamification.perks?.includes(item.id);
                   const canAfford = (gamification.starPoints || 0) >= item.cost;
@@ -3498,35 +3508,6 @@ export default function App() {
                 <span>{t('btnInviteFriends')}</span>
               </button>
             </div>
-
-            {/* RECENT CLAIM TRANSACTIONS LIST */}
-            {claimHistory.length > 0 && (
-              <div className="pt-1">
-                <h3 className="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  {t('recentDropHistory')}
-                </h3>
-                <div className="space-y-1.5">
-                  {claimHistory.map(item => (
-                    <div key={item.id} className="bg-slate-900/60 border border-slate-800/80 rounded-lg p-2.5 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-amber-400 font-mono">+{item.amount} XLM</span>
-                        <span className="text-[10px] text-slate-500">{item.time}</span>
-                      </div>
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-mono"
-                      >
-                        {item.txHash.slice(0, 6)}...
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 

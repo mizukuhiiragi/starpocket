@@ -9,7 +9,7 @@ export const translations = {
     tabPocket: "Pocket",
     tabSwap: "Swap",
     tabVault: "Vault",
-    tabDailyDrop: "Daily Drop",
+    tabDailyDrop: "Calendar",
 
     // Wallet Tab
     totalBalance: "Total Balance",
@@ -152,7 +152,7 @@ export const translations = {
     tabPocket: "ポケット",
     tabSwap: "スワップ",
     tabVault: "星の金庫",
-    tabDailyDrop: "星集め",
+    tabDailyDrop: "カレンダー",
 
     // Wallet Tab
     totalBalance: "総保有残高",
