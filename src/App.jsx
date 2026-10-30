@@ -42,6 +42,8 @@ import {
   EyeOff,
   KeyRound,
   LogOut,
+  ChevronDown,
+  Edit2,
   ScanLine,
   Camera,
   Upload
@@ -57,6 +59,14 @@ import {
   deriveKeypairFromMnemonic, 
   getKeypairFromSecret 
 } from './walletCrypto.js';
+import { 
+  getSavedWallets, 
+  addWallet, 
+  switchWallet, 
+  renameWallet, 
+  removeWallet,
+  getActiveWalletId 
+} from './walletManager.js';
 
 const HORIZON_URL = 'https://horizon-testnet.stellar.org';
 const stellarServer = new Horizon.Server(HORIZON_URL);
@@ -546,22 +556,36 @@ export default function App() {
     }
   };
 
+  const [wallets, setWallets] = useState(() => getSavedWallets());
+  const [activeWalletId, setActiveWalletIdState] = useState(() => {
+    const list = getSavedWallets();
+    return getActiveWalletId(list);
+  });
+  const activeWalletObj = wallets.find(w => w.id === activeWalletId) || wallets[0] || null;
+
   const [walletAddress, setWalletAddress] = useState(() => {
-    return localStorage.getItem('starpocket_stellar_pub') || localStorage.getItem('lumendrop_stellar_pub') || '';
+    const active = getSavedWallets().find(w => w.id === getActiveWalletId(getSavedWallets()));
+    return active ? active.publicKey : (localStorage.getItem('starpocket_stellar_pub') || '');
   });
   const [walletSecret, setWalletSecret] = useState(() => {
-    return localStorage.getItem('starpocket_stellar_secret') || localStorage.getItem('lumendrop_stellar_secret') || '';
+    const active = getSavedWallets().find(w => w.id === getActiveWalletId(getSavedWallets()));
+    return active ? active.secret : (localStorage.getItem('starpocket_stellar_secret') || '');
   });
   const [walletMnemonic, setWalletMnemonic] = useState(() => {
-    return localStorage.getItem('starpocket_stellar_mnemonic') || '';
+    const active = getSavedWallets().find(w => w.id === getActiveWalletId(getSavedWallets()));
+    return active ? (active.mnemonic || '') : (localStorage.getItem('starpocket_stellar_mnemonic') || '');
   });
   const [hasWallet, setHasWallet] = useState(() => {
-    const pub = localStorage.getItem('starpocket_stellar_pub') || localStorage.getItem('lumendrop_stellar_pub');
-    const sec = localStorage.getItem('starpocket_stellar_secret') || localStorage.getItem('lumendrop_stellar_secret');
-    return !!(pub && sec);
+    const list = getSavedWallets();
+    return list.length > 0;
   });
   const [customAddress, setCustomAddress] = useState('');
   const [useCustom, setUseCustom] = useState(false);
+
+  // 👛 Multi-Wallet Switcher & Management Modals
+  const [showWalletSwitchModal, setShowWalletSwitchModal] = useState(false);
+  const [editingWalletId, setEditingWalletId] = useState(null);
+  const [editingWalletName, setEditingWalletName] = useState('');
 
   // 🧭 Top / Onboarding Flow States
   const [onboardingView, setOnboardingView] = useState('welcome'); // 'welcome' | 'create' | 'import'
@@ -829,14 +853,15 @@ export default function App() {
       }
     }
 
-    const storedSecret = localStorage.getItem('starpocket_stellar_secret') || localStorage.getItem('lumendrop_stellar_secret');
-    const storedPub = localStorage.getItem('starpocket_stellar_pub') || localStorage.getItem('lumendrop_stellar_pub');
-    const storedMnemonic = localStorage.getItem('starpocket_stellar_mnemonic') || '';
-
-    if (storedSecret && storedPub) {
-      setWalletAddress(storedPub);
-      setWalletSecret(storedSecret);
-      setWalletMnemonic(storedMnemonic);
+    const currentWallets = getSavedWallets();
+    setWallets(currentWallets);
+    if (currentWallets.length > 0) {
+      const activeId = getActiveWalletId(currentWallets);
+      const active = currentWallets.find(w => w.id === activeId) || currentWallets[0];
+      setActiveWalletIdState(active.id);
+      setWalletAddress(active.publicKey);
+      setWalletSecret(active.secret);
+      setWalletMnemonic(active.mnemonic || '');
       setHasWallet(true);
     } else {
       setHasWallet(false);
@@ -844,6 +869,50 @@ export default function App() {
 
     fetchFaucetInfo();
   }, []);
+
+  // 🧭 Multi-Wallet Switcher & Management Handlers
+  const handleSelectWallet = (id) => {
+    const target = switchWallet(id);
+    if (target) {
+      setActiveWalletIdState(target.id);
+      setWalletAddress(target.publicKey);
+      setWalletSecret(target.secret);
+      setWalletMnemonic(target.mnemonic || '');
+      setShowWalletSwitchModal(false);
+      fetchAll(target.publicKey);
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.selectionChanged();
+      }
+    }
+  };
+
+  const handleRenameWallet = (id, newName) => {
+    const updated = renameWallet(id, newName);
+    setWallets(updated);
+    setEditingWalletId(null);
+  };
+
+  const handleRemoveWallet = (id) => {
+    if (wallets.length <= 1) {
+      alert(lang === 'ja' ? '最後のお財布は削除できません' : 'Cannot remove the last remaining wallet');
+      return;
+    }
+    const target = wallets.find(w => w.id === id);
+    const confirmMsg = lang === 'ja'
+      ? `「${target?.name || 'お財布'}」を削除しますか？\nバックアップ（12単語または秘密鍵）がない場合、このお財布は復元できません。`
+      : `Remove "${target?.name || 'Wallet'}"?\nWithout backup, this wallet cannot be restored.`;
+    if (window.confirm(confirmMsg)) {
+      const res = removeWallet(id);
+      if (res.updatedWallets) {
+        setWallets(res.updatedWallets);
+        setActiveWalletIdState(res.activeWallet.id);
+        setWalletAddress(res.activeWallet.publicKey);
+        setWalletSecret(res.activeWallet.secret);
+        setWalletMnemonic(res.activeWallet.mnemonic || '');
+        fetchAll(res.activeWallet.publicKey);
+      }
+    }
+  };
 
   // 🧭 Wallet Creation & Import Handlers
   const handleStartCreateWallet = () => {
@@ -866,12 +935,18 @@ export default function App() {
       const mnemonicStr = newMnemonicWords.join(' ');
       const res = deriveKeypairFromMnemonic(mnemonicStr);
 
-      localStorage.setItem('starpocket_stellar_pub', res.publicKey);
-      localStorage.setItem('starpocket_stellar_secret', res.secret);
-      localStorage.setItem('starpocket_stellar_mnemonic', mnemonicStr);
+      const nextNum = wallets.length + 1;
+      const { updatedWallets, activeWallet } = addWallet({
+        name: `お財布 ${nextNum}`,
+        publicKey: res.publicKey,
+        secret: res.secret,
+        mnemonic: mnemonicStr
+      });
 
-      setWalletAddress(res.publicKey);
-      setWalletSecret(res.secret);
+      setWallets(updatedWallets);
+      setActiveWalletIdState(activeWallet.id);
+      setWalletAddress(activeWallet.publicKey);
+      setWalletSecret(activeWallet.secret);
       setWalletMnemonic(mnemonicStr);
       setHasWallet(true);
       setOnboardingView('welcome');
@@ -919,18 +994,19 @@ export default function App() {
         }
       }
 
-      localStorage.setItem('starpocket_stellar_pub', derivedPub);
-      localStorage.setItem('starpocket_stellar_secret', derivedSec);
-      if (derivedMnemonic) {
-        localStorage.setItem('starpocket_stellar_mnemonic', derivedMnemonic);
-        setWalletMnemonic(derivedMnemonic);
-      } else {
-        localStorage.removeItem('starpocket_stellar_mnemonic');
-        setWalletMnemonic('');
-      }
+      const nextNum = wallets.length + 1;
+      const { updatedWallets, activeWallet } = addWallet({
+        name: `お財布 ${nextNum}`,
+        publicKey: derivedPub,
+        secret: derivedSec,
+        mnemonic: derivedMnemonic || null
+      });
 
+      setWallets(updatedWallets);
+      setActiveWalletIdState(activeWallet.id);
       setWalletAddress(derivedPub);
       setWalletSecret(derivedSec);
+      setWalletMnemonic(derivedMnemonic || '');
       setHasWallet(true);
       setImportInput('');
       setImportError('');
@@ -957,14 +1033,8 @@ export default function App() {
   };
 
   const handleSwitchAccount = () => {
-    const confirmMsg = lang === 'ja'
-      ? '現在のウォレットのバックアップ（12単語または秘密鍵）はお済みですか？\nバックアップがない場合、このウォレットを復元できなくなります。\nアカウントを切り替えますか？'
-      : 'Did you back up your 12 words or secret key?\nWithout backup, you cannot restore this wallet.\nSwitch account?';
-    if (window.confirm(confirmMsg)) {
-      setShowSettingsModal(false);
-      setHasWallet(false);
-      setOnboardingView('welcome');
-    }
+    setShowSettingsModal(false);
+    setShowWalletSwitchModal(true);
   };
 
   const activeAddress = useCustom && customAddress ? customAddress : walletAddress;
@@ -2317,6 +2387,32 @@ export default function App() {
         </div>
       </header>
 
+      {/* 👛 ACTIVE WALLET SELECTOR BAR */}
+      <div className="flex items-center justify-between mt-2 px-0.5">
+        <button
+          onClick={() => {
+            setShowWalletSwitchModal(true);
+            if (window.Telegram?.WebApp?.HapticFeedback) {
+              window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+            }
+          }}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 hover:border-amber-400/60 transition cursor-pointer active:scale-95 shadow-md shadow-black/40"
+        >
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="font-extrabold text-xs text-amber-200">
+            {activeWalletObj ? activeWalletObj.name : 'お財布 1'}
+          </span>
+          <span className="text-[10px] text-slate-400 font-mono">
+            ({walletAddress.slice(0, 4)}...{walletAddress.slice(-4)})
+          </span>
+          <ChevronDown className="w-3 h-3 text-slate-400" />
+        </button>
+
+        <span className="text-[10px] text-slate-500 font-mono">
+          {wallets.length} {lang === 'ja' ? '個のお財布' : 'Wallets'}
+        </span>
+      </div>
+
       {/* NAVIGATION PILL TABS (4 TABS) */}
       <div className="grid grid-cols-4 gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800/80 my-2.5">
         <button
@@ -2913,53 +3009,6 @@ export default function App() {
                   </button>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400">
                     {t('swapFeeBadge')}
-                  </span>
-                </div>
-              </div>
-
-              {/* 🎁 MONTHLY TRADER DIVIDEND POOL (三方よし 1:1:1) */}
-              <div className="bg-gradient-to-r from-amber-950/40 via-purple-950/40 to-slate-900 border border-amber-500/30 rounded-xl p-3 mb-3 shadow-lg">
-                <div className="flex items-center justify-between pb-2 border-b border-amber-500/20 mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <Gift className="w-4 h-4 text-amber-400" />
-                    <span className="font-bold text-xs text-amber-200">{t('monthlyBonusTitle')}</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                    ⏳ {swapBonusInfo.daysRemaining} {t('daysLeftLabel')}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-slate-950/60 rounded-lg p-1.5 border border-slate-800">
-                    <p className="text-[9px] text-slate-400 uppercase font-semibold">{t('poolTotalLabel')}</p>
-                    <p className="font-extrabold text-[12px] text-amber-300 font-mono mt-0.5">
-                      {swapBonusInfo.monthlyPoolTotalXlm} <span className="text-[9px] text-slate-400">XLM</span>
-                    </p>
-                    <p className="text-[9px] text-slate-500">~${swapBonusInfo.monthlyPoolTotalUsd}</p>
-                  </div>
-                  <div className="bg-slate-950/60 rounded-lg p-1.5 border border-slate-800">
-                    <p className="text-[9px] text-slate-400 uppercase font-semibold">{t('yourVolumeLabel')}</p>
-                    <p className="font-extrabold text-[12px] text-white font-mono mt-0.5">
-                      ${swapBonusInfo.userVolumeUsd}
-                    </p>
-                    <p className="text-[9px] text-emerald-400">{swapBonusInfo.userSharePercent}% share</p>
-                  </div>
-                  <div className="bg-slate-950/60 rounded-lg p-1.5 border border-amber-500/30 bg-amber-500/5">
-                    <p className="text-[9px] text-amber-300 uppercase font-semibold">{t('yourEstBonusLabel')}</p>
-                    <p className="font-extrabold text-[12px] text-amber-400 font-mono mt-0.5">
-                      ~{swapBonusInfo.userEstBonusXlm} <span className="text-[9px]">XLM</span>
-                    </p>
-                    <p className="text-[9px] text-amber-300/70">auto-claim</p>
-                  </div>
-                </div>
-
-                <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
-                  <span className="flex items-center gap-1 text-[9px] text-purple-300 font-semibold">
-                    <Sparkles className="w-3 h-3 text-purple-400" />
-                    {t('feeSplitBadge')}: 0.10% 💰 | 0.10% 🎁 | 0.10% 🌟
-                  </span>
-                  <span className="text-[9px] text-slate-400 text-right truncate ml-2">
-                    {t('flywheelBanner')}
                   </span>
                 </div>
               </div>
@@ -4439,6 +4488,145 @@ export default function App() {
                 className="text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
               >
                 {t('btnClose')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 👛 MULTI-WALLET SWITCHER & MANAGEMENT MODAL */}
+      {/* ========================================================= */}
+      {showWalletSwitchModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[#121626] border border-amber-400/50 rounded-3xl p-5 max-w-sm w-full shadow-2xl relative">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-amber-400" />
+                <h3 className="font-extrabold text-sm text-white">
+                  {lang === 'ja' ? 'お財布の切り替え ＆ 管理' : 'Switch & Manage Wallets'}
+                </h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowWalletSwitchModal(false);
+                  setEditingWalletId(null);
+                }}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Wallet List */}
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-0.5 mb-3">
+              {wallets.map((w) => {
+                const isActive = w.id === activeWalletId;
+                const isEditing = editingWalletId === w.id;
+
+                return (
+                  <div
+                    key={w.id}
+                    className={`p-3 rounded-2xl border transition ${
+                      isActive
+                        ? 'bg-gradient-to-r from-amber-500/15 via-slate-900 to-slate-900 border-amber-400 shadow-lg shadow-amber-500/10'
+                        : 'bg-slate-950/70 border-slate-800/80 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      {isEditing ? (
+                        <div className="flex items-center gap-1.5 flex-1 mr-2">
+                          <input
+                            type="text"
+                            value={editingWalletName}
+                            onChange={(e) => setEditingWalletName(e.target.value)}
+                            className="bg-slate-900 border border-amber-400 rounded-lg px-2 py-1 text-xs text-white font-bold w-full outline-none"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleRenameWallet(w.id, editingWalletName)}
+                            className="px-2 py-1 rounded bg-amber-400 text-slate-950 text-[10px] font-black cursor-pointer"
+                          >
+                            OK
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-xs text-white flex items-center gap-1.5">
+                            <span>{w.name}</span>
+                            {isActive && (
+                              <span className="text-[9px] font-bold text-amber-300 bg-amber-400/20 px-1.5 py-0.2 rounded-full border border-amber-400/40">
+                                {lang === 'ja' ? '選択中' : 'Active'}
+                              </span>
+                            )}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setEditingWalletId(w.id);
+                              setEditingWalletName(w.name);
+                            }}
+                            className="text-slate-500 hover:text-slate-300 transition cursor-pointer"
+                            title="名前を変更"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+
+                      {wallets.length > 1 && !isActive && (
+                        <button
+                          onClick={() => handleRemoveWallet(w.id)}
+                          className="text-slate-600 hover:text-rose-400 transition cursor-pointer p-1"
+                          title="削除"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {w.publicKey.slice(0, 8)}...{w.publicKey.slice(-8)}
+                      </span>
+
+                      {!isActive && (
+                        <button
+                          onClick={() => handleSelectWallet(w.id)}
+                          className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/30 transition cursor-pointer active:scale-95"
+                        >
+                          {lang === 'ja' ? 'これを使う' : 'Select'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Action Buttons: Add Wallet or Import */}
+            <div className="space-y-2 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => {
+                  setShowWalletSwitchModal(false);
+                  handleStartCreateWallet();
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md shadow-amber-500/20 active:scale-[0.99]"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{lang === 'ja' ? '✨ 新しいお財布を追加 (12単語発行)' : '✨ Add New Wallet (12 Words)'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowWalletSwitchModal(false);
+                  setImportError('');
+                  setImportInput('');
+                  setShowImportModal(true);
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-cyan-400/50 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-[0.99]"
+              >
+                <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{lang === 'ja' ? '📥 他のウォレットをインポートして追加' : '📥 Import Another Wallet'}</span>
               </button>
             </div>
           </div>
