@@ -2162,27 +2162,22 @@ export default function App() {
                   <span className="text-[9px] font-mono font-bold text-slate-500 w-4 text-right">
                     {String(idx + 1).padStart(2, '0')}
                   </span>
-                  <span className="text-xs font-bold font-mono text-amber-200 truncate select-all">
+                  <span className="text-xs font-bold font-mono text-amber-200 truncate select-none">
                     {word}
                   </span>
                 </div>
               ))}
             </div>
 
-            {/* Copy Button */}
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(newMnemonicWords.join(' '));
-                if (window.Telegram?.WebApp?.HapticFeedback) {
-                  window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-                }
-                alert(lang === 'ja' ? '12単語をクリップボードにコピーしました！' : '12 words copied to clipboard!');
-              }}
-              className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-amber-400/50 text-slate-300 hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95"
-            >
-              <Copy className="w-3.5 h-3.5 text-amber-400" />
-              <span>{lang === 'ja' ? '12単語をコピーする' : 'Copy 12 Words'}</span>
-            </button>
+            {/* Security Notice: No Clipboard Copy (Anti-Spyware) */}
+            <div className="py-2.5 px-3 rounded-xl bg-slate-950/70 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="text-[11px] leading-tight text-slate-300">
+                {lang === 'ja'
+                  ? '🛡️ クリップボード盗難マルウェア防止のためコピー機能はありません。必ず紙のノート等に順番通り手書きしてください。'
+                  : '🛡️ Clipboard copy is disabled for security against spyware. Please write down all 12 words on paper.'}
+              </span>
+            </div>
 
             {/* Confirmation Checkbox */}
             <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 cursor-pointer select-none">
@@ -4651,25 +4646,15 @@ export default function App() {
                   <span className="text-[11px] font-bold text-amber-300">
                     {lang === 'ja' ? '12単語シードフレーズ' : '12-Word Seed Phrase'}
                   </span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(walletMnemonic);
-                      if (window.Telegram?.WebApp?.HapticFeedback) {
-                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-                      }
-                      alert(lang === 'ja' ? '12単語をコピーしました！' : '12 words copied!');
-                    }}
-                    className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Copy className="w-3 h-3" />
-                    <span>{lang === 'ja' ? 'コピー' : 'Copy'}</span>
-                  </button>
+                  <span className="text-[10px] text-slate-500 font-medium">
+                    {lang === 'ja' ? '紙に手書きメモ' : 'Write on paper'}
+                  </span>
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
                   {walletMnemonic.split(' ').map((word, idx) => (
                     <div key={idx} className="bg-slate-900 border border-slate-800 rounded-lg px-1.5 py-1 flex items-center gap-1 text-[11px]">
                       <span className="text-[9px] font-mono text-slate-500">{String(idx + 1).padStart(2, '0')}</span>
-                      <span className="font-mono font-bold text-amber-200 truncate select-all">{word}</span>
+                      <span className="font-mono font-bold text-amber-200 truncate select-none">{word}</span>
                     </div>
                   ))}
                 </div>
