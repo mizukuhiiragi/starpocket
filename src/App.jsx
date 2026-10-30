@@ -42,6 +42,7 @@ import {
   EyeOff,
   KeyRound,
   LogOut,
+  FileText,
   ChevronDown,
   Edit2,
   Calendar,
@@ -592,7 +593,12 @@ export default function App() {
   const [onboardingView, setOnboardingView] = useState('welcome'); // 'welcome' | 'create' | 'import'
   const [newMnemonicWords, setNewMnemonicWords] = useState([]);
   const [mnemonicConfirmed, setMnemonicConfirmed] = useState(false);
-  const [importInput, setImportInput] = useState('');
+
+  // 📥 Import Mode & Form States (Separated: Secret Key vs 12-Word Mnemonic)
+  const [importMethod, setImportMethod] = useState('select'); // 'select' | 'secret' | 'mnemonic'
+  const [importSecretInput, setImportSecretInput] = useState('');
+  const [importMnemonicInput, setImportMnemonicInput] = useState('');
+  const [showSecretInputEye, setShowSecretInputEye] = useState(false);
   const [importError, setImportError] = useState('');
   const [importLoading, setImportLoading] = useState(false);
 
@@ -960,39 +966,42 @@ export default function App() {
     }
   };
 
-  const handleExecuteImport = (inputStr, isFromSettings = false) => {
-    const raw = (inputStr !== undefined ? inputStr : importInput || '').trim();
+  const handleExecuteImportMethod = (method, isFromSettings = false) => {
     setImportError('');
-    if (!raw) {
-      setImportError(lang === 'ja' ? '秘密鍵または12単語を入力してください' : 'Please enter secret key or 12 words');
-      return;
-    }
-
     try {
       setImportLoading(true);
       let derivedPub = '';
       let derivedSec = '';
       let derivedMnemonic = '';
 
-      if (raw.startsWith('S') && raw.length === 56 && validateSecretKey(raw)) {
+      if (method === 'secret') {
+        const raw = importSecretInput.trim();
+        if (!raw) {
+          throw new Error(lang === 'ja' ? '秘密鍵（S...）を入力してください' : 'Please enter secret key');
+        }
+        if (!raw.startsWith('S') || raw.length !== 56 || !validateSecretKey(raw)) {
+          throw new Error(lang === 'ja' ? '無効なStellar秘密鍵です（Sから始まる56文字）' : 'Invalid Stellar secret key (56 chars starting with S)');
+        }
         const res = getKeypairFromSecret(raw);
         derivedPub = res.publicKey;
         derivedSec = res.secret;
-      } else {
-        const words = raw.split(/\s+/).filter(Boolean);
-        if (words.length === 12 || words.length === 24) {
-          const joined = words.join(' ').toLowerCase();
-          if (validateMnemonic(joined)) {
-            const res = deriveKeypairFromMnemonic(joined);
-            derivedPub = res.publicKey;
-            derivedSec = res.secret;
-            derivedMnemonic = joined;
-          } else {
-            throw new Error(lang === 'ja' ? '無効なシードフレーズ（単語リスト）です' : 'Invalid seed phrase words');
-          }
-        } else {
-          throw new Error(lang === 'ja' ? '56文字の秘密鍵（S...）または12単語を入力してください' : 'Enter 56-char secret key (S...) or 12-word seed');
+      } else if (method === 'mnemonic') {
+        const raw = importMnemonicInput.trim().toLowerCase();
+        if (!raw) {
+          throw new Error(lang === 'ja' ? '12単語を入力してください' : 'Please enter 12 words');
         }
+        const words = raw.split(/\s+/).filter(Boolean);
+        if (words.length !== 12 && words.length !== 24) {
+          throw new Error(lang === 'ja' ? `単語数が不正です（現在: ${words.length} 単語 / 必要な数: 12 単語）` : `Invalid word count (Current: ${words.length} / Required: 12)`);
+        }
+        const joined = words.join(' ');
+        if (!validateMnemonic(joined)) {
+          throw new Error(lang === 'ja' ? '単語のスペルまたは組み合わせが正しくありません' : 'Invalid mnemonic words or checksum');
+        }
+        const res = deriveKeypairFromMnemonic(joined);
+        derivedPub = res.publicKey;
+        derivedSec = res.secret;
+        derivedMnemonic = joined;
       }
 
       const nextNum = wallets.length + 1;
@@ -1009,7 +1018,9 @@ export default function App() {
       setWalletSecret(derivedSec);
       setWalletMnemonic(derivedMnemonic || '');
       setHasWallet(true);
-      setImportInput('');
+      setImportSecretInput('');
+      setImportMnemonicInput('');
+      setImportMethod('select');
       setImportError('');
 
       if (isFromSettings) {
@@ -2126,7 +2137,9 @@ export default function App() {
               <button
                 onClick={() => {
                   setImportError('');
-                  setImportInput('');
+                  setImportSecretInput('');
+                  setImportMnemonicInput('');
+                  setImportMethod('select');
                   setOnboardingView('import');
                 }}
                 className="w-full py-3 px-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer active:scale-[0.99]"
@@ -2222,89 +2235,291 @@ export default function App() {
         {/* Import Flow */}
         {onboardingView === 'import' && (
           <div className="my-auto py-3 space-y-3.5 z-10 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="text-center space-y-1">
-              <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 mx-auto mb-1">
-                <ArrowDownLeft className="w-5 h-5" />
-              </div>
-              <h2 className="text-base font-black text-white">
-                {lang === 'ja' ? 'ウォレットの引越し・インポート' : 'Import Existing Wallet'}
-              </h2>
-              <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
-                {lang === 'ja' 
-                  ? 'LOBSTRなどの既存ウォレットから、56文字の秘密鍵（S...）または12単語シードフレーズを入力してください。' 
-                  : 'Enter your 56-char secret key (S...) or 12-word seed phrase from LOBSTR or other Stellar wallets.'}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-300">
-                  {lang === 'ja' ? '秘密鍵（S...）または 12単語' : 'Secret Key (S...) or 12 Words'}
-                </label>
-                <button
-                  onClick={async () => {
-                    try {
-                      const text = await navigator.clipboard.readText();
-                      if (text) setImportInput(text);
-                    } catch (e) {
-                      console.error('Clipboard read failed:', e);
-                    }
-                  }}
-                  className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  <Copy className="w-3 h-3" />
-                  <span>{lang === 'ja' ? '貼り付け' : 'Paste'}</span>
-                </button>
-              </div>
-
-              <textarea
-                value={importInput}
-                onChange={(e) => setImportInput(e.target.value)}
-                placeholder={lang === 'ja' ? '例: SXXXXXXXXXXXXXXXX... または\nword1 word2 word3 ... word12' : 'e.g. SXXXXX... or 12 words separated by spaces'}
-                rows={3}
-                className="w-full bg-slate-950 border border-slate-700/80 focus:border-cyan-400 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none resize-none transition"
-              />
-
-              {importError && (
-                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
-                  ⚠️ {importError}
+            {/* Step 1: Select Import Method */}
+            {importMethod === 'select' && (
+              <div className="space-y-3.5 animate-in fade-in">
+                <div className="text-center space-y-1">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 mx-auto mb-1">
+                    <ArrowDownLeft className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-base font-black text-white">
+                    {lang === 'ja' ? 'インポート方法を選択' : 'Select Import Method'}
+                  </h2>
+                  <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
+                    {lang === 'ja' 
+                      ? 'お持ちのキー形式に合わせて選んでください。' 
+                      : 'Choose the format of your existing wallet credentials.'}
+                  </p>
                 </div>
-              )}
-            </div>
 
-            <div className="space-y-2 pt-1">
-              <button
-                onClick={() => handleExecuteImport()}
-                disabled={importLoading || !importInput.trim()}
-                className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
-                  importInput.trim() && !importLoading
-                    ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-500 text-slate-950 cursor-pointer shadow-cyan-500/30'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                }`}
-              >
-                {importLoading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{lang === 'ja' ? 'ウォレット読込中...' : 'Importing...'}</span>
-                  </>
-                ) : (
-                  <>
-                    <ArrowDownLeft className="w-4 h-4" />
-                    <span>{lang === 'ja' ? 'ウォレットを引越して開始' : 'Import & Launch Wallet'}</span>
-                  </>
-                )}
-              </button>
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => {
+                      setImportError('');
+                      setImportMethod('secret');
+                    }}
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/90 border border-slate-700/80 hover:border-cyan-400/60 flex items-center gap-3 text-left transition cursor-pointer active:scale-[0.99] shadow-md group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0 group-hover:scale-105 transition">
+                      <KeyRound className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-white">
+                          {lang === 'ja' ? '🔑 秘密鍵で引越し' : '🔑 Import with Secret Key'}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition" />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
+                        {lang === 'ja' ? 'Sから始まる56文字のStellar秘密鍵（LOBSTR等からエクスポート）' : '56-character Stellar secret key starting with S...'}
+                      </p>
+                    </div>
+                  </button>
 
-              <button
-                onClick={() => {
-                  setImportError('');
-                  setOnboardingView('welcome');
-                }}
-                className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
-              >
-                {lang === 'ja' ? '← 戻る' : '← Back'}
-              </button>
-            </div>
+                  <button
+                    onClick={() => {
+                      setImportError('');
+                      setImportMethod('mnemonic');
+                    }}
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/90 border border-slate-700/80 hover:border-amber-400/60 flex items-center gap-3 text-left transition cursor-pointer active:scale-[0.99] shadow-md group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0 group-hover:scale-105 transition">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-white">
+                          {lang === 'ja' ? '📝 12単語フレーズで引越し' : '📝 Import with 12 Words'}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition" />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
+                        {lang === 'ja' ? 'BIP-39 / SEP-0005 準拠の12個のリカバリー英単語' : '12-word recovery phrase (BIP-39 / SEP-0005 standard)'}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => setOnboardingView('welcome')}
+                    className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+                  >
+                    {lang === 'ja' ? '← TOPに戻る' : '← Back to TOP'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2A: Secret Key Input */}
+            {importMethod === 'secret' && (
+              <div className="space-y-3.5 animate-in fade-in">
+                <div className="text-center space-y-1">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 mx-auto mb-1">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-base font-black text-white">
+                    {lang === 'ja' ? '秘密鍵を入力' : 'Enter Secret Key'}
+                  </h2>
+                  <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
+                    {lang === 'ja' 
+                      ? 'LOBSTR等のウォレット設定からエクスポートした56文字の秘密鍵（S...）を入力してください。' 
+                      : 'Enter the 56-char Stellar secret key starting with S...'}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                      <span>{lang === 'ja' ? 'Stellar 秘密鍵 (S...)' : 'Secret Key (S...)'}</span>
+                      {importSecretInput.startsWith('S') && importSecretInput.length === 56 && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      )}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowSecretInputEye(!showSecretInputEye)}
+                        className="text-[10px] text-slate-400 hover:text-slate-200 flex items-center gap-0.5 cursor-pointer"
+                      >
+                        {showSecretInputEye ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        <span>{showSecretInputEye ? (lang === 'ja' ? '隠す' : 'Hide') : (lang === 'ja' ? '表示' : 'Show')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const text = await navigator.clipboard.readText();
+                            if (text) setImportSecretInput(text.trim());
+                          } catch (e) {
+                            console.error('Clipboard read failed:', e);
+                          }
+                        }}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy className="w-3 h-3" />
+                        <span>{lang === 'ja' ? '貼り付け' : 'Paste'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <input
+                    type={showSecretInputEye ? 'text' : 'password'}
+                    value={importSecretInput}
+                    onChange={(e) => setImportSecretInput(e.target.value.trim())}
+                    placeholder="SXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                    className="w-full bg-slate-950 border border-slate-700/80 focus:border-cyan-400 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none transition"
+                  />
+
+                  {importError && (
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
+                      ⚠️ {importError}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <button
+                    onClick={() => handleExecuteImportMethod('secret')}
+                    disabled={importLoading || !importSecretInput.trim()}
+                    className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
+                      importSecretInput.trim() && !importLoading
+                        ? 'bg-gradient-to-r from-cyan-400 via-teal-400 to-cyan-500 text-slate-950 cursor-pointer shadow-cyan-500/30'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                    }`}
+                  >
+                    {importLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>{lang === 'ja' ? 'ウォレット読込中...' : 'Importing...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound className="w-4 h-4" />
+                        <span>{lang === 'ja' ? '秘密鍵でウォレットを復元' : 'Restore with Secret Key'}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setImportError('');
+                      setImportMethod('select');
+                    }}
+                    className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+                  >
+                    {lang === 'ja' ? '← 方法を選び直す' : '← Change Method'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2B: 12-Word Mnemonic Input */}
+            {importMethod === 'mnemonic' && (
+              <div className="space-y-3.5 animate-in fade-in">
+                <div className="text-center space-y-1">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 mx-auto mb-1">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-base font-black text-white">
+                    {lang === 'ja' ? '12単語フレーズを入力' : 'Enter 12-Word Phrase'}
+                  </h2>
+                  <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
+                    {lang === 'ja' 
+                      ? '紙にメモした12個の英単語をスペース区切りで順番に入力してください。' 
+                      : 'Enter your 12 recovery words in order, separated by spaces.'}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-300">
+                        {lang === 'ja' ? '12個の英単語' : '12 English Words'}
+                      </label>
+                      {/* Word Count Indicator Badge */}
+                      {(() => {
+                        const count = importMnemonicInput.trim() ? importMnemonicInput.trim().split(/\s+/).length : 0;
+                        const isComplete = count === 12;
+                        return (
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.2 rounded-full border ${
+                            isComplete 
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' 
+                              : 'bg-slate-800 text-slate-400 border-slate-700'
+                          }`}>
+                            {count} / 12 {isComplete ? '✓' : ''}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          if (text) setImportMnemonicInput(text.trim().toLowerCase());
+                        } catch (e) {
+                          console.error('Clipboard read failed:', e);
+                        }
+                      }}
+                      className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Copy className="w-3 h-3" />
+                      <span>{lang === 'ja' ? '貼り付け' : 'Paste'}</span>
+                    </button>
+                  </div>
+
+                  <textarea
+                    value={importMnemonicInput}
+                    onChange={(e) => setImportMnemonicInput(e.target.value.toLowerCase())}
+                    placeholder="word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
+                    rows={3}
+                    className="w-full bg-slate-950 border border-slate-700/80 focus:border-amber-400 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none resize-none transition"
+                  />
+
+                  {importError && (
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
+                      ⚠️ {importError}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <button
+                    onClick={() => handleExecuteImportMethod('mnemonic')}
+                    disabled={importLoading || !importMnemonicInput.trim()}
+                    className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
+                      importMnemonicInput.trim() && !importLoading
+                        ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 cursor-pointer shadow-amber-500/30'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                    }`}
+                  >
+                    {importLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>{lang === 'ja' ? 'ウォレット読込中...' : 'Importing...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4" />
+                        <span>{lang === 'ja' ? '12単語でウォレットを復元' : 'Restore with 12 Words'}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setImportError('');
+                      setImportMethod('select');
+                    }}
+                    className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+                  >
+                    {lang === 'ja' ? '← 方法を選び直す' : '← Change Method'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -4431,7 +4646,9 @@ export default function App() {
                 <button
                   onClick={() => {
                     setImportError('');
-                    setImportInput('');
+                    setImportSecretInput('');
+                    setImportMnemonicInput('');
+                    setImportMethod('select');
                     setShowImportModal(true);
                   }}
                   className="w-full py-2.5 px-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400/50 text-slate-200 text-xs font-bold flex items-center justify-between transition cursor-pointer active:scale-[0.99]"
@@ -4596,7 +4813,9 @@ export default function App() {
                 onClick={() => {
                   setShowWalletSwitchModal(false);
                   setImportError('');
-                  setImportInput('');
+                  setImportSecretInput('');
+                  setImportMnemonicInput('');
+                  setImportMethod('select');
                   setShowImportModal(true);
                 }}
                 className="w-full py-2 px-3 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-cyan-400/50 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-[0.99]"
@@ -4719,13 +4938,18 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <ArrowDownLeft className="w-5 h-5 text-cyan-400" />
                 <h3 className="font-extrabold text-sm text-white">
-                  {lang === 'ja' ? '📥 ウォレット引越し・インポート' : '📥 Import / Migrate Wallet'}
+                  {importMethod === 'select'
+                    ? (lang === 'ja' ? '📥 インポート方法を選択' : '📥 Select Import Method')
+                    : importMethod === 'secret'
+                    ? (lang === 'ja' ? '🔑 秘密鍵を入力' : '🔑 Enter Secret Key')
+                    : (lang === 'ja' ? '📝 12単語フレーズを入力' : '📝 Enter 12-Word Phrase')}
                 </h3>
               </div>
               <button 
                 onClick={() => {
                   setShowImportModal(false);
                   setImportError('');
+                  setImportMethod('select');
                 }}
                 className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
               >
@@ -4733,81 +4957,268 @@ export default function App() {
               </button>
             </div>
 
-            <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
-              {lang === 'ja'
-                ? 'LOBSTRなどの既存ウォレットから、56文字の秘密鍵（S...）または12単語を入力して引越します。'
-                : 'Import existing wallet from LOBSTR with 56-char secret (S...) or 12-word seed.'}
-            </p>
+            {/* Step 1: Select Method */}
+            {importMethod === 'select' && (
+              <div className="space-y-3 animate-in fade-in">
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {lang === 'ja'
+                    ? 'お持ちのキー形式に合わせて選んでください。別のアカウントとして追加されます。'
+                    : 'Choose your import method. This will be added as a separate wallet account.'}
+                </p>
 
-            <div className="space-y-2 mb-3">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-300">
-                  {lang === 'ja' ? '秘密鍵または12単語' : 'Secret Key or 12 Words'}
-                </label>
+                <div className="space-y-2.5">
+                  <button
+                    onClick={() => {
+                      setImportError('');
+                      setImportMethod('secret');
+                    }}
+                    className="w-full p-3 rounded-2xl bg-slate-900/90 border border-slate-700/80 hover:border-cyan-400/60 flex items-center gap-3 text-left transition cursor-pointer active:scale-[0.99] group shadow-sm"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shrink-0 group-hover:scale-105 transition">
+                      <KeyRound className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-white">
+                          {lang === 'ja' ? '🔑 秘密鍵で追加' : '🔑 Secret Key'}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition" />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
+                        {lang === 'ja' ? 'Sから始まる56文字のStellar秘密鍵（LOBSTR等）' : '56-char secret key starting with S...'}
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setImportError('');
+                      setImportMethod('mnemonic');
+                    }}
+                    className="w-full p-3 rounded-2xl bg-slate-900/90 border border-slate-700/80 hover:border-amber-400/60 flex items-center gap-3 text-left transition cursor-pointer active:scale-[0.99] group shadow-sm"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0 group-hover:scale-105 transition">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-white">
+                          {lang === 'ja' ? '📝 12単語フレーズで追加' : '📝 12 Words Phrase'}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition" />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
+                        {lang === 'ja' ? 'BIP-39 / SEP-0005 準拠の12個の英単語' : '12-word recovery phrase (SEP-0005)'}
+                      </p>
+                    </div>
+                  </button>
+                </div>
+
                 <button
-                  onClick={async () => {
-                    try {
-                      const text = await navigator.clipboard.readText();
-                      if (text) setImportInput(text);
-                    } catch (e) {
-                      console.error('Clipboard paste failed:', e);
-                    }
+                  onClick={() => {
+                    setShowImportModal(false);
+                    setImportError('');
                   }}
-                  className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 cursor-pointer"
+                  className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer pt-1"
                 >
-                  <Copy className="w-3 h-3" />
-                  <span>{lang === 'ja' ? '貼り付け' : 'Paste'}</span>
+                  {t('btnClose')}
                 </button>
               </div>
+            )}
 
-              <textarea
-                value={importInput}
-                onChange={(e) => setImportInput(e.target.value)}
-                placeholder={lang === 'ja' ? '例: SXXXXXXXXXXXXXXXX... または\nword1 word2 word3 ... word12' : 'e.g. SXXXXX... or 12 words'}
-                rows={3}
-                className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl p-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none resize-none"
-              />
+            {/* Step 2A: Secret Key Input */}
+            {importMethod === 'secret' && (
+              <div className="space-y-3 animate-in fade-in">
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {lang === 'ja'
+                    ? 'LOBSTR等のウォレット設定からエクスポートした56文字の秘密鍵（S...）を入力してください。'
+                    : 'Enter the 56-char Stellar secret key starting with S...'}
+                </p>
 
-              {importError && (
-                <div className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
-                  ⚠️ {importError}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                      <span>{lang === 'ja' ? 'Stellar 秘密鍵 (S...)' : 'Secret Key (S...)'}</span>
+                      {importSecretInput.startsWith('S') && importSecretInput.length === 56 && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      )}
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowSecretInputEye(!showSecretInputEye)}
+                        className="text-[10px] text-slate-400 hover:text-slate-200 flex items-center gap-0.5 cursor-pointer"
+                      >
+                        {showSecretInputEye ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        <span>{showSecretInputEye ? (lang === 'ja' ? '隠す' : 'Hide') : (lang === 'ja' ? '表示' : 'Show')}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const text = await navigator.clipboard.readText();
+                            if (text) setImportSecretInput(text.trim());
+                          } catch (e) {
+                            console.error('Clipboard read failed:', e);
+                          }
+                        }}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy className="w-3 h-3" />
+                        <span>{lang === 'ja' ? '貼り付け' : 'Paste'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <input
+                    type={showSecretInputEye ? 'text' : 'password'}
+                    value={importSecretInput}
+                    onChange={(e) => setImportSecretInput(e.target.value.trim())}
+                    placeholder="SXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-cyan-400 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none transition"
+                  />
+
+                  {importError && (
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
+                      ⚠️ {importError}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <button
-                onClick={() => handleExecuteImport(importInput, true)}
-                disabled={importLoading || !importInput.trim()}
-                className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
-                  importInput.trim() && !importLoading
-                    ? 'bg-gradient-to-r from-cyan-400 to-teal-400 text-slate-950 cursor-pointer shadow-cyan-500/30'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                }`}
-              >
-                {importLoading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>{lang === 'ja' ? 'インポート中...' : 'Importing...'}</span>
-                  </>
-                ) : (
-                  <>
-                    <ArrowDownLeft className="w-4 h-4" />
-                    <span>{lang === 'ja' ? 'このウォレットに切り替える' : 'Switch to this Wallet'}</span>
-                  </>
-                )}
-              </button>
+                <div className="space-y-2 pt-1">
+                  <button
+                    onClick={() => handleExecuteImportMethod('secret', true)}
+                    disabled={importLoading || !importSecretInput.trim()}
+                    className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
+                      importSecretInput.trim() && !importLoading
+                        ? 'bg-gradient-to-r from-cyan-400 to-teal-400 text-slate-950 cursor-pointer shadow-cyan-500/30'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                    }`}
+                  >
+                    {importLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>{lang === 'ja' ? 'インポート中...' : 'Importing...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound className="w-4 h-4" />
+                        <span>{lang === 'ja' ? '秘密鍵でウォレットを追加' : 'Add Wallet with Secret Key'}</span>
+                      </>
+                    )}
+                  </button>
 
-              <button
-                onClick={() => {
-                  setShowImportModal(false);
-                  setImportError('');
-                }}
-                className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
-              >
-                {t('btnClose')}
-              </button>
-            </div>
+                  <button
+                    onClick={() => {
+                      setImportError('');
+                      setImportMethod('select');
+                    }}
+                    className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+                  >
+                    {lang === 'ja' ? '← 方法を選び直す' : '← Change Method'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2B: 12-Word Mnemonic Input */}
+            {importMethod === 'mnemonic' && (
+              <div className="space-y-3 animate-in fade-in">
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {lang === 'ja'
+                    ? '紙にメモした12個の英単語をスペース区切りで順番に入力してください。'
+                    : 'Enter your 12 recovery words in order, separated by spaces.'}
+                </p>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-[11px] font-bold text-slate-300">
+                        {lang === 'ja' ? '12個の英単語' : '12 English Words'}
+                      </label>
+                      {/* Word Count Indicator Badge */}
+                      {(() => {
+                        const count = importMnemonicInput.trim() ? importMnemonicInput.trim().split(/\s+/).length : 0;
+                        const isComplete = count === 12;
+                        return (
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.2 rounded-full border ${
+                            isComplete 
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' 
+                              : 'bg-slate-800 text-slate-400 border-slate-700'
+                          }`}>
+                            {count} / 12 {isComplete ? '✓' : ''}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          if (text) setImportMnemonicInput(text.trim().toLowerCase());
+                        } catch (e) {
+                          console.error('Clipboard read failed:', e);
+                        }
+                      }}
+                      className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Copy className="w-3 h-3" />
+                      <span>{lang === 'ja' ? '貼り付け' : 'Paste'}</span>
+                    </button>
+                  </div>
+
+                  <textarea
+                    value={importMnemonicInput}
+                    onChange={(e) => setImportMnemonicInput(e.target.value.toLowerCase())}
+                    placeholder="word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
+                    rows={3}
+                    className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl p-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none resize-none transition"
+                  />
+
+                  {importError && (
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
+                      ⚠️ {importError}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <button
+                    onClick={() => handleExecuteImportMethod('mnemonic', true)}
+                    disabled={importLoading || !importMnemonicInput.trim()}
+                    className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
+                      importMnemonicInput.trim() && !importLoading
+                        ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 cursor-pointer shadow-amber-500/30'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                    }`}
+                  >
+                    {importLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>{lang === 'ja' ? 'インポート中...' : 'Importing...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4" />
+                        <span>{lang === 'ja' ? '12単語でウォレットを追加' : 'Add Wallet with 12 Words'}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setImportError('');
+                      setImportMethod('select');
+                    }}
+                    className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+                  >
+                    {lang === 'ja' ? '← 方法を選び直す' : '← Change Method'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
