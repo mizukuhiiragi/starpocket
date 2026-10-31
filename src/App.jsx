@@ -510,6 +510,8 @@ const MAIN_TABS = ['wallet', 'swap', 'vault', 'reward'];
 export default function App() {
   const [tgUser, setTgUser] = useState(null);
   const [activeTab, setActiveTab] = useState('wallet'); // 'wallet' | 'swap' | 'vault' | 'reward'
+  const [rewardSubTab, setRewardSubTab] = useState('calendar'); // 'calendar' | 'shop'
+  const [shopCategoryFilter, setShopCategoryFilter] = useState('all'); // 'all' | 'regular' | 'rare' | 'premium' | 'item'
   const [selectedAssetDetail, setSelectedAssetDetail] = useState(null); // 'XLM' | 'USDC' | 'yXLM' | 'yUSDC'
   
   // Active Color Theme (cosmos | cyber | sakura | retro)
@@ -2928,6 +2930,7 @@ export default function App() {
           <button
             onClick={() => {
               setActiveTab('reward');
+              setRewardSubTab(gamification.checkedInToday ? 'shop' : 'calendar');
               if (window.Telegram?.WebApp?.HapticFeedback) {
                 window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
               }
@@ -4141,266 +4144,381 @@ export default function App() {
               </div>
             )}
 
-            {/* ⭐ 1. 31-DAY STAR STREAK CALENDAR */}
-            <div className="bg-gradient-to-b from-[#1b223c] to-[#0d1222] rounded-2xl p-4 border border-amber-400/40 shadow-xl relative overflow-hidden">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                  <h2 className="font-extrabold text-sm text-white">{t('loginCalendarTitle')}</h2>
-                </div>
-                <div className="flex items-center gap-1 bg-amber-400/15 border border-amber-400/40 px-2.5 py-0.5 rounded-full text-[11px] font-black text-amber-300 font-mono shadow-sm shadow-amber-400/15">
-                  <span>🔥 {gamification.streak} {t('streakDaysLabel')}</span>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
-                {t('loginCalendarSubtitle')}
-              </p>
-
-              {/* Check-in CTA Button */}
-              <div className="mb-3.5">
-                {gamification.checkedInToday ? (
-                  <div className="w-full py-2.5 px-3 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-2 shadow-sm">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>{t('checkedInBadge')}</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleCheckin}
-                    disabled={checkinLoading}
-                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-[0.98] transition cursor-pointer"
-                  >
-                    <Star className="w-4 h-4 fill-slate-950" />
-                    <span>{checkinLoading ? '...' : t('checkInBtn')}</span>
-                  </button>
-                )}
-              </div>
-
-              {/* 31-Day Constellation Calendar Grid */}
-              <div className="bg-slate-950/70 rounded-xl p-2.5 border border-slate-800/80 mb-3">
-                <div className="grid grid-cols-7 gap-1.5 text-center">
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
-                    const isChecked = gamification.checkinDays?.includes(day);
-                    const isToday = day === gamification.currentDayOfMonth;
-                    const isMilestone = day === 7 || day === 14 || day === 21 || day === 31;
-                    return (
-                      <div
-                        key={day}
-                        className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-[10px] font-mono transition-all duration-200 ${
-                          isChecked 
-                            ? 'bg-amber-400/20 text-amber-300 border border-amber-400/60 shadow-sm shadow-amber-400/25 font-bold'
-                            : isToday
-                              ? 'bg-cyan-500/20 text-cyan-200 border-2 border-cyan-400 animate-pulse font-extrabold'
-                              : 'bg-slate-900/60 text-slate-500 border border-slate-800/60 hover:border-slate-700'
-                        }`}
-                      >
-                        {isChecked ? (
-                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                        ) : (
-                          <span>{day}</span>
-                        )}
-                        {isMilestone && (
-                          <span className="absolute -top-1 -right-1 text-[8px] leading-none">
-                            {day === 31 ? '🎫' : '⭐'}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* 31-Day Select Ticket Highlight Banner */}
-              <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-cyan-500/15 border border-amber-400/30 flex items-start gap-2.5">
-                <Gift className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
-                <div className="text-[10px] leading-relaxed">
-                  <div className="font-extrabold text-amber-200">{t('ticket31Banner')}</div>
-                  <div className="text-slate-400 mt-0.5">{t('ticket31Desc')}</div>
-                </div>
+            {/* 🌟 REWARD SUB-TAB SWITCHER (カレンダー ⇄ 特典ショップ) */}
+            <div className="flex items-center justify-center pt-0.5">
+              <div className="grid grid-cols-2 p-1 bg-slate-950/80 border border-slate-800 rounded-2xl w-full max-w-sm shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRewardSubTab('calendar');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                      window.Telegram.WebApp.HapticFeedback.selectionChanged();
+                    }
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    rewardSubTab === 'calendar'
+                      ? 'bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-400/20'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{lang === 'ja' ? '📅 ログイン星集め' : '📅 Star Calendar'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRewardSubTab('shop');
+                    if (window.Telegram?.WebApp?.HapticFeedback) {
+                      window.Telegram.WebApp.HapticFeedback.selectionChanged();
+                    }
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    rewardSubTab === 'shop'
+                      ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-black shadow-md shadow-cyan-400/20'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Coins className="w-3.5 h-3.5" />
+                  <span>{lang === 'ja' ? '🛍️ 特典ショップ' : '🛍️ Perks Shop'}</span>
+                </button>
               </div>
             </div>
 
-            {/* ⭐ 2. STAR POINTS PERKS EXCHANGE (特典交換所) */}
-            <div className="bg-gradient-to-b from-[#181c30] to-[#0f1220] rounded-2xl p-4 border border-cyan-500/30 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Coins className="w-4 h-4 text-cyan-400" />
-                  <h3 className="font-extrabold text-xs text-white">{t('perksTitle')}</h3>
-                </div>
-                <span className="text-[11px] font-black text-amber-300 font-mono bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/30">
-                  {gamification.starPoints} SP
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 mb-3">{t('perksSubtitle')}</p>
-
-              {/* 🪐 Special First Deposit Bonus Card */}
-              <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-purple-950/50 via-slate-900/60 to-purple-950/40 border border-purple-500/30 flex items-center justify-between text-xs shadow-md">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-lg shrink-0 shadow-sm">
-                    🪐
-                  </div>
-                  <div>
-                    <div className="font-extrabold text-white text-[11px] flex items-center gap-1.5">
-                      <span>{lang === 'ja' ? '限定VIP【宇宙浮遊ステラ】⭐' : 'VIP Card: Floating Stella ⭐'}</span>
-                      <span className="text-[9px] bg-purple-400/20 text-purple-300 border border-purple-400/40 px-1.5 py-0.2 rounded font-bold">
-                        {lang === 'ja' ? '初回入金特典' : 'Deposit Bonus'}
-                      </span>
+            {/* 📅 SUB-TAB 1: 31-DAY STAR STREAK CALENDAR */}
+            {rewardSubTab === 'calendar' && (
+              <div className="space-y-3.5 animate-in fade-in duration-150">
+                <div className="bg-gradient-to-b from-[#1b223c] to-[#0d1222] rounded-2xl p-4 border border-amber-400/40 shadow-xl relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                      <h2 className="font-extrabold text-sm text-white">{t('loginCalendarTitle')}</h2>
                     </div>
-                    <p className="text-[10px] text-purple-200/80 font-mono mt-0.5">
-                      {isStellaUnlocked 
-                        ? (lang === 'ja' ? '🎉 初回チャージ達成で解放済み！' : '🎉 Unlocked via First Deposit!')
-                        : (lang === 'ja' ? 'ウォレットにXLMをチャージすると無料アンロック！' : 'Fund wallet with XLM to unlock free!')}
-                    </p>
+                    <div className="flex items-center gap-1 bg-amber-400/15 border border-amber-400/40 px-2.5 py-0.5 rounded-full text-[11px] font-black text-amber-300 font-mono shadow-sm shadow-amber-400/15">
+                      <span>🔥 {gamification.streak} {t('streakDaysLabel')}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="shrink-0">
-                  {isStellaUnlocked ? (
-                    currentCardFace === 'stella' ? (
-                      <span className="text-[9px] font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">
-                        {lang === 'ja' ? '適用中' : 'Active'}
-                      </span>
+
+                  <p className="text-[11px] text-slate-300 mb-3 leading-relaxed">
+                    {t('loginCalendarSubtitle')}
+                  </p>
+
+                  {/* Check-in CTA Button */}
+                  <div className="mb-3.5">
+                    {gamification.checkedInToday ? (
+                      <div className="w-full py-2.5 px-3 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-2 shadow-sm">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        <span>{t('checkedInBadge')}</span>
+                      </div>
                     ) : (
                       <button
-                        type="button"
-                        onClick={() => handleSelectCardFace('stella')}
-                        className="text-[9px] font-bold px-2.5 py-1 rounded-lg bg-cyan-400/20 hover:bg-cyan-400/30 text-cyan-300 border border-cyan-400/40 cursor-pointer transition active:scale-95"
+                        onClick={handleCheckin}
+                        disabled={checkinLoading}
+                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 active:scale-[0.98] transition cursor-pointer"
                       >
-                        {lang === 'ja' ? '適用' : 'Equip'}
+                        <Star className="w-4 h-4 fill-slate-950" />
+                        <span>{checkinLoading ? '...' : t('checkInBtn')}</span>
                       </button>
-                    )
-                  ) : (
-                    <span className="text-[9px] font-bold text-amber-300 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-700 flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5 text-amber-400" />
-                      <span>FREE</span>
-                    </span>
-                  )}
-                </div>
-              </div>
+                    )}
+                  </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { 
-                    id: 'streak_shield', 
-                    name: t('perkStreakShield'), 
-                    desc: t('perkStreakShieldDesc'), 
-                    cost: 200, 
-                    icon: '🛡️',
-                    tier: 'item'
-                  },
-                  ...Object.values(CARD_FACES)
-                    .filter(face => face.id !== 'none' && face.id !== 'stella')
-                    .map(face => ({
-                      id: `${face.id}_skin`,
-                      faceId: face.id,
-                      name: lang === 'ja' ? face.name : face.nameEn,
-                      desc: lang === 'ja' ? face.description : face.descriptionEn,
-                      cost: face.cost,
-                      icon: face.icon,
-                      tier: face.tier,
-                      comingSoon: Boolean(face.comingSoon)
-                    }))
-                ].map((item) => {
-                  const unlocked = item.faceId 
-                    ? isCardFaceUnlocked(item.faceId)
-                    : Boolean(gamification.perks?.includes(item.id));
-                  const isCardActive = item.faceId && currentCardFace === item.faceId;
-                  const canAfford = (gamification.starPoints || 0) >= item.cost;
-
-                  return (
-                    <div 
-                      key={item.id} 
-                      className={`p-2.5 rounded-xl bg-slate-950/60 border flex flex-col justify-between transition ${
-                        item.comingSoon 
-                          ? 'border-dashed border-slate-800 opacity-60' 
-                          : 'border-slate-800/80 hover:border-slate-700'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-sm shrink-0">{item.icon}</span>
-                          <span className={`text-[11px] font-extrabold truncate ${item.comingSoon ? 'text-slate-400' : 'text-white'}`}>
-                            {item.name}
-                          </span>
-                        </div>
-                        <p className="text-[9px] text-slate-400 leading-tight mb-2 line-clamp-2">
-                          {item.desc}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
-                        <span className="text-[10px] font-black font-mono text-amber-300">
-                          {item.cost} SP
-                        </span>
-
-                        {item.comingSoon ? (
-                          <span className="text-[9px] font-bold text-slate-400 bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700/60 flex items-center gap-0.5">
-                            <Clock className="w-2.5 h-2.5 text-slate-400" />
-                            {t('perkComingSoon')}
-                          </span>
-                        ) : unlocked ? (
-                          item.faceId ? (
-                            isCardActive ? (
-                              <span className="text-[9px] font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
-                                {lang === 'ja' ? '適用中' : 'Active'}
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleSelectCardFace(item.faceId)}
-                                className="text-[9px] font-bold px-2 py-0.5 rounded bg-cyan-400/20 hover:bg-cyan-400/30 text-cyan-300 border border-cyan-400/40 cursor-pointer transition active:scale-95"
-                              >
-                                {lang === 'ja' ? '適用' : 'Equip'}
-                              </button>
-                            )
-                          ) : (
-                            <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                              {t('redeemedBadge')}
-                            </span>
-                          )
-                        ) : (
-                          <button
-                            onClick={() => handleRedeemPerk(item.id)}
-                            disabled={!canAfford || redeemLoading === item.id}
-                            className={`text-[9px] font-bold px-2 py-0.5 rounded transition ${
-                              canAfford 
-                                ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 active:scale-95 cursor-pointer shadow-sm' 
-                                : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  {/* 31-Day Constellation Calendar Grid */}
+                  <div className="bg-slate-950/70 rounded-xl p-2.5 border border-slate-800/80 mb-3">
+                    <div className="grid grid-cols-7 gap-1.5 text-center">
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                        const isChecked = gamification.checkinDays?.includes(day);
+                        const isToday = day === gamification.currentDayOfMonth;
+                        const isMilestone = day === 7 || day === 14 || day === 21 || day === 31;
+                        return (
+                          <div
+                            key={day}
+                            className={`relative aspect-square rounded-lg flex flex-col items-center justify-center text-[10px] font-mono transition-all duration-200 ${
+                              isChecked 
+                                ? 'bg-amber-400/20 text-amber-300 border border-amber-400/60 shadow-sm shadow-amber-400/25 font-bold'
+                                : isToday
+                                  ? 'bg-cyan-500/20 text-cyan-200 border-2 border-cyan-400 animate-pulse font-extrabold'
+                                  : 'bg-slate-900/60 text-slate-500 border border-slate-800/60 hover:border-slate-700'
                             }`}
                           >
-                            {redeemLoading === item.id ? '...' : canAfford ? t('btnRedeem') : t('insufficientSp')}
-                          </button>
-                        )}
+                            {isChecked ? (
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                            ) : (
+                              <span>{day}</span>
+                            )}
+                            {isMilestone && (
+                              <span className="absolute -top-1 -right-1 text-[8px] leading-none">
+                                {day === 31 ? '🎫' : '⭐'}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 31-Day Select Ticket Highlight Banner */}
+                  <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-purple-500/15 to-cyan-500/15 border border-amber-400/30 flex items-start gap-2.5">
+                    <Gift className="w-4 h-4 text-amber-300 shrink-0 mt-0.5" />
+                    <div className="text-[10px] leading-relaxed">
+                      <div className="font-extrabold text-amber-200">{t('ticket31Banner')}</div>
+                      <div className="text-slate-400 mt-0.5">{t('ticket31Desc')}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* VIRAL SHARE BUTTON */}
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleShareInvite}
+                    className="w-full py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 flex items-center justify-center gap-2 text-xs font-bold text-slate-200 transition cursor-pointer active:scale-[0.99]"
+                  >
+                    <Share2 className="w-4 h-4 text-cyan-400" />
+                    <span>{t('btnInviteFriends')}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 🛍️ SUB-TAB 2: STAR POINTS PERKS EXCHANGE */}
+            {rewardSubTab === 'shop' && (
+              <div className="space-y-3.5 animate-in fade-in duration-150">
+                <div className="bg-gradient-to-b from-[#181c30] to-[#0f1220] rounded-2xl p-4 border border-cyan-500/30 shadow-xl">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Coins className="w-4 h-4 text-cyan-400" />
+                      <h3 className="font-extrabold text-xs text-white">{t('perksTitle')}</h3>
+                    </div>
+                    <span className="text-[11px] font-black text-amber-300 font-mono bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/30">
+                      {gamification.starPoints} SP
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mb-3">{t('perksSubtitle')}</p>
+
+                  {/* 🪐 Special First Deposit Bonus Card */}
+                  <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-purple-950/50 via-slate-900/60 to-purple-950/40 border border-purple-500/30 flex items-center justify-between text-xs shadow-md">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-lg shrink-0 shadow-sm">
+                        🪐
+                      </div>
+                      <div>
+                        <div className="font-extrabold text-white text-[11px] flex items-center gap-1.5">
+                          <span>{lang === 'ja' ? '限定VIP【宇宙浮遊ステラ】⭐' : 'VIP Card: Floating Stella ⭐'}</span>
+                          <span className="text-[9px] bg-purple-400/20 text-purple-300 border border-purple-400/40 px-1.5 py-0.2 rounded font-bold">
+                            {lang === 'ja' ? '初回入金特典' : 'Deposit Bonus'}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-purple-200/80 font-mono mt-0.5">
+                          {isStellaUnlocked 
+                            ? (lang === 'ja' ? '🎉 初回チャージ達成で解放済み！' : '🎉 Unlocked via First Deposit!')
+                            : (lang === 'ja' ? 'ウォレットにXLMをチャージすると無料アンロック！' : 'Fund wallet with XLM to unlock free!')}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="shrink-0 flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowcaseSkin('stella');
+                          setShowcaseModal(true);
+                          if (window.Telegram?.WebApp?.HapticFeedback) {
+                            window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                          }
+                        }}
+                        className="py-1 px-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/40 text-[9px] font-bold text-cyan-300 hover:text-white flex items-center gap-1 cursor-pointer transition shadow-sm"
+                        title={lang === 'ja' ? '券面見本を鑑賞' : 'View Sample'}
+                      >
+                        <Eye className="w-2.5 h-2.5 text-cyan-300" />
+                        <span>{lang === 'ja' ? '見本' : 'View'}</span>
+                      </button>
 
-              {/* 🤝 Community Requests & Partner Collabs Note */}
-              <div className="mt-2.5 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-[10px]">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm">🤝</span>
-                  <span className="text-slate-300 font-medium">
-                    {lang === 'ja' ? '新券面リクエスト ＆ パートナーコラボ受付中！' : 'Card face requests & partner collabs welcome!'}
-                  </span>
+                      {isStellaUnlocked ? (
+                        currentCardFace === 'stella' ? (
+                          <span className="text-[9px] font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">
+                            {lang === 'ja' ? '適用中' : 'Active'}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSelectCardFace('stella')}
+                            className="text-[9px] font-bold px-2.5 py-1 rounded-lg bg-cyan-400/20 hover:bg-cyan-400/30 text-cyan-300 border border-cyan-400/40 cursor-pointer transition active:scale-95"
+                          >
+                            {lang === 'ja' ? '適用' : 'Equip'}
+                          </button>
+                        )
+                      ) : (
+                        <span className="text-[9px] font-bold text-amber-300 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-700 flex items-center gap-1">
+                          <Lock className="w-2.5 h-2.5 text-amber-400" />
+                          <span>FREE</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 🏷️ Tier / Category Filter Bar */}
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1.5 mb-2.5 no-scrollbar text-[10px]">
+                    {[
+                      { id: 'all', label: lang === 'ja' ? 'すべて (全11種)' : 'All' },
+                      { id: 'regular', label: lang === 'ja' ? 'レギュラー (300 SP)' : 'Regular (300)' },
+                      { id: 'rare', label: lang === 'ja' ? 'レア (500 SP)' : 'Rare (500)' },
+                      { id: 'premium', label: lang === 'ja' ? 'プレミアム (800 SP)' : 'Premium (800)' },
+                      { id: 'item', label: lang === 'ja' ? 'アイテム (200 SP)' : 'Items' },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => {
+                          setShopCategoryFilter(f.id);
+                          if (window.Telegram?.WebApp?.HapticFeedback) {
+                            window.Telegram.WebApp.HapticFeedback.selectionChanged();
+                          }
+                        }}
+                        className={`py-1 px-2 rounded-lg font-bold shrink-0 transition cursor-pointer border ${
+                          shopCategoryFilter === f.id
+                            ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-black shadow-sm'
+                            : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 2-Column Perks Grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { 
+                        id: 'streak_shield', 
+                        name: t('perkStreakShield'), 
+                        desc: t('perkStreakShieldDesc'), 
+                        cost: 200, 
+                        icon: '🛡️',
+                        tier: 'item'
+                      },
+                      ...Object.values(CARD_FACES)
+                        .filter(face => face.id !== 'none' && face.id !== 'stella')
+                        .map(face => ({
+                          id: `${face.id}_skin`,
+                          faceId: face.id,
+                          name: lang === 'ja' ? face.name : face.nameEn,
+                          desc: lang === 'ja' ? face.description : face.descriptionEn,
+                          cost: face.cost,
+                          icon: face.icon,
+                          tier: face.tier,
+                          comingSoon: Boolean(face.comingSoon)
+                        }))
+                    ]
+                      .filter(item => shopCategoryFilter === 'all' || item.tier === shopCategoryFilter)
+                      .map((item) => {
+                        const unlocked = item.faceId 
+                          ? isCardFaceUnlocked(item.faceId)
+                          : Boolean(gamification.perks?.includes(item.id));
+                        const isCardActive = item.faceId && currentCardFace === item.faceId;
+                        const canAfford = (gamification.starPoints || 0) >= item.cost;
+
+                        return (
+                          <div 
+                            key={item.id} 
+                            className={`p-2.5 rounded-xl bg-slate-950/60 border flex flex-col justify-between transition ${
+                              item.comingSoon 
+                                ? 'border-dashed border-slate-800 opacity-60' 
+                                : 'border-slate-800/80 hover:border-slate-700'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <span className="text-sm shrink-0">{item.icon}</span>
+                                  <span className={`text-[11px] font-extrabold truncate ${item.comingSoon ? 'text-slate-400' : 'text-white'}`}>
+                                    {item.name}
+                                  </span>
+                                </div>
+                                {item.faceId && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setShowcaseSkin(item.faceId);
+                                      setShowcaseModal(true);
+                                      if (window.Telegram?.WebApp?.HapticFeedback) {
+                                        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                                      }
+                                    }}
+                                    className="p-1 rounded-md bg-purple-500/15 hover:bg-purple-500/30 border border-purple-400/30 text-cyan-300 hover:text-white text-[9px] font-bold flex items-center gap-0.5 cursor-pointer shrink-0 transition"
+                                    title={lang === 'ja' ? '券面見本を鑑賞' : 'View Sample'}
+                                  >
+                                    <Eye className="w-2.5 h-2.5 text-cyan-300" />
+                                    <span>{lang === 'ja' ? '見本' : 'View'}</span>
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-[9px] text-slate-400 leading-tight mb-2 line-clamp-2">
+                                {item.desc}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
+                              <span className="text-[10px] font-black font-mono text-amber-300">
+                                {item.cost} SP
+                              </span>
+
+                              {item.comingSoon ? (
+                                <span className="text-[9px] font-bold text-slate-400 bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700/60 flex items-center gap-0.5">
+                                  <Clock className="w-2.5 h-2.5 text-slate-400" />
+                                  {t('perkComingSoon')}
+                                </span>
+                              ) : unlocked ? (
+                                item.faceId ? (
+                                  isCardActive ? (
+                                    <span className="text-[9px] font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                                      {lang === 'ja' ? '適用中' : 'Active'}
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSelectCardFace(item.faceId)}
+                                      className="text-[9px] font-bold px-2 py-0.5 rounded bg-cyan-400/20 hover:bg-cyan-400/30 text-cyan-300 border border-cyan-400/40 cursor-pointer transition active:scale-95"
+                                    >
+                                      {lang === 'ja' ? '適用' : 'Equip'}
+                                    </button>
+                                  )
+                                ) : (
+                                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                                    {t('redeemedBadge')}
+                                  </span>
+                                )
+                              ) : (
+                                <button
+                                  onClick={() => handleRedeemPerk(item.id)}
+                                  disabled={!canAfford || redeemLoading === item.id}
+                                  className={`text-[9px] font-bold px-2 py-0.5 rounded transition ${
+                                    canAfford 
+                                      ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 active:scale-95 cursor-pointer shadow-sm' 
+                                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                                  }`}
+                                >
+                                  {redeemLoading === item.id ? '...' : canAfford ? t('btnRedeem') : t('insufficientSp')}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  {/* 🤝 Community Requests & Partner Collabs Note */}
+                  <div className="mt-2.5 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-[10px]">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">🤝</span>
+                      <span className="text-slate-300 font-medium">
+                        {lang === 'ja' ? '新券面リクエスト ＆ パートナーコラボ受付中！' : 'Card face requests & partner collabs welcome!'}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-bold text-amber-300 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30">
+                      {lang === 'ja' ? '随時追加' : 'Expanding'}
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[9px] font-bold text-amber-300 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30">
-                  {lang === 'ja' ? '随時追加' : 'Expanding'}
-                </span>
               </div>
-            </div>
-
-            {/* VIRAL SHARE BUTTON */}
-            <div>
-              <button
-                type="button"
-                onClick={handleShareInvite}
-                className="w-full py-3 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 flex items-center justify-center gap-2 text-xs font-bold text-slate-200 transition cursor-pointer active:scale-[0.99]"
-              >
-                <Share2 className="w-4 h-4 text-cyan-400" />
-                <span>{t('btnInviteFriends')}</span>
-              </button>
-            </div>
+            )}
           </div>
         )}
 
@@ -5190,6 +5308,7 @@ export default function App() {
                             if (wantToShop) {
                               setShowSettingsModal(false);
                               setActiveTab('reward');
+                              setRewardSubTab('shop');
                             }
                           }
                           return;
@@ -6916,27 +7035,25 @@ export default function App() {
           <div className="flex items-center justify-between z-10 shrink-0 pt-2" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-lg shadow-sm">
-                {showcaseSkin === 'chibi' ? '🌟' : '🪐'}
+                {CARD_FACES[showcaseSkin]?.icon || (showcaseSkin === 'chibi' ? '🌟' : '🪐')}
               </div>
               <div>
                 <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
                   <span>{
-                    showcaseSkin === 'chibi' 
-                      ? (lang === 'ja' ? 'ちびステラ ＆ お星さま' : 'Chibi Stella & Star') 
-                      : showcaseSkin === 'shooting_star'
-                        ? (lang === 'ja' ? 'サイバー・シューティングスター' : 'Cyber Shooting Star')
-                        : (lang === 'ja' ? '宇宙浮遊ステラ' : 'Techwear Stella')
+                    CARD_FACES[showcaseSkin]
+                      ? (lang === 'ja' ? CARD_FACES[showcaseSkin].name : CARD_FACES[showcaseSkin].nameEn)
+                      : (showcaseSkin === 'chibi' 
+                          ? (lang === 'ja' ? 'ちびステラ ＆ お星さま' : 'Chibi Stella & Star') 
+                          : (lang === 'ja' ? '宇宙浮遊ステラ' : 'Techwear Stella'))
                   }</span>
                   <span className="text-[9px] bg-cyan-400/20 border border-cyan-400/40 text-cyan-300 px-1.5 py-0.2 rounded-full font-bold">
-                    {lang === 'ja' ? 'アート鑑賞' : 'Art Showcase'}
+                    {lang === 'ja' ? '券面見本' : 'Art Showcase'}
                   </span>
                 </h3>
                 <p className="text-[10px] text-slate-400 font-mono">
-                  {showcaseSkin === 'chibi' 
-                    ? 'Chibi Stella Character Art' 
-                    : showcaseSkin === 'shooting_star'
-                      ? 'Cosmic Meteor & Cyber Constellation Art'
-                      : 'Official Techwear Illustration'}
+                  {CARD_FACES[showcaseSkin]?.tier 
+                    ? `${CARD_FACES[showcaseSkin].tier.toUpperCase()} VIP CARD` 
+                    : 'Official VIP Design'}
                 </p>
               </div>
             </div>
@@ -6960,19 +7077,38 @@ export default function App() {
                   : 'bg-gradient-to-br from-purple-600/35 via-cyan-500/25 to-pink-500/20'
             }`} />
 
-            <img
-              src={
-                showcaseSkin === 'chibi' 
-                  ? '/chibi_stella_skin.jpg' 
-                  : showcaseSkin === 'shooting_star'
-                    ? '/cyber_shooting_star_card.jpg'
-                    : '/stella_techwear_skin.jpg'
-              }
-              alt="Character Showcase"
-              className={`max-h-[58vh] max-w-[90vw] object-contain drop-shadow-[0_0_35px_rgba(56,189,248,0.5)] select-none ${
-                showcaseSkin === 'shooting_star' ? 'rounded-2xl border border-cyan-400/40 shadow-2xl' : 'animate-float-stella'
-              }`}
-            />
+            {['stella', 'chibi', 'shooting_star'].includes(showcaseSkin) ? (
+              <img
+                src={
+                  showcaseSkin === 'chibi' 
+                    ? '/chibi_stella_skin.jpg' 
+                    : showcaseSkin === 'shooting_star'
+                      ? '/cyber_shooting_star_card.jpg'
+                      : '/stella_techwear_skin.jpg'
+                }
+                alt="Character Showcase"
+                className={`max-h-[55vh] max-w-[88vw] object-contain drop-shadow-[0_0_35px_rgba(56,189,248,0.5)] select-none ${
+                  showcaseSkin === 'shooting_star' ? 'rounded-2xl border border-cyan-400/40 shadow-2xl' : 'animate-float-stella'
+                }`}
+              />
+            ) : (
+              <div className="w-72 h-44 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border-2 border-amber-400/40 p-4 shadow-2xl flex flex-col justify-between relative overflow-hidden select-none animate-in zoom-in-95">
+                <div className="flex items-center justify-between">
+                  <span className="text-3xl">{CARD_FACES[showcaseSkin]?.icon}</span>
+                  <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                    {CARD_FACES[showcaseSkin]?.tier?.toUpperCase()} VIP
+                  </span>
+                </div>
+                <div className="text-center my-auto">
+                  <div className="text-sm font-black text-white">{lang === 'ja' ? CARD_FACES[showcaseSkin]?.name : CARD_FACES[showcaseSkin]?.nameEn}</div>
+                  <div className="text-[10px] text-slate-300 mt-1 font-mono leading-relaxed">{lang === 'ja' ? CARD_FACES[showcaseSkin]?.description : CARD_FACES[showcaseSkin]?.descriptionEn}</div>
+                </div>
+                <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-t border-slate-800/80 pt-2">
+                  <span className="text-cyan-400 font-bold">StarPocket</span>
+                  <span className="text-amber-300 font-bold">{CARD_FACES[showcaseSkin]?.cost ? `${CARD_FACES[showcaseSkin].cost} SP` : 'SPECIAL'}</span>
+                </div>
+              </div>
+            )}
 
             {/* Character Dialogue Quote */}
             <div className="mt-3 max-w-xs text-center px-4 py-2 rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-2xl backdrop-blur-md">
@@ -6981,7 +7117,11 @@ export default function App() {
                   ? (lang === 'ja' ? '『ちびもいっしょだよー！お星さまたくさん集めてぎゅーってしよ🌟』' : '"Chibi is right here! Let\'s collect shining stars together!🌟"')
                   : showcaseSkin === 'shooting_star'
                     ? (lang === 'ja' ? '『星屑の彼方へ一直線！サイバー空間を疾走するシューティングスター🌠』' : '"Streaking straight across the starlit cyber cosmos!🌠"')
-                    : (lang === 'ja' ? '『相棒、いつもStarPocketを使ってくれてありがとう！宇宙の果てまで一緒に行こうね⭐』' : '"Always by your side, partner! Let\'s venture across the cosmos together!⭐"')
+                  : showcaseSkin === 'stella'
+                    ? (lang === 'ja' ? '『相棒、いつもStarPocketを使ってくれてありがとう！宇宙の果てまで一緒に行こうね⭐』' : '"Always by your side, partner! Let\'s venture across the cosmos together!⭐"')
+                  : (lang === 'ja' 
+                      ? `『${CARD_FACES[showcaseSkin]?.name || '限定VIP'}』の券面デザイン見本だよ！星広場で手に入れよう✨` 
+                      : `Design preview for ${CARD_FACES[showcaseSkin]?.nameEn || 'VIP Card'}! Redeem in Star Shop✨`)
                 }
               </p>
             </div>
@@ -7062,6 +7202,7 @@ export default function App() {
                           );
                           if (wantToShop) {
                             setActiveTab('reward');
+                            setRewardSubTab('shop');
                           }
                         }
                       }}
