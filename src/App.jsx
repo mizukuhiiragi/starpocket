@@ -597,7 +597,9 @@ export default function App() {
   // 📥 Import Mode & Form States (Separated: Secret Key vs 12-Word Mnemonic)
   const [importMethod, setImportMethod] = useState('select'); // 'select' | 'secret' | 'mnemonic'
   const [importSecretInput, setImportSecretInput] = useState('');
-  const [importMnemonicInput, setImportMnemonicInput] = useState('');
+  const [importMnemonicWords, setImportMnemonicWords] = useState(Array(12).fill(''));
+  const mnemonicInputRefs = useRef([]);
+  const inAppMnemonicInputRefs = useRef([]);
   const [showSecretInputEye, setShowSecretInputEye] = useState(false);
   const [importError, setImportError] = useState('');
   const [importLoading, setImportLoading] = useState(false);
@@ -966,6 +968,61 @@ export default function App() {
     }
   };
 
+  const fillMnemonicWords = (text, startIndex = 0, isModal = false) => {
+    if (!text) return;
+    const words = text
+      .toLowerCase()
+      .trim()
+      .replace(/[,.]/g, ' ')
+      .split(/\s+/)
+      .filter(Boolean);
+    
+    setImportMnemonicWords((prev) => {
+      const next = [...prev];
+      words.forEach((w, offset) => {
+        if (startIndex + offset < 12) {
+          next[startIndex + offset] = w.replace(/[^a-z]/g, '');
+        }
+      });
+      return next;
+    });
+
+    const targetRefs = isModal ? inAppMnemonicInputRefs : mnemonicInputRefs;
+    const nextFocus = Math.min(startIndex + words.length, 11);
+    setTimeout(() => {
+      if (targetRefs.current[nextFocus]) {
+        targetRefs.current[nextFocus].focus();
+      }
+    }, 50);
+  };
+
+  const handleMnemonicWordChange = (idx, val, isModal = false) => {
+    if (val.includes(' ') || val.includes('\n') || val.includes('\t') || val.includes(',')) {
+      fillMnemonicWords(val, idx, isModal);
+      return;
+    }
+    const clean = val.toLowerCase().replace(/[^a-z]/g, '');
+    setImportMnemonicWords((prev) => {
+      const next = [...prev];
+      next[idx] = clean;
+      return next;
+    });
+  };
+
+  const handleMnemonicKeyDown = (idx, e, isModal = false) => {
+    const targetRefs = isModal ? inAppMnemonicInputRefs : mnemonicInputRefs;
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      if (idx < 11 && targetRefs.current[idx + 1]) {
+        targetRefs.current[idx + 1].focus();
+      }
+    } else if (e.key === 'Backspace' && !importMnemonicWords[idx] && idx > 0) {
+      if (targetRefs.current[idx - 1]) {
+        targetRefs.current[idx - 1].focus();
+      }
+    }
+  };
+
   const handleExecuteImportMethod = (method, isFromSettings = false) => {
     setImportError('');
     try {
@@ -986,13 +1043,12 @@ export default function App() {
         derivedPub = res.publicKey;
         derivedSec = res.secret;
       } else if (method === 'mnemonic') {
-        const raw = importMnemonicInput.trim().toLowerCase();
-        if (!raw) {
+        const words = importMnemonicWords.map((w) => w.trim().toLowerCase()).filter(Boolean);
+        if (words.length === 0) {
           throw new Error(lang === 'ja' ? '12単語を入力してください' : 'Please enter 12 words');
         }
-        const words = raw.split(/\s+/).filter(Boolean);
-        if (words.length !== 12 && words.length !== 24) {
-          throw new Error(lang === 'ja' ? `単語数が不正です（現在: ${words.length} 単語 / 必要な数: 12 単語）` : `Invalid word count (Current: ${words.length} / Required: 12)`);
+        if (words.length !== 12) {
+          throw new Error(lang === 'ja' ? `単語数が不足しています（現在: ${words.length} / 12 単語）` : `Incomplete words (Current: ${words.length} / 12)`);
         }
         const joined = words.join(' ');
         if (!validateMnemonic(joined)) {
@@ -1019,7 +1075,7 @@ export default function App() {
       setWalletMnemonic(derivedMnemonic || '');
       setHasWallet(true);
       setImportSecretInput('');
-      setImportMnemonicInput('');
+      setImportMnemonicWords(Array(12).fill(''));
       setImportMethod('select');
       setImportError('');
 
@@ -2138,7 +2194,7 @@ export default function App() {
                 onClick={() => {
                   setImportError('');
                   setImportSecretInput('');
-                  setImportMnemonicInput('');
+                  setImportMnemonicWords(Array(12).fill(''));
                   setImportMethod('select');
                   setOnboardingView('import');
                 }}
@@ -2414,112 +2470,151 @@ export default function App() {
               </div>
             )}
 
-            {/* Step 2B: 12-Word Mnemonic Input */}
-            {importMethod === 'mnemonic' && (
-              <div className="space-y-3.5 animate-in fade-in">
-                <div className="text-center space-y-1">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 mx-auto mb-1">
-                    <FileText className="w-5 h-5" />
-                  </div>
-                  <h2 className="text-base font-black text-white">
-                    {lang === 'ja' ? '12単語フレーズを入力' : 'Enter 12-Word Phrase'}
-                  </h2>
-                  <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
-                    {lang === 'ja' 
-                      ? '紙にメモした12個の英単語をスペース区切りで順番に入力してください。' 
-                      : 'Enter your 12 recovery words in order, separated by spaces.'}
-                  </p>
-                </div>
+            {/* Step 2B: 12-Word Mnemonic Input (12 Separate Boxes) */}
+            {importMethod === 'mnemonic' && (() => {
+              const filledCount = importMnemonicWords.filter(w => w.trim().length > 0).length;
+              const isComplete = filledCount === 12;
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-300">
-                        {lang === 'ja' ? '12個の英単語' : '12 English Words'}
-                      </label>
-                      {/* Word Count Indicator Badge */}
-                      {(() => {
-                        const count = importMnemonicInput.trim() ? importMnemonicInput.trim().split(/\s+/).length : 0;
-                        const isComplete = count === 12;
-                        return (
-                          <span className={`text-[10px] font-mono font-bold px-2 py-0.2 rounded-full border ${
-                            isComplete 
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' 
-                              : 'bg-slate-800 text-slate-400 border-slate-700'
-                          }`}>
-                            {count} / 12 {isComplete ? '✓' : ''}
-                          </span>
-                        );
-                      })()}
+              return (
+                <div className="space-y-3 animate-in fade-in">
+                  <div className="text-center space-y-1">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 mx-auto mb-1">
+                      <FileText className="w-5 h-5" />
                     </div>
+                    <h2 className="text-base font-black text-white">
+                      {lang === 'ja' ? '12単語フレーズを入力' : 'Enter 12-Word Phrase'}
+                    </h2>
+                    <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
+                      {lang === 'ja' 
+                        ? '紙にメモした12個の英単語を01から順番に入力してください。（スペースで次の枠へ自動移動）' 
+                        : 'Enter all 12 recovery words in order. Space or Enter moves to next box.'}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold text-slate-300">
+                          {lang === 'ja' ? '12個の単語枠' : '12 Word Boxes'}
+                        </label>
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.2 rounded-full border transition ${
+                          isComplete 
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' 
+                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}>
+                          {filledCount} / 12 {isComplete ? '✓' : ''}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {filledCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImportMnemonicWords(Array(12).fill(''));
+                              setImportError('');
+                            }}
+                            className="text-[10px] text-slate-400 hover:text-slate-200 font-bold cursor-pointer"
+                          >
+                            {lang === 'ja' ? 'クリア' : 'Clear'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const text = await navigator.clipboard.readText();
+                              if (text) fillMnemonicWords(text, 0, false);
+                            } catch (e) {
+                              console.error('Clipboard read failed:', e);
+                            }
+                          }}
+                          className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>{lang === 'ja' ? '一括貼り付け' : 'Paste All'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 12-Box Grid */}
+                    <div className="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 shadow-inner">
+                      {importMnemonicWords.map((word, idx) => (
+                        <div
+                          key={idx}
+                          className={`bg-slate-900/90 border rounded-xl px-2 py-1.5 flex items-center gap-1.5 shadow-sm transition focus-within:border-amber-400 focus-within:ring-1 focus-within:ring-amber-400/40 ${
+                            word ? 'border-amber-400/50 bg-amber-500/5' : 'border-slate-800/80'
+                          }`}
+                        >
+                          <span className={`text-[9px] font-mono font-bold w-3.5 text-right shrink-0 select-none ${
+                            word ? 'text-amber-400' : 'text-slate-500'
+                          }`}>
+                            {String(idx + 1).padStart(2, '0')}
+                          </span>
+                          <input
+                            ref={(el) => (mnemonicInputRefs.current[idx] = el)}
+                            type="text"
+                            value={word}
+                            onChange={(e) => handleMnemonicWordChange(idx, e.target.value, false)}
+                            onKeyDown={(e) => handleMnemonicKeyDown(idx, e, false)}
+                            onPaste={(e) => {
+                              e.preventDefault();
+                              const text = e.clipboardData ? e.clipboardData.getData('text') : '';
+                              fillMnemonicWords(text, idx, false);
+                            }}
+                            placeholder=""
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck="false"
+                            className="w-full bg-transparent text-xs font-mono font-bold text-amber-200 placeholder-slate-700 outline-none p-0 min-w-0"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {importError && (
+                      <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
+                        ⚠️ {importError}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    <button
+                      onClick={() => handleExecuteImportMethod('mnemonic')}
+                      disabled={importLoading || !isComplete}
+                      className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
+                        isComplete && !importLoading
+                          ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 cursor-pointer shadow-amber-500/30'
+                          : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                      }`}
+                    >
+                      {importLoading ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>{lang === 'ja' ? 'ウォレット読込中...' : 'Importing...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4" />
+                          <span>{lang === 'ja' ? '12単語でウォレットを復元' : 'Restore with 12 Words'}</span>
+                        </>
+                      )}
+                    </button>
 
                     <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const text = await navigator.clipboard.readText();
-                          if (text) setImportMnemonicInput(text.trim().toLowerCase());
-                        } catch (e) {
-                          console.error('Clipboard read failed:', e);
-                        }
+                      onClick={() => {
+                        setImportError('');
+                        setImportMethod('select');
                       }}
-                      className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
+                      className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
                     >
-                      <Copy className="w-3 h-3" />
-                      <span>{lang === 'ja' ? '貼り付け' : 'Paste'}</span>
+                      {lang === 'ja' ? '← 方法を選び直す' : '← Change Method'}
                     </button>
                   </div>
-
-                  <textarea
-                    value={importMnemonicInput}
-                    onChange={(e) => setImportMnemonicInput(e.target.value.toLowerCase())}
-                    placeholder="word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
-                    rows={3}
-                    className="w-full bg-slate-950 border border-slate-700/80 focus:border-amber-400 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none resize-none transition"
-                  />
-
-                  {importError && (
-                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
-                      ⚠️ {importError}
-                    </div>
-                  )}
                 </div>
-
-                <div className="space-y-2 pt-1">
-                  <button
-                    onClick={() => handleExecuteImportMethod('mnemonic')}
-                    disabled={importLoading || !importMnemonicInput.trim()}
-                    className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
-                      importMnemonicInput.trim() && !importLoading
-                        ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 cursor-pointer shadow-amber-500/30'
-                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                    }`}
-                  >
-                    {importLoading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>{lang === 'ja' ? 'ウォレット読込中...' : 'Importing...'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-4 h-4" />
-                        <span>{lang === 'ja' ? '12単語でウォレットを復元' : 'Restore with 12 Words'}</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setImportError('');
-                      setImportMethod('select');
-                    }}
-                    className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
-                  >
-                    {lang === 'ja' ? '← 方法を選び直す' : '← Change Method'}
-                  </button>
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         )}
 
@@ -4647,7 +4742,7 @@ export default function App() {
                   onClick={() => {
                     setImportError('');
                     setImportSecretInput('');
-                    setImportMnemonicInput('');
+                    setImportMnemonicWords(Array(12).fill(''));
                     setImportMethod('select');
                     setShowImportModal(true);
                   }}
@@ -4814,7 +4909,7 @@ export default function App() {
                   setShowWalletSwitchModal(false);
                   setImportError('');
                   setImportSecretInput('');
-                  setImportMnemonicInput('');
+                  setImportMnemonicWords(Array(12).fill(''));
                   setImportMethod('select');
                   setShowImportModal(true);
                 }}
@@ -5121,104 +5216,143 @@ export default function App() {
               </div>
             )}
 
-            {/* Step 2B: 12-Word Mnemonic Input */}
-            {importMethod === 'mnemonic' && (
-              <div className="space-y-3 animate-in fade-in">
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  {lang === 'ja'
-                    ? '紙にメモした12個の英単語をスペース区切りで順番に入力してください。'
-                    : 'Enter your 12 recovery words in order, separated by spaces.'}
-                </p>
+            {/* Step 2B: 12-Word Mnemonic Input (12 Separate Boxes) */}
+            {importMethod === 'mnemonic' && (() => {
+              const filledCount = importMnemonicWords.filter(w => w.trim().length > 0).length;
+              const isComplete = filledCount === 12;
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <label className="text-[11px] font-bold text-slate-300">
-                        {lang === 'ja' ? '12個の英単語' : '12 English Words'}
-                      </label>
-                      {/* Word Count Indicator Badge */}
-                      {(() => {
-                        const count = importMnemonicInput.trim() ? importMnemonicInput.trim().split(/\s+/).length : 0;
-                        const isComplete = count === 12;
-                        return (
-                          <span className={`text-[10px] font-mono font-bold px-2 py-0.2 rounded-full border ${
-                            isComplete 
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' 
-                              : 'bg-slate-800 text-slate-400 border-slate-700'
-                          }`}>
-                            {count} / 12 {isComplete ? '✓' : ''}
-                          </span>
-                        );
-                      })()}
+              return (
+                <div className="space-y-3 animate-in fade-in">
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    {lang === 'ja'
+                      ? '紙にメモした12個の英単語を01から順番に入力してください。（スペースで次の枠へ自動移動）'
+                      : 'Enter all 12 recovery words in order. Space or Enter moves to next box.'}
+                  </p>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-[11px] font-bold text-slate-300">
+                          {lang === 'ja' ? '12個の単語枠' : '12 Word Boxes'}
+                        </label>
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.2 rounded-full border transition ${
+                          isComplete 
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' 
+                            : 'bg-slate-800 text-slate-400 border-slate-700'
+                        }`}>
+                          {filledCount} / 12 {isComplete ? '✓' : ''}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {filledCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImportMnemonicWords(Array(12).fill(''));
+                              setImportError('');
+                            }}
+                            className="text-[10px] text-slate-400 hover:text-slate-200 font-bold cursor-pointer"
+                          >
+                            {lang === 'ja' ? 'クリア' : 'Clear'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const text = await navigator.clipboard.readText();
+                              if (text) fillMnemonicWords(text, 0, true);
+                            } catch (e) {
+                              console.error('Clipboard read failed:', e);
+                            }
+                          }}
+                          className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>{lang === 'ja' ? '一括貼り付け' : 'Paste All'}</span>
+                        </button>
+                      </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const text = await navigator.clipboard.readText();
-                          if (text) setImportMnemonicInput(text.trim().toLowerCase());
-                        } catch (e) {
-                          console.error('Clipboard read failed:', e);
-                        }
-                      }}
-                      className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Copy className="w-3 h-3" />
-                      <span>{lang === 'ja' ? '貼り付け' : 'Paste'}</span>
-                    </button>
+                    {/* 12-Box Grid */}
+                    <div className="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 shadow-inner max-h-[220px] overflow-y-auto">
+                      {importMnemonicWords.map((word, idx) => (
+                        <div
+                          key={idx}
+                          className={`bg-slate-900/90 border rounded-xl px-2 py-1.5 flex items-center gap-1.5 shadow-sm transition focus-within:border-amber-400 focus-within:ring-1 focus-within:ring-amber-400/40 ${
+                            word ? 'border-amber-400/50 bg-amber-500/5' : 'border-slate-800/80'
+                          }`}
+                        >
+                          <span className={`text-[9px] font-mono font-bold w-3.5 text-right shrink-0 select-none ${
+                            word ? 'text-amber-400' : 'text-slate-500'
+                          }`}>
+                            {String(idx + 1).padStart(2, '0')}
+                          </span>
+                          <input
+                            ref={(el) => (inAppMnemonicInputRefs.current[idx] = el)}
+                            type="text"
+                            value={word}
+                            onChange={(e) => handleMnemonicWordChange(idx, e.target.value, true)}
+                            onKeyDown={(e) => handleMnemonicKeyDown(idx, e, true)}
+                            onPaste={(e) => {
+                              e.preventDefault();
+                              const text = e.clipboardData ? e.clipboardData.getData('text') : '';
+                              fillMnemonicWords(text, idx, true);
+                            }}
+                            placeholder=""
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                            spellCheck="false"
+                            className="w-full bg-transparent text-xs font-mono font-bold text-amber-200 placeholder-slate-700 outline-none p-0 min-w-0"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {importError && (
+                      <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
+                        ⚠️ {importError}
+                      </div>
+                    )}
                   </div>
 
-                  <textarea
-                    value={importMnemonicInput}
-                    onChange={(e) => setImportMnemonicInput(e.target.value.toLowerCase())}
-                    placeholder="word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12"
-                    rows={3}
-                    className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl p-2.5 text-xs font-mono text-slate-200 placeholder-slate-600 outline-none resize-none transition"
-                  />
+                  <div className="space-y-2 pt-1">
+                    <button
+                      onClick={() => handleExecuteImportMethod('mnemonic', true)}
+                      disabled={importLoading || !isComplete}
+                      className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
+                        isComplete && !importLoading
+                          ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 cursor-pointer shadow-amber-500/30'
+                          : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                      }`}
+                    >
+                      {importLoading ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>{lang === 'ja' ? 'インポート中...' : 'Importing...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4" />
+                          <span>{lang === 'ja' ? '12単語でウォレットを追加' : 'Add Wallet with 12 Words'}</span>
+                        </>
+                      )}
+                    </button>
 
-                  {importError && (
-                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold animate-in fade-in">
-                      ⚠️ {importError}
-                    </div>
-                  )}
+                    <button
+                      onClick={() => {
+                        setImportError('');
+                        setImportMethod('select');
+                      }}
+                      className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+                    >
+                      {lang === 'ja' ? '← 方法を選び直す' : '← Change Method'}
+                    </button>
+                  </div>
                 </div>
-
-                <div className="space-y-2 pt-1">
-                  <button
-                    onClick={() => handleExecuteImportMethod('mnemonic', true)}
-                    disabled={importLoading || !importMnemonicInput.trim()}
-                    className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
-                      importMnemonicInput.trim() && !importLoading
-                        ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 cursor-pointer shadow-amber-500/30'
-                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                    }`}
-                  >
-                    {importLoading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>{lang === 'ja' ? 'インポート中...' : 'Importing...'}</span>
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-4 h-4" />
-                        <span>{lang === 'ja' ? '12単語でウォレットを追加' : 'Add Wallet with 12 Words'}</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setImportError('');
-                      setImportMethod('select');
-                    }}
-                    className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
-                  >
-                    {lang === 'ja' ? '← 方法を選び直す' : '← Change Method'}
-                  </button>
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </div>
       )}
