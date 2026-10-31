@@ -503,16 +503,7 @@ const ASSET_DETAILS = {
 
 export const STELLA_WALLET_ADDRESS = 'GAKDLWCZOEZAEVFDLIQGIB2UUWCUM3KIMPXHQLITEGFLGO6PN7FYVQSG';
 
-export const INITIAL_ADDRESS_BOOK = [
-  {
-    id: 'stella-fund',
-    name: 'ステラ (開発・サーバー支援 ⭐)',
-    address: 'GAKDLWCZOEZAEVFDLIQGIB2UUWCUM3KIMPXHQLITEGFLGO6PN7FYVQSG',
-    memo: 'Server Support! ☕',
-    memoType: 'text',
-    tag: 'dev'
-  }
-];
+export const INITIAL_ADDRESS_BOOK = [];
 
 const MAIN_TABS = ['wallet', 'swap', 'vault', 'reward'];
 
@@ -862,16 +853,19 @@ export default function App() {
     setTimeout(() => setCopiedActivityKey(''), 2000);
   };
 
-  // Address Book (連絡先・アドレス帳) State
+  // Address Book (連絡先・アドレス帳) State - Start with 0 clean contacts
   const [addressBook, setAddressBook] = useState(() => {
     try {
       const saved = localStorage.getItem('starpocket_address_book');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          // Clean out legacy default 'stella-fund' so user starts fresh with 0 contacts
+          return parsed.filter(c => c.id !== 'stella-fund');
+        }
       }
     } catch (e) {}
-    return INITIAL_ADDRESS_BOOK;
+    return [];
   });
   const [showAddressBookModal, setShowAddressBookModal] = useState(false);
   const [showAddContactModal, setShowAddContactModal] = useState(false);
