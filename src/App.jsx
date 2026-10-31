@@ -594,8 +594,9 @@ export default function App() {
   const [newMnemonicWords, setNewMnemonicWords] = useState([]);
   const [mnemonicConfirmed, setMnemonicConfirmed] = useState(false);
 
-  // 📥 Import Mode & Form States (Separated: Secret Key vs 12-Word Mnemonic)
+  // 📥 Import Mode & Form States (Separated: Secret Key vs 12-Word vs 24-Word)
   const [importMethod, setImportMethod] = useState('select'); // 'select' | 'secret' | 'mnemonic'
+  const [mnemonicLength, setMnemonicLength] = useState(12); // 12 | 24
   const [importSecretInput, setImportSecretInput] = useState('');
   const [importMnemonicWords, setImportMnemonicWords] = useState(Array(12).fill(''));
   const mnemonicInputRefs = useRef([]);
@@ -968,37 +969,18 @@ export default function App() {
     }
   };
 
-  const fillMnemonicWords = (text, startIndex = 0, isModal = false) => {
-    if (!text) return;
-    const words = text
-      .toLowerCase()
-      .trim()
-      .replace(/[,.]/g, ' ')
-      .split(/\s+/)
-      .filter(Boolean);
-    
-    setImportMnemonicWords((prev) => {
-      const next = [...prev];
-      words.forEach((w, offset) => {
-        if (startIndex + offset < 12) {
-          next[startIndex + offset] = w.replace(/[^a-z]/g, '');
-        }
-      });
-      return next;
-    });
-
-    const targetRefs = isModal ? inAppMnemonicInputRefs : mnemonicInputRefs;
-    const nextFocus = Math.min(startIndex + words.length, 11);
-    setTimeout(() => {
-      if (targetRefs.current[nextFocus]) {
-        targetRefs.current[nextFocus].focus();
-      }
-    }, 50);
-  };
-
   const handleMnemonicWordChange = (idx, val, isModal = false) => {
+    const targetRefs = isModal ? inAppMnemonicInputRefs : mnemonicInputRefs;
     if (val.includes(' ') || val.includes('\n') || val.includes('\t') || val.includes(',')) {
-      fillMnemonicWords(val, idx, isModal);
+      const clean = val.toLowerCase().replace(/[^a-z]/g, '');
+      setImportMnemonicWords((prev) => {
+        const next = [...prev];
+        next[idx] = clean;
+        return next;
+      });
+      if (idx < mnemonicLength - 1 && targetRefs.current[idx + 1]) {
+        targetRefs.current[idx + 1].focus();
+      }
       return;
     }
     const clean = val.toLowerCase().replace(/[^a-z]/g, '');
@@ -1013,7 +995,7 @@ export default function App() {
     const targetRefs = isModal ? inAppMnemonicInputRefs : mnemonicInputRefs;
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
-      if (idx < 11 && targetRefs.current[idx + 1]) {
+      if (idx < mnemonicLength - 1 && targetRefs.current[idx + 1]) {
         targetRefs.current[idx + 1].focus();
       }
     } else if (e.key === 'Backspace' && !importMnemonicWords[idx] && idx > 0) {
@@ -1045,10 +1027,10 @@ export default function App() {
       } else if (method === 'mnemonic') {
         const words = importMnemonicWords.map((w) => w.trim().toLowerCase()).filter(Boolean);
         if (words.length === 0) {
-          throw new Error(lang === 'ja' ? '12単語を入力してください' : 'Please enter 12 words');
+          throw new Error(lang === 'ja' ? `${mnemonicLength}単語を入力してください` : `Please enter ${mnemonicLength} words`);
         }
-        if (words.length !== 12) {
-          throw new Error(lang === 'ja' ? `単語数が不足しています（現在: ${words.length} / 12 単語）` : `Incomplete words (Current: ${words.length} / 12)`);
+        if (words.length !== mnemonicLength) {
+          throw new Error(lang === 'ja' ? `単語数が不足しています（現在: ${words.length} / ${mnemonicLength} 単語）` : `Incomplete words (Current: ${words.length} / ${mnemonicLength})`);
         }
         const joined = words.join(' ');
         if (!validateMnemonic(joined)) {
@@ -1075,7 +1057,7 @@ export default function App() {
       setWalletMnemonic(derivedMnemonic || '');
       setHasWallet(true);
       setImportSecretInput('');
-      setImportMnemonicWords(Array(12).fill(''));
+      setImportMnemonicWords(Array(mnemonicLength).fill(''));
       setImportMethod('select');
       setImportError('');
 
@@ -2335,6 +2317,8 @@ export default function App() {
                   <button
                     onClick={() => {
                       setImportError('');
+                      setMnemonicLength(12);
+                      setImportMnemonicWords(Array(12).fill(''));
                       setImportMethod('mnemonic');
                     }}
                     className="w-full p-3.5 rounded-2xl bg-slate-900/90 border border-slate-700/80 hover:border-amber-400/60 flex items-center gap-3 text-left transition cursor-pointer active:scale-[0.99] shadow-md group"
@@ -2350,7 +2334,32 @@ export default function App() {
                         <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition" />
                       </div>
                       <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
-                        {lang === 'ja' ? 'BIP-39 / SEP-0005 準拠の12個のリカバリー英単語' : '12-word recovery phrase (BIP-39 / SEP-0005 standard)'}
+                        {lang === 'ja' ? 'LOBSTRなど一般的なウォレット（12個の英単語）' : '12-word recovery phrase (LOBSTR / standard)'}
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setImportError('');
+                      setMnemonicLength(24);
+                      setImportMnemonicWords(Array(24).fill(''));
+                      setImportMethod('mnemonic');
+                    }}
+                    className="w-full p-3.5 rounded-2xl bg-slate-900/90 border border-slate-700/80 hover:border-purple-400/60 flex items-center gap-3 text-left transition cursor-pointer active:scale-[0.99] shadow-md group"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0 group-hover:scale-105 transition">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-white">
+                          {lang === 'ja' ? '🛡️ 24単語フレーズで引越し' : '🛡️ Import with 24 Words'}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-purple-400 transition" />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
+                        {lang === 'ja' ? 'Ledger等のハードウェアウォレット（24個の英単語）' : '24-word recovery phrase (Ledger / Hardware)'}
                       </p>
                     </div>
                   </button>
@@ -2470,24 +2479,30 @@ export default function App() {
               </div>
             )}
 
-            {/* Step 2B: 12-Word Mnemonic Input (12 Separate Boxes) */}
+            {/* Step 2B: Mnemonic Input (12 or 24 Separate Boxes) */}
             {importMethod === 'mnemonic' && (() => {
               const filledCount = importMnemonicWords.filter(w => w.trim().length > 0).length;
-              const isComplete = filledCount === 12;
+              const isComplete = filledCount === mnemonicLength;
 
               return (
                 <div className="space-y-3 animate-in fade-in">
                   <div className="text-center space-y-1">
-                    <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 mx-auto mb-1">
-                      <FileText className="w-5 h-5" />
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mx-auto mb-1 border ${
+                      mnemonicLength === 12
+                        ? 'bg-amber-500/20 border-amber-400/40 text-amber-300'
+                        : 'bg-purple-500/20 border-purple-400/40 text-purple-300'
+                    }`}>
+                      {mnemonicLength === 12 ? <FileText className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
                     </div>
                     <h2 className="text-base font-black text-white">
-                      {lang === 'ja' ? '12単語フレーズを入力' : 'Enter 12-Word Phrase'}
+                      {mnemonicLength === 12 
+                        ? (lang === 'ja' ? '12単語フレーズを入力' : 'Enter 12-Word Phrase')
+                        : (lang === 'ja' ? '24単語フレーズを入力' : 'Enter 24-Word Phrase')}
                     </h2>
                     <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
                       {lang === 'ja' 
-                        ? '紙にメモした12個の英単語を01から順番に入力してください。（スペースで次の枠へ自動移動）' 
-                        : 'Enter all 12 recovery words in order. Space or Enter moves to next box.'}
+                        ? `紙にメモした${mnemonicLength}個の英単語を01から順番に手入力してください。（スペースで次の枠へ自動移動）` 
+                        : `Enter all ${mnemonicLength} recovery words in order. Space moves to next box.`}
                     </p>
                   </div>
 
@@ -2495,14 +2510,14 @@ export default function App() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <label className="text-[11px] font-bold text-slate-300">
-                          {lang === 'ja' ? '12個の単語枠' : '12 Word Boxes'}
+                          {lang === 'ja' ? `${mnemonicLength}個の単語枠` : `${mnemonicLength} Word Boxes`}
                         </label>
                         <span className={`text-[10px] font-mono font-bold px-2 py-0.2 rounded-full border transition ${
                           isComplete 
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' 
                             : 'bg-slate-800 text-slate-400 border-slate-700'
                         }`}>
-                          {filledCount} / 12 {isComplete ? '✓' : ''}
+                          {filledCount} / {mnemonicLength} {isComplete ? '✓' : ''}
                         </span>
                       </div>
 
@@ -2511,7 +2526,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => {
-                              setImportMnemonicWords(Array(12).fill(''));
+                              setImportMnemonicWords(Array(mnemonicLength).fill(''));
                               setImportError('');
                             }}
                             className="text-[10px] text-slate-400 hover:text-slate-200 font-bold cursor-pointer"
@@ -2519,26 +2534,15 @@ export default function App() {
                             {lang === 'ja' ? 'クリア' : 'Clear'}
                           </button>
                         )}
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              const text = await navigator.clipboard.readText();
-                              if (text) fillMnemonicWords(text, 0, false);
-                            } catch (e) {
-                              console.error('Clipboard read failed:', e);
-                            }
-                          }}
-                          className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
-                        >
-                          <Copy className="w-3 h-3" />
-                          <span>{lang === 'ja' ? '一括貼り付け' : 'Paste All'}</span>
-                        </button>
+                        <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-slate-400" />
+                          <span>{lang === 'ja' ? '手入力保護' : 'Manual Entry'}</span>
+                        </span>
                       </div>
                     </div>
 
-                    {/* 12-Box Grid */}
-                    <div className="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 shadow-inner">
+                    {/* Word Boxes Grid */}
+                    <div className="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 shadow-inner max-h-[260px] overflow-y-auto">
                       {importMnemonicWords.map((word, idx) => (
                         <div
                           key={idx}
@@ -2559,8 +2563,10 @@ export default function App() {
                             onKeyDown={(e) => handleMnemonicKeyDown(idx, e, false)}
                             onPaste={(e) => {
                               e.preventDefault();
-                              const text = e.clipboardData ? e.clipboardData.getData('text') : '';
-                              fillMnemonicWords(text, idx, false);
+                              const text = e.clipboardData ? e.clipboardData.getData('text').trim() : '';
+                              if (!text.includes(' ') && !text.includes('\n') && !text.includes(',')) {
+                                handleMnemonicWordChange(idx, text, false);
+                              }
                             }}
                             placeholder=""
                             autoCapitalize="none"
@@ -2596,8 +2602,10 @@ export default function App() {
                         </>
                       ) : (
                         <>
-                          <FileText className="w-4 h-4" />
-                          <span>{lang === 'ja' ? '12単語でウォレットを復元' : 'Restore with 12 Words'}</span>
+                          {mnemonicLength === 12 ? <FileText className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                          <span>
+                            {lang === 'ja' ? `${mnemonicLength}単語でウォレットを復元` : `Restore with ${mnemonicLength} Words`}
+                          </span>
                         </>
                       )}
                     </button>
@@ -5037,7 +5045,9 @@ export default function App() {
                     ? (lang === 'ja' ? '📥 インポート方法を選択' : '📥 Select Import Method')
                     : importMethod === 'secret'
                     ? (lang === 'ja' ? '🔑 秘密鍵を入力' : '🔑 Enter Secret Key')
-                    : (lang === 'ja' ? '📝 12単語フレーズを入力' : '📝 Enter 12-Word Phrase')}
+                    : mnemonicLength === 12
+                    ? (lang === 'ja' ? '📝 12単語フレーズを入力' : '📝 Enter 12 Words')
+                    : (lang === 'ja' ? '🛡️ 24単語フレーズを入力' : '🛡️ Enter 24 Words')}
                 </h3>
               </div>
               <button 
@@ -5088,6 +5098,8 @@ export default function App() {
                   <button
                     onClick={() => {
                       setImportError('');
+                      setMnemonicLength(12);
+                      setImportMnemonicWords(Array(12).fill(''));
                       setImportMethod('mnemonic');
                     }}
                     className="w-full p-3 rounded-2xl bg-slate-900/90 border border-slate-700/80 hover:border-amber-400/60 flex items-center gap-3 text-left transition cursor-pointer active:scale-[0.99] group shadow-sm"
@@ -5103,7 +5115,32 @@ export default function App() {
                         <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-amber-400 transition" />
                       </div>
                       <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
-                        {lang === 'ja' ? 'BIP-39 / SEP-0005 準拠の12個の英単語' : '12-word recovery phrase (SEP-0005)'}
+                        {lang === 'ja' ? 'LOBSTRなど一般的なウォレット（12個の英単語）' : '12-word recovery phrase (LOBSTR / standard)'}
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setImportError('');
+                      setMnemonicLength(24);
+                      setImportMnemonicWords(Array(24).fill(''));
+                      setImportMethod('mnemonic');
+                    }}
+                    className="w-full p-3 rounded-2xl bg-slate-900/90 border border-slate-700/80 hover:border-purple-400/60 flex items-center gap-3 text-left transition cursor-pointer active:scale-[0.99] group shadow-sm"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-purple-300 shrink-0 group-hover:scale-105 transition">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-xs text-white">
+                          {lang === 'ja' ? '🛡️ 24単語フレーズで追加' : '🛡️ 24 Words Phrase'}
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-purple-400 transition" />
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
+                        {lang === 'ja' ? 'Ledger等のハードウェアウォレット（24個の英単語）' : '24-word recovery phrase (Ledger / Hardware)'}
                       </p>
                     </div>
                   </button>
@@ -5216,31 +5253,31 @@ export default function App() {
               </div>
             )}
 
-            {/* Step 2B: 12-Word Mnemonic Input (12 Separate Boxes) */}
+            {/* Step 2B: Mnemonic Input (12 or 24 Separate Boxes) */}
             {importMethod === 'mnemonic' && (() => {
               const filledCount = importMnemonicWords.filter(w => w.trim().length > 0).length;
-              const isComplete = filledCount === 12;
+              const isComplete = filledCount === mnemonicLength;
 
               return (
                 <div className="space-y-3 animate-in fade-in">
                   <p className="text-[11px] text-slate-400 leading-relaxed">
                     {lang === 'ja'
-                      ? '紙にメモした12個の英単語を01から順番に入力してください。（スペースで次の枠へ自動移動）'
-                      : 'Enter all 12 recovery words in order. Space or Enter moves to next box.'}
+                      ? `紙にメモした${mnemonicLength}個の英単語を01から順番に手入力してください。（スペースで次の枠へ自動移動）`
+                      : `Enter all ${mnemonicLength} recovery words in order. Space moves to next box.`}
                   </p>
 
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <label className="text-[11px] font-bold text-slate-300">
-                          {lang === 'ja' ? '12個の単語枠' : '12 Word Boxes'}
+                          {lang === 'ja' ? `${mnemonicLength}個の単語枠` : `${mnemonicLength} Word Boxes`}
                         </label>
                         <span className={`text-[10px] font-mono font-bold px-2 py-0.2 rounded-full border transition ${
                           isComplete 
                             ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' 
                             : 'bg-slate-800 text-slate-400 border-slate-700'
                         }`}>
-                          {filledCount} / 12 {isComplete ? '✓' : ''}
+                          {filledCount} / {mnemonicLength} {isComplete ? '✓' : ''}
                         </span>
                       </div>
 
@@ -5249,7 +5286,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => {
-                              setImportMnemonicWords(Array(12).fill(''));
+                              setImportMnemonicWords(Array(mnemonicLength).fill(''));
                               setImportError('');
                             }}
                             className="text-[10px] text-slate-400 hover:text-slate-200 font-bold cursor-pointer"
@@ -5257,26 +5294,15 @@ export default function App() {
                             {lang === 'ja' ? 'クリア' : 'Clear'}
                           </button>
                         )}
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              const text = await navigator.clipboard.readText();
-                              if (text) fillMnemonicWords(text, 0, true);
-                            } catch (e) {
-                              console.error('Clipboard read failed:', e);
-                            }
-                          }}
-                          className="text-[10px] text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer"
-                        >
-                          <Copy className="w-3 h-3" />
-                          <span>{lang === 'ja' ? '一括貼り付け' : 'Paste All'}</span>
-                        </button>
+                        <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-slate-400" />
+                          <span>{lang === 'ja' ? '手入力保護' : 'Manual Entry'}</span>
+                        </span>
                       </div>
                     </div>
 
-                    {/* 12-Box Grid */}
-                    <div className="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 shadow-inner max-h-[220px] overflow-y-auto">
+                    {/* Word Boxes Grid */}
+                    <div className="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 shadow-inner max-h-[260px] overflow-y-auto">
                       {importMnemonicWords.map((word, idx) => (
                         <div
                           key={idx}
@@ -5297,8 +5323,10 @@ export default function App() {
                             onKeyDown={(e) => handleMnemonicKeyDown(idx, e, true)}
                             onPaste={(e) => {
                               e.preventDefault();
-                              const text = e.clipboardData ? e.clipboardData.getData('text') : '';
-                              fillMnemonicWords(text, idx, true);
+                              const text = e.clipboardData ? e.clipboardData.getData('text').trim() : '';
+                              if (!text.includes(' ') && !text.includes('\n') && !text.includes(',')) {
+                                handleMnemonicWordChange(idx, text, true);
+                              }
                             }}
                             placeholder=""
                             autoCapitalize="none"
@@ -5334,8 +5362,10 @@ export default function App() {
                         </>
                       ) : (
                         <>
-                          <FileText className="w-4 h-4" />
-                          <span>{lang === 'ja' ? '12単語でウォレットを追加' : 'Add Wallet with 12 Words'}</span>
+                          {mnemonicLength === 12 ? <FileText className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                          <span>
+                            {lang === 'ja' ? `${mnemonicLength}単語でウォレットを追加` : `Add Wallet with ${mnemonicLength} Words`}
+                          </span>
                         </>
                       )}
                     </button>
