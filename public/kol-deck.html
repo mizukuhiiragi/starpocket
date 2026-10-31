@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>StarPocket — ステラルーメンを愛する人達へ</title>
+  <title>StarPocket — Stellar Lumens Community Deck</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,33 +77,47 @@
   <div class="relative z-10">
 
     <!-- TOP ACTION BAR -->
-    <div class="no-print flex items-center justify-between pb-6 mb-8 border-b border-slate-800/80 backdrop-blur-sm">
-      <div class="flex items-center gap-2">
+    <div class="no-print flex flex-wrap items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-800/80 backdrop-blur-sm">
+      <div class="flex items-center gap-3">
         <span class="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 flex items-center gap-1.5">
           <span>⭐</span>
-          <span>StarPocket 公式コミュニティキット</span>
+          <span class="lang-ja">StarPocket 公式コミュニティキット</span>
+          <span class="lang-en hidden">StarPocket Official Community Deck</span>
         </span>
+
+        <!-- BILINGUAL LANGUAGE SWITCHER -->
+        <div class="flex items-center bg-slate-900/90 border border-slate-700/80 rounded-xl p-0.5 text-xs font-mono font-bold">
+          <button id="btn-lang-ja" onclick="setLanguage('ja')" class="px-2.5 py-1 rounded-lg transition cursor-pointer">
+            JA
+          </button>
+          <button id="btn-lang-en" onclick="setLanguage('en')" class="px-2.5 py-1 rounded-lg transition cursor-pointer">
+            EN
+          </button>
+        </div>
       </div>
+
       <div class="flex items-center gap-3">
         <button 
           onclick="window.print()" 
           class="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-amber-400/20 active:scale-95 transition cursor-pointer"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-          <span>PDFとして保存 / 印刷</span>
+          <span class="lang-ja">PDFとして保存 / 印刷</span>
+          <span class="lang-en hidden">Save as PDF / Print</span>
         </button>
         <a 
           href="https://starpocket.onrender.com/" 
           target="_blank"
           class="bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 text-xs font-bold px-3 py-2.5 rounded-xl text-slate-300 transition backdrop-blur-md"
         >
-          アプリを体験する ↗
+          <span class="lang-ja">アプリを体験する ↗</span>
+          <span class="lang-en hidden">Launch App ↗</span>
         </a>
       </div>
     </div>
 
     <!-- ===================================================================== -->
-    <!-- SLIDE 1: HERO COVER (ステラルーメン愛 ＆ 着せ替えウォレット) -->
+    <!-- SLIDE 1: HERO COVER -->
     <!-- ===================================================================== -->
     <div class="slide-card bg-[#0e1426]/85 backdrop-blur-xl border border-amber-400/30 rounded-3xl p-6 md:p-10 shadow-2xl relative overflow-hidden mb-8 page-break">
       <div class="absolute -top-24 -right-24 w-72 h-72 bg-amber-400/15 rounded-full blur-3xl pointer-events-none"></div>
@@ -113,36 +127,72 @@
         FOR STELLAR LUMENS (XLM) LOVERS 2026
       </div>
 
-      <h1 class="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4">
+      <!-- TITLE JA -->
+      <h1 class="lang-ja text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4">
         ステラルーメンを愛する人達へ。<br>
         <span class="bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent">新しいウォレット</span>、始めませんか？<br>
         ウォレット × 着せ替えが生む<br>
         <span class="text-amber-400">自分らしいおサイフアプリ爆誕</span>
       </h1>
 
-      <p class="text-slate-300 text-sm md:text-base leading-relaxed mb-8 max-w-2xl">
+      <!-- TITLE EN -->
+      <h1 class="lang-en hidden text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4">
+        To Everyone Who Loves Stellar Lumens.<br>
+        <span class="bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 bg-clip-text text-transparent">A New Era of Wallets</span> Begins.<br>
+        Smart Wallet × Collectible Customization<br>
+        <span class="text-amber-400">Express Your True Style on Stellar</span>
+      </h1>
+
+      <!-- DESCRIPTION JA -->
+      <p class="lang-ja text-slate-300 text-sm md:text-base leading-relaxed mb-8 max-w-2xl">
         無機質で難しい暗号資産ウォレットは、もうおしまい。<br>
         Telegramさえあればアプリインストール不要で1秒起動。<br>
         毎朝の星スタンプでポイントを集め、お気に入りの世界観や限定カード券面に自由にカスタマイズ！<br>
         <strong class="text-white">「使うたびにワクワクして、自分の色が咲く」</strong>、Stellarコミュニティ待望の新世代ノンカストディアルウォレット『StarPocket』です。
       </p>
 
+      <!-- DESCRIPTION EN -->
+      <p class="lang-en hidden text-slate-300 text-sm md:text-base leading-relaxed mb-8 max-w-2xl">
+        Say goodbye to cold, complicated crypto wallets.<br>
+        Launches in 1 second via Telegram Mini App — no native app installation needed.<br>
+        Collect Star Points with daily constellation check-ins to unlock collectible VIP cards and cosmic themes!<br>
+        <strong class="text-white">"Exciting with every tap, uniquely yours."</strong> An onboarding-first, 100% non-custodial wallet dedicated to the Stellar community.
+      </p>
+
       <!-- 3 KEY PILLARS -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-6 border-t border-slate-800/80">
         <div class="bg-slate-900/70 rounded-2xl p-4 border border-slate-800 backdrop-blur-md">
-          <div class="text-2xl mb-1">⚡ 1秒で爆誕</div>
-          <div class="text-xs font-bold text-white mb-1">Telegramで即スタート</div>
-          <div class="text-[11px] text-slate-400">面倒なアプリDLも初期設定もゼロ。リンクをタップした瞬間にお財布完成。</div>
+          <div class="text-2xl mb-1">⚡ 1s</div>
+          <div class="text-xs font-bold text-white mb-1">
+            <span class="lang-ja">1秒で爆誕 (Telegram即起動)</span>
+            <span class="lang-en hidden">Instant Onboarding</span>
+          </div>
+          <div class="text-[11px] text-slate-400">
+            <span class="lang-ja">面倒なアプリDLも初期設定もゼロ。リンクをタップした瞬間にお財布完成。</span>
+            <span class="lang-en hidden">No downloads or clunky setups. Tap the Telegram link and your Stellar wallet is live.</span>
+          </div>
         </div>
         <div class="bg-slate-900/70 rounded-2xl p-4 border border-slate-800 backdrop-blur-md">
-          <div class="text-2xl mb-1">🎨 着せ替え無限大</div>
-          <div class="text-xs font-bold text-white mb-1">4色 × 多彩なカード券面</div>
-          <div class="text-[11px] text-slate-400">世界観やVIPカードを気分でチェンジ。タップで全身アートも鑑賞可能！</div>
+          <div class="text-2xl mb-1">🎨 12+</div>
+          <div class="text-xs font-bold text-white mb-1">
+            <span class="lang-ja">着せ替え無限大 (4色×VIP券面)</span>
+            <span class="lang-en hidden">Collectible Card Customization</span>
+          </div>
+          <div class="text-[11px] text-slate-400">
+            <span class="lang-ja">世界観やVIPカードを気分でチェンジ。タップで全身アートも鑑賞可能！</span>
+            <span class="lang-en hidden">Switch cosmic themes & VIP card faces. Tap to inspect high-res full-body art anytime!</span>
+          </div>
         </div>
         <div class="bg-slate-900/70 rounded-2xl p-4 border border-slate-800 backdrop-blur-md">
-          <div class="text-2xl mb-1">🔑 安心の自己管理</div>
-          <div class="text-xs font-bold text-white mb-1">完全ノンカストディアル</div>
-          <div class="text-[11px] text-slate-400">秘密鍵＆12単語バックアップ対応。LOBSTRなど他ウォレットへの移行も自由。</div>
+          <div class="text-2xl mb-1">🔑 100%</div>
+          <div class="text-xs font-bold text-white mb-1">
+            <span class="lang-ja">安心の自己管理 (ノンカストディアル)</span>
+            <span class="lang-en hidden">Pure Non-Custodial Security</span>
+          </div>
+          <div class="text-[11px] text-slate-400">
+            <span class="lang-ja">秘密鍵＆12単語バックアップ対応。LOBSTRなど他ウォレットへの移行も自由。</span>
+            <span class="lang-en hidden">Full SEP-0005 12-word seed & secret key backup. Seamless import/export with LOBSTR.</span>
+          </div>
         </div>
       </div>
     </div>
@@ -152,9 +202,15 @@
     <!-- ===================================================================== -->
     <div class="slide-card bg-[#0e1426]/85 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 md:p-10 shadow-2xl mb-8 page-break">
       <div class="text-xs font-mono font-bold text-cyan-400 mb-2">ULTIMATE PERSONALIZATION</div>
-      <h2 class="text-2xl md:text-3xl font-black mb-3">あなただけのスタイル！4色展開 × 券面カスタム</h2>
-      <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+      
+      <h2 class="lang-ja text-2xl md:text-3xl font-black mb-3">あなただけのスタイル！4色展開 × 券面カスタム</h2>
+      <h2 class="lang-en hidden text-2xl md:text-3xl font-black mb-3">Your Unique Style! 4 Themes × VIP Card Customization</h2>
+
+      <p class="lang-ja text-xs text-slate-400 mb-6 leading-relaxed">
         毎日使うおサイフだからこそ、愛着を持てるデザインに。カラーテーマとカード券面を自由に組み合わせて、何十通りもの個性的な表情を楽しめます。
+      </p>
+      <p class="lang-en hidden text-xs text-slate-400 mb-6 leading-relaxed">
+        A daily wallet should feel personal. Combine 4 distinct cosmic colorways with collectible VIP card faces for dozens of unique aesthetic combinations.
       </p>
 
       <!-- VISUAL CARD PREVIEW ROW -->
@@ -168,9 +224,15 @@
           <div class="w-full h-28 rounded-xl overflow-hidden mb-2 bg-slate-950/80 border border-purple-500/30 flex items-center justify-center relative">
             <img src="/stella_techwear_skin.jpg" alt="Stella Card" class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
-            <span class="absolute bottom-1.5 left-2 text-[10px] font-black text-purple-200">宇宙浮遊ステラ</span>
+            <span class="absolute bottom-1.5 left-2 text-[10px] font-black text-purple-200">
+              <span class="lang-ja">宇宙浮遊ステラ</span>
+              <span class="lang-en hidden">Cosmic Stella</span>
+            </span>
           </div>
-          <div class="text-[10px] text-purple-300/80">知性派テックウェア仕様</div>
+          <div class="text-[10px] text-purple-300/80">
+            <span class="lang-ja">知性派テックウェア仕様</span>
+            <span class="lang-en hidden">Cyber Techwear Edition</span>
+          </div>
         </div>
 
         <!-- Card 2: Chibi VIP -->
@@ -182,9 +244,15 @@
           <div class="w-full h-28 rounded-xl overflow-hidden mb-2 bg-slate-950/80 border border-cyan-500/30 flex items-center justify-center relative">
             <img src="/chibi_stella_skin.jpg" alt="Chibi Stella Card" class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
-            <span class="absolute bottom-1.5 left-2 text-[10px] font-black text-cyan-200">ちびステラ＆星</span>
+            <span class="absolute bottom-1.5 left-2 text-[10px] font-black text-cyan-200">
+              <span class="lang-ja">ちびステラ＆星</span>
+              <span class="lang-en hidden">Chibi Stella & Star</span>
+            </span>
           </div>
-          <div class="text-[10px] text-cyan-300/80">星を抱っこしたマスコット</div>
+          <div class="text-[10px] text-cyan-300/80">
+            <span class="lang-ja">星を抱っこしたマスコット</span>
+            <span class="lang-en hidden">Mascot Hugging the Star</span>
+          </div>
         </div>
 
         <!-- Card 3: Cyber Shooting Star -->
@@ -196,9 +264,15 @@
           <div class="w-full h-28 rounded-xl overflow-hidden mb-2 bg-slate-950/80 border border-amber-500/30 flex items-center justify-center relative">
             <img src="/cyber_shooting_star_card.jpg" alt="Shooting Star Card" class="w-full h-full object-cover">
             <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
-            <span class="absolute bottom-1.5 left-2 text-[10px] font-black text-amber-200">シューティングスター</span>
+            <span class="absolute bottom-1.5 left-2 text-[10px] font-black text-amber-200">
+              <span class="lang-ja">シューティングスター</span>
+              <span class="lang-en hidden">Shooting Star</span>
+            </span>
           </div>
-          <div class="text-[10px] text-amber-300/80">近未来の流星ネオン</div>
+          <div class="text-[10px] text-amber-300/80">
+            <span class="lang-ja">近未来の流星ネオン</span>
+            <span class="lang-en hidden">Futuristic Neon Meteor</span>
+          </div>
         </div>
       </div>
 
@@ -208,35 +282,62 @@
         <div class="bg-slate-950/70 rounded-2xl p-4 border border-slate-800 backdrop-blur-md">
           <div class="flex items-center gap-2 mb-3">
             <span class="text-base">🎨</span>
-            <h3 class="font-extrabold text-xs text-white">選べる4つのカラーテーマ</h3>
+            <h3 class="font-extrabold text-xs text-white">
+              <span class="lang-ja">選べる4つのカラーテーマ</span>
+              <span class="lang-en hidden">4 Curated Cosmic Themes</span>
+            </h3>
           </div>
           <div class="grid grid-cols-2 gap-2 text-xs">
             <div class="p-2 rounded-xl bg-slate-900/90 border border-amber-400/30 flex items-center gap-2">
               <span>🌌</span>
               <div>
-                <div class="font-bold text-amber-300 text-[10px]">深宇宙ネイビー</div>
-                <div class="text-[9px] text-slate-400">王道コズミック</div>
+                <div class="font-bold text-amber-300 text-[10px]">
+                  <span class="lang-ja">深宇宙ネイビー</span>
+                  <span class="lang-en hidden">Cosmic Navy</span>
+                </div>
+                <div class="text-[9px] text-slate-400">
+                  <span class="lang-ja">王道コズミック</span>
+                  <span class="lang-en hidden">Classic Space</span>
+                </div>
               </div>
             </div>
             <div class="p-2 rounded-xl bg-slate-900/90 border border-cyan-400/30 flex items-center gap-2">
               <span>⚡</span>
               <div>
-                <div class="font-bold text-cyan-300 text-[10px]">サイバー天文台</div>
-                <div class="text-[9px] text-slate-400">ネオングリッド</div>
+                <div class="font-bold text-cyan-300 text-[10px]">
+                  <span class="lang-ja">サイバー天文台</span>
+                  <span class="lang-en hidden">Cyber Obser.</span>
+                </div>
+                <div class="text-[9px] text-slate-400">
+                  <span class="lang-ja">ネオングリッド</span>
+                  <span class="lang-en hidden">Neon Grid</span>
+                </div>
               </div>
             </div>
             <div class="p-2 rounded-xl bg-slate-900/90 border border-pink-400/30 flex items-center gap-2">
               <span>🌸</span>
               <div>
-                <div class="font-bold text-pink-300 text-[10px]">桜ネビュラ</div>
-                <div class="text-[9px] text-slate-400">パステルピンク</div>
+                <div class="font-bold text-pink-300 text-[10px]">
+                  <span class="lang-ja">桜ネビュラ</span>
+                  <span class="lang-en hidden">Sakura Nebula</span>
+                </div>
+                <div class="text-[9px] text-slate-400">
+                  <span class="lang-ja">パステルピンク</span>
+                  <span class="lang-en hidden">Pastel Pink</span>
+                </div>
               </div>
             </div>
             <div class="p-2 rounded-xl bg-slate-900/90 border border-emerald-400/30 flex items-center gap-2">
               <span>👾</span>
               <div>
-                <div class="font-bold text-emerald-300 text-[10px]">8-Bit レトロ</div>
-                <div class="text-[9px] text-slate-400">ドット絵グリーン</div>
+                <div class="font-bold text-emerald-300 text-[10px]">
+                  <span class="lang-ja">8-Bit レトロ</span>
+                  <span class="lang-en hidden">8-Bit Retro</span>
+                </div>
+                <div class="text-[9px] text-slate-400">
+                  <span class="lang-ja">ドット絵グリーン</span>
+                  <span class="lang-en hidden">Pixel Green</span>
+                </div>
               </div>
             </div>
           </div>
@@ -244,16 +345,28 @@
 
         <!-- Tap to Showcase -->
         <div class="bg-slate-950/70 rounded-2xl p-4 border border-slate-800 backdrop-blur-md flex flex-col justify-between">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-base">✨</span>
-            <h3 class="font-extrabold text-xs text-white">タップで美麗フルボディ鑑賞！</h3>
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-base">✨</span>
+              <h3 class="font-extrabold text-xs text-white">
+                <span class="lang-ja">タップで美麗フルボディ鑑賞！</span>
+                <span class="lang-en hidden">Tap to View High-Res Full-Body Art!</span>
+              </h3>
+            </div>
+            <p class="text-[11px] text-slate-300 leading-relaxed mb-3">
+              <span class="lang-ja">残高カードをタップすると、高解像度の全身イラストがポップアップで出現。普段は文字が見やすいクリーン仕様、見たいときはじっくり愛でられる最高峰のUI設計です。</span>
+              <span class="lang-en hidden">Tap your balance card anytime to pop up high-resolution full-body artwork. Clean & uncluttered during payments, delightfully detailed whenever you want to admire it.</span>
+            </p>
           </div>
-          <p class="text-[11px] text-slate-300 leading-relaxed mb-3">
-            残高カードをタップすると、高解像度の全身イラストがポップアップで出現。普段は文字が見やすいクリーン仕様、見たいときはじっくり愛でられる最高峰のUI設計です。
-          </p>
           <div class="p-2 rounded-xl bg-purple-500/10 border border-purple-400/30 text-[10px] text-purple-200 flex items-center justify-between">
-            <span>🔍 カード全体をタップ</span>
-            <span class="font-mono text-purple-300">➔ フルボディ鑑賞</span>
+            <span>
+              <span class="lang-ja">🔍 カード全体をタップ</span>
+              <span class="lang-en hidden">🔍 Tap Entire Balance Card</span>
+            </span>
+            <span class="font-mono text-purple-300">
+              <span class="lang-ja">➔ フルボディ鑑賞</span>
+              <span class="lang-en hidden">➔ High-Res Modal</span>
+            </span>
           </div>
         </div>
       </div>
@@ -264,62 +377,92 @@
     <!-- ===================================================================== -->
     <div class="slide-card bg-[#0e1426]/85 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 md:p-10 shadow-2xl mb-8 page-break">
       <div class="text-xs font-mono font-bold text-amber-400 mb-2">DAILY DELIGHT & UTILITY</div>
-      <h2 class="text-2xl md:text-3xl font-black mb-6">毎日開きたくなる「愛着＆便利機能」</h2>
+      
+      <h2 class="lang-ja text-2xl md:text-3xl font-black mb-6">毎日開きたくなる「愛着＆便利機能」</h2>
+      <h2 class="lang-en hidden text-2xl md:text-3xl font-black mb-6">Built for Daily Delight: Core Features Stellar Lovers Value</h2>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <!-- Feature 1 -->
+        <!-- Feature 1: Calendar -->
         <div class="bg-slate-950/70 rounded-2xl p-5 border border-slate-800/90 relative overflow-hidden backdrop-blur-md">
           <div class="flex items-center gap-3 mb-2">
             <div class="w-9 h-9 rounded-xl bg-purple-400/15 border border-purple-400/30 flex items-center justify-center text-purple-400 text-lg font-bold">📅</div>
             <div>
-              <h3 class="font-extrabold text-sm text-white">31日星座ログインカレンダー</h3>
-              <span class="text-[10px] text-purple-300 font-mono">星スタンプを集めて限定スキンと交換</span>
+              <h3 class="font-extrabold text-sm text-white">
+                <span class="lang-ja">31日星座ログインカレンダー</span>
+                <span class="lang-en hidden">31-Day Constellation Calendar</span>
+              </h3>
+              <span class="text-[10px] text-purple-300 font-mono">
+                <span class="lang-ja">星スタンプを集めて限定スキンと交換</span>
+                <span class="lang-en hidden">Earn Star Points (SP) to unlock cards</span>
+              </span>
             </div>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            毎朝チェックインして星スタンプを集めるだけ！ラジオ体操のスタンプカード感覚で楽しく続けられ、貯まった星ポイント（SP）で新しいVIP券面やアイテムをアンロックできます。
+            <span class="lang-ja">毎朝チェックインして星スタンプを集めるだけ！ラジオ体操のスタンプカード感覚で楽しく続けられ、貯まった星ポイント（SP）で新しいVIP券面やアイテムをアンロックできます。</span>
+            <span class="lang-en hidden">Check in every morning to collect celestial stamps! Inspired by classic Japanese habit-forming stamp cards, users accumulate Star Points (SP) to unlock VIP card faces, themes, and community perks.</span>
           </p>
         </div>
 
-        <!-- Feature 2 -->
+        <!-- Feature 2: Camera QR -->
         <div class="bg-slate-950/70 rounded-2xl p-5 border border-slate-800/90 relative overflow-hidden backdrop-blur-md">
           <div class="flex items-center gap-3 mb-2">
             <div class="w-9 h-9 rounded-xl bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center text-emerald-400 text-lg font-bold">📷</div>
             <div>
-              <h3 class="font-extrabold text-sm text-white">カメラQRコード送受金</h3>
-              <span class="text-[10px] text-emerald-300 font-mono">Stellarの爆速・激安送金を極限まで手軽に</span>
+              <h3 class="font-extrabold text-sm text-white">
+                <span class="lang-ja">カメラQRコード送受金</span>
+                <span class="lang-en hidden">Instant Camera QR Transfers</span>
+              </h3>
+              <span class="text-[10px] text-emerald-300 font-mono">
+                <span class="lang-ja">Stellarの爆速・激安送金を極限まで手軽に</span>
+                <span class="lang-en hidden">Stellar's sub-second speed & near-zero fees</span>
+              </span>
             </div>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            カメラ起動で相手のQRコードを一瞬で読み取り送金。ガス代はわずか約0.00001 XLM（ほぼ0円）、着金までたった数秒。日常のちょっとした支払いや割り勘にも最適です。
+            <span class="lang-ja">カメラ起動で相手のQRコードを一瞬で読み取り送金。ガス代はわずか約0.00001 XLM（ほぼ0円）、着金までたった数秒。日常のちょっとした支払いや割り勘にも最適です。</span>
+            <span class="lang-en hidden">Instantly scan recipient QR codes with your phone camera. Powered by Stellar's sub-second consensus and ~0.00001 XLM transaction fee, perfect for micro-payments and bill-splitting.</span>
           </p>
         </div>
 
-        <!-- Feature 3 -->
+        <!-- Feature 3: Swap & Vault -->
         <div class="bg-slate-950/70 rounded-2xl p-5 border border-slate-800/90 relative overflow-hidden backdrop-blur-md">
           <div class="flex items-center gap-3 mb-2">
             <div class="w-9 h-9 rounded-xl bg-cyan-400/15 border border-cyan-400/30 flex items-center justify-center text-cyan-400 text-lg font-bold">🔄</div>
             <div>
-              <h3 class="font-extrabold text-sm text-white">DEXスワップ ＆ 星の金庫</h3>
-              <span class="text-[10px] text-cyan-300 font-mono">ログインポイント（SP）で機能解放・Stellar直接連携</span>
+              <h3 class="font-extrabold text-sm text-white">
+                <span class="lang-ja">DEXスワップ ＆ 星の金庫</span>
+                <span class="lang-en hidden">DEX Swap & Stellar Vault</span>
+              </h3>
+              <span class="text-[10px] text-cyan-300 font-mono">
+                <span class="lang-ja">ログインポイント（SP）で機能解放・Stellar直接連携</span>
+                <span class="lang-en hidden">Progressive SP Unlock · Direct Stellar Integration</span>
+              </span>
             </div>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            毎日のログインで貯めた星ポイント（SP）で上級機能をアンロック！XLMやUSDCの無料スワップに対応し、さらにUltraStellarプロトコルと連携した「星の金庫」で、保有資産を安全に自動運用（年利5.0% APY・いつでも引き出し自由）することも可能です。
+            <span class="lang-ja">毎日のログインで貯めた星ポイント（SP）で上級機能をアンロック！XLMやUSDCの無料スワップに対応し、さらにUltraStellarプロトコルと連携した「星の金庫」で、保有資産を安全に自動運用（年利5.0% APY・いつでも引き出し自由）することも可能です。</span>
+            <span class="lang-en hidden">Unlock advanced DeFi tools through daily check-in habit! Experience 0% protocol fee DEX path-finding swaps between XLM and USDC, plus access to the UltraStellar yield vault (up to 5.0% APY with instant withdrawal).</span>
           </p>
         </div>
 
-        <!-- Feature 4 -->
+        <!-- Feature 4: Address Book & VIP Unlock -->
         <div class="bg-slate-950/70 rounded-2xl p-5 border border-slate-800/90 relative overflow-hidden backdrop-blur-md">
           <div class="flex items-center gap-3 mb-2">
             <div class="w-9 h-9 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center text-amber-400 text-lg font-bold">⭐</div>
             <div>
-              <h3 class="font-extrabold text-sm text-white">スマートアドレス帳＆初回入金VIP解放</h3>
-              <span class="text-[10px] text-amber-300 font-mono">初めての入金で限定ステラVIP券面アンロック</span>
+              <h3 class="font-extrabold text-sm text-white">
+                <span class="lang-ja">スマートアドレス帳＆初回入金VIP解放</span>
+                <span class="lang-en hidden">Smart Address Book & VIP Unlock</span>
+              </h3>
+              <span class="text-[10px] text-amber-300 font-mono">
+                <span class="lang-ja">初めての入金で限定ステラVIP券面アンロック</span>
+                <span class="lang-en hidden">First XLM deposit unlocks rare Stella VIP card</span>
+              </span>
             </div>
           </div>
           <p class="text-xs text-slate-400 leading-relaxed">
-            よく使うアドレスをワンタップ登録。自分のお財布に初めてXLMを入金（チャージ）した瞬間、限定VIP券面【宇宙浮遊ステラ】が自動アンロックされる嬉しいウェルカム仕様です。
+            <span class="lang-ja">よく使うアドレスをワンタップ登録。自分のお財布に初めてXLMを入金（チャージ）した瞬間、限定VIP券面【宇宙浮遊ステラ】が自動アンロックされる嬉しいウェルカム仕様です。</span>
+            <span class="lang-en hidden">Save frequent contacts with one tap. As soon as you fund your wallet with your first XLM deposit, the rare [Cosmic Floating Stella] VIP card face is automatically unlocked as a celebratory welcome perk.</span>
           </p>
         </div>
       </div>
@@ -330,15 +473,21 @@
     <!-- ===================================================================== -->
     <div class="slide-card bg-[#0e1426]/85 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 md:p-10 shadow-2xl mb-8 page-break">
       <div class="text-xs font-mono font-bold text-cyan-400 mb-2">SELF-CUSTODY & FREEDOM</div>
-      <h2 class="text-2xl md:text-3xl font-black mb-6">自分の資産は自分で守る「完全な自由」</h2>
+      
+      <h2 class="lang-ja text-2xl md:text-3xl font-black mb-6">自分の資産は自分で守る「完全な自由」</h2>
+      <h2 class="lang-en hidden text-2xl md:text-3xl font-black mb-6">Absolute Freedom: True Non-Custodial Ownership</h2>
 
       <div class="space-y-4">
         <div class="flex items-start gap-4 p-4 rounded-2xl bg-slate-900/70 border border-slate-800 backdrop-blur-md">
           <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">✓</div>
           <div>
-            <h4 class="font-bold text-sm text-white mb-1">1. 完全ノンカストディアル（秘密鍵はあなたの手元だけ）</h4>
+            <h4 class="font-bold text-sm text-white mb-1">
+              <span class="lang-ja">1. 完全ノンカストディアル（秘密鍵はあなたの手元だけ）</span>
+              <span class="lang-en hidden">1. 100% Non-Custodial (Your Keys, Your Coins)</span>
+            </h4>
             <p class="text-xs text-slate-400 leading-relaxed">
-              StarPocketはサーバーに秘密鍵を一切預かりません。暗号化された秘密鍵はお使いの端末（ブラウザ）内でのみ安全に生成・保管されます。運営会社による資金凍結やハッキングのリスクはありません。
+              <span class="lang-ja">StarPocketはサーバーに秘密鍵を一切預かりません。暗号化された秘密鍵はお使いの端末（ブラウザ）内でのみ安全に生成・保管されます。運営会社による資金凍結やハッキングのリスクはありません。</span>
+              <span class="lang-en hidden">StarPocket never touches your private keys. Cryptographic keys are generated and stored strictly inside your local browser sandbox with Ed25519 signing. Zero server-side custody, zero risk of central fund freezing.</span>
             </p>
           </div>
         </div>
@@ -346,13 +495,21 @@
         <div class="flex items-start gap-4 p-4 rounded-2xl bg-slate-900/70 border border-slate-800 backdrop-blur-md">
           <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">✓</div>
           <div>
-            <h4 class="font-bold text-sm text-white mb-1">2. 秘密鍵（S...）＆ 12単語シードフレーズ両対応</h4>
+            <h4 class="font-bold text-sm text-white mb-1">
+              <span class="lang-ja">2. 秘密鍵（S...）＆ 12単語シードフレーズ両対応</span>
+              <span class="lang-en hidden">2. Dual Backup: Secret Key (S...) & 12-Word Seed Phrase</span>
+            </h4>
             <p class="text-xs text-slate-400 leading-relaxed mb-2">
-              設定画面からいつでも秘密鍵（Sから始まる56文字）や12個の英単語シードフレーズを表示・確認して手帳にメモできます。
+              <span class="lang-ja">設定画面からいつでも秘密鍵（Sから始まる56文字）や12個の英単語シードフレーズを表示・確認して手帳にメモできます。</span>
+              <span class="lang-en hidden">View and backup your standard 12-word SEP-0005 mnemonic phrase or 56-character raw secret key anytime directly in your security settings.</span>
             </p>
             <div class="p-3 rounded-xl bg-slate-950 border border-slate-800/80 text-[11px] text-slate-300 leading-relaxed">
-              <strong class="text-amber-300">🔑 いつでも他社ウォレットへ引越し・復元可能：</strong><br>
-              LOBSTRやFreighterなど、世界中のStellarウォレットへそのまま残高を丸ごと移行・復元できます。一つのアプリに囲い込まれる心配はありません。
+              <strong class="text-amber-300">
+                <span class="lang-ja">🔑 いつでも他社ウォレットへ引越し・復元可能：</span>
+                <span class="lang-en hidden">🔑 Interoperable with LOBSTR & Freighter:</span>
+              </strong><br>
+              <span class="lang-ja">LOBSTRやFreighterなど、世界中のStellarウォレットへそのまま残高を丸ごと移行・復元できます。一つのアプリに囲い込まれる心配はありません。</span>
+              <span class="lang-en hidden">Export your seed phrase or secret key into LOBSTR, Freighter, or any standard Stellar wallet instantly. No vendor lock-in.</span>
             </div>
           </div>
         </div>
@@ -360,9 +517,13 @@
         <div class="flex items-start gap-4 p-4 rounded-2xl bg-slate-900/70 border border-slate-800 backdrop-blur-md">
           <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">✓</div>
           <div>
-            <h4 class="font-bold text-sm text-white mb-1">3. オープンソース＆コミュニティ主導の公共財</h4>
+            <h4 class="font-bold text-sm text-white mb-1">
+              <span class="lang-ja">3. オープンソース＆コミュニティ主導の公共財</span>
+              <span class="lang-en hidden">3. Open Source & Community-Driven Public Good</span>
+            </h4>
             <p class="text-xs text-slate-400 leading-relaxed">
-              StarPocketはStellarコミュニティファンド（SCF）の支援を目指すオープンソースプロジェクトです。ユーザーから不透明な中抜き手数料を徴収することは一切なく、純粋にStellarの利便性と楽しさを広げるために開発されています。
+              <span class="lang-ja">StarPocketはStellarコミュニティファンド（SCF）の支援を目指すオープンソースプロジェクトです。ユーザーから不透明な中抜き手数料を徴収することは一切なく、純粋にStellarの利便性と楽しさを広げるために開発されています。</span>
+              <span class="lang-en hidden">StarPocket is designed as an open-source public good candidate for the Stellar Community Fund (SCF). 0% swap fees, zero predatory ads, and built with love to accelerate mainstream Stellar adoption.</span>
             </p>
           </div>
         </div>
@@ -374,17 +535,26 @@
     <!-- ===================================================================== -->
     <div class="slide-card bg-[#0e1426]/85 backdrop-blur-xl border border-amber-400/30 rounded-3xl p-6 md:p-10 shadow-2xl mb-8 page-break">
       <div class="text-xs font-mono font-bold text-amber-400 mb-2">COMMUNITY SHARE KIT</div>
-      <h2 class="text-2xl md:text-3xl font-black mb-3">コミュニティへのシェア用テンプレート</h2>
-      <p class="text-xs text-slate-400 mb-6">X（Twitter）、Telegram、Discord等でそのままお使いいただけます。</p>
+      
+      <h2 class="lang-ja text-2xl md:text-3xl font-black mb-3">コミュニティへのシェア用テンプレート</h2>
+      <h2 class="lang-en hidden text-2xl md:text-3xl font-black mb-3">Ready-to-Use Community Share Templates</h2>
+
+      <p class="lang-ja text-xs text-slate-400 mb-6">X（Twitter）、Telegram、Discord等でそのままお使いいただけます。</p>
+      <p class="lang-en hidden text-xs text-slate-400 mb-6">Copy & paste ready templates for X (Twitter), Telegram, and Discord to share with fellow Stellar builders and enthusiasts.</p>
 
       <div class="space-y-4">
         <!-- Template A -->
         <div class="bg-slate-950/80 rounded-2xl p-5 border border-slate-800 backdrop-blur-md">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-amber-300">【X (Twitter) 向け：ステラ好き・着せ替え訴求】</span>
-            <span class="text-[10px] font-mono text-slate-500">推奨：X (Twitter)</span>
+            <span class="text-xs font-bold text-amber-300">
+              <span class="lang-ja">【X (Twitter) 向け：ステラ好き・着せ替え訴求】</span>
+              <span class="lang-en hidden">[For X / Twitter: Stellar Lovers & Customization]</span>
+            </span>
+            <span class="text-[10px] font-mono text-slate-500">X (Twitter)</span>
           </div>
-          <div class="bg-slate-900 p-3.5 rounded-xl text-xs text-slate-300 font-mono leading-relaxed select-all border border-slate-800">
+
+          <!-- Template A Text JA -->
+          <div class="lang-ja bg-slate-900 p-3.5 rounded-xl text-xs text-slate-300 font-mono leading-relaxed select-all border border-slate-800">
 ステラルーメン（XLM）を愛する人達へ🚀<br><br>
 ウォレット×着せ替えが生む、自分らしいおサイフアプリ『StarPocket』が爆誕！<br><br>
 Telegramで開くだけで1秒スタート。無機質なウォレットはもう終わり。<br>
@@ -395,15 +565,33 @@ Telegramで開くだけで1秒スタート。無機質なウォレットはも�
 Stellarの星空を手元で感じられる最高のウォレットです👇<br>
 [あなたの専用紹介URL]
           </div>
+
+          <!-- Template A Text EN -->
+          <div class="lang-en hidden bg-slate-900 p-3.5 rounded-xl text-xs text-slate-300 font-mono leading-relaxed select-all border border-slate-800">
+To all Stellar Lumens (XLM) lovers 🚀<br><br>
+Smart Wallet × Collectible Card Customization: StarPocket is live!<br><br>
+1-second launch on Telegram Mini App — no native downloads needed:<br>
+✅ 4 Cosmic Themes × VIP Card Face Customization<br>
+✅ Daily Constellation Check-in Calendar with Star Points<br>
+✅ Fast Camera QR Transfers (~$0.000001 fee)<br>
+✅ 100% Non-Custodial with SEP-0005 12-word seed backup<br><br>
+Bring the Stellar galaxy right into your pocket 👇<br>
+[Your Referral Link]
+          </div>
         </div>
 
         <!-- Template B -->
         <div class="bg-slate-950/80 rounded-2xl p-5 border border-slate-800 backdrop-blur-md">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-bold text-cyan-300">【Telegram / Discord 向け：ギーク・クリプト層】</span>
-            <span class="text-[10px] font-mono text-slate-500">推奨：Telegram / Discord</span>
+            <span class="text-xs font-bold text-cyan-300">
+              <span class="lang-ja">【Telegram / Discord 向け：ギーク・クリプト層】</span>
+              <span class="lang-en hidden">[For Telegram / Discord: Web3 & Developers]</span>
+            </span>
+            <span class="text-[10px] font-mono text-slate-500">Telegram / Discord</span>
           </div>
-          <div class="bg-slate-900 p-3.5 rounded-xl text-xs text-slate-300 font-mono leading-relaxed select-all border border-slate-800">
+
+          <!-- Template B Text JA -->
+          <div class="lang-ja bg-slate-900 p-3.5 rounded-xl text-xs text-slate-300 font-mono leading-relaxed select-all border border-slate-800">
 Stellar基盤のTelegramミニアプリ『StarPocket』を触ってみたけどUIの作り込みがすごい。<br><br>
 ・アプリDL不要、Ed25519クライアント署名で完全ノンカストディアル<br>
 ・4大テーマ（深宇宙・サイバー・桜・8Bitレトロ）× VIP券面カスタマイズ<br>
@@ -411,6 +599,18 @@ Stellar基盤のTelegramミニアプリ『StarPocket』を触ってみたけどU
 ・LOBSTRやFreighterと相互互換（秘密鍵・シードフレーズで即復元）<br><br>
 Stellar民は一度触ってみて損なし👇<br>
 [あなたの専用紹介URL]
+          </div>
+
+          <!-- Template B Text EN -->
+          <div class="lang-en hidden bg-slate-900 p-3.5 rounded-xl text-xs text-slate-300 font-mono leading-relaxed select-all border border-slate-800">
+Just tested StarPocket, an onboarding-first Telegram Mini App wallet built on Stellar!<br><br>
+• Instant onboarding, 100% non-custodial Ed25519 client-side signing<br>
+• 4 Themes (Deep Cosmic, Cyber, Sakura, 8-Bit) × VIP Card Faces<br>
+• Full-body high-res character art inspection on card tap<br>
+• Interoperable with LOBSTR & Freighter (SEP-0005 seed import/export)<br>
+• Zero swap fees & community-driven public good<br><br>
+Stellar community members should give it a spin 👇<br>
+[Your Referral Link]
           </div>
         </div>
       </div>
@@ -421,9 +621,15 @@ Stellar民は一度触ってみて損なし👇<br>
     <!-- ===================================================================== -->
     <div class="slide-card bg-[#0e1426]/85 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 md:p-10 shadow-2xl text-center">
       <div class="inline-block text-2xl mb-3">🌌</div>
-      <h2 class="text-2xl md:text-3xl font-black mb-3">Stellarの星空を、すべての人のポケットへ。</h2>
-      <p class="text-xs text-slate-400 max-w-xl mx-auto leading-relaxed mb-6">
+
+      <h2 class="lang-ja text-2xl md:text-3xl font-black mb-3">Stellarの星空を、すべての人のポケットへ。</h2>
+      <h2 class="lang-en hidden text-2xl md:text-3xl font-black mb-3">Bringing the Stellar Galaxy into Everyone's Pocket.</h2>
+
+      <p class="lang-ja text-xs text-slate-400 max-w-xl mx-auto leading-relaxed mb-6">
         StarPocketは、Stellarコミュニティの皆様とともに育っていくオープンなプロジェクトです。フィードバックやコラボレーション、オリジナル券面制作のご相談など、いつでもお気軽にお声がけください。
+      </p>
+      <p class="lang-en hidden text-xs text-slate-400 max-w-xl mx-auto leading-relaxed mb-6">
+        StarPocket is an open-source project growing hand-in-hand with the Stellar community. We warmly welcome UX feedback, collaboration ideas, and custom card face partnerships from Stellar builders worldwide.
       </p>
 
       <div class="inline-flex flex-col sm:flex-row items-center gap-3">
@@ -432,13 +638,15 @@ Stellar民は一度触ってみて損なし👇<br>
           target="_blank"
           class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black text-xs shadow-lg shadow-amber-400/20 transition cursor-pointer"
         >
-          StarPocket を今すぐ体験する
+          <span class="lang-ja">StarPocket を今すぐ体験する</span>
+          <span class="lang-en hidden">Experience StarPocket Now</span>
         </a>
         <button 
           onclick="window.print()" 
           class="no-print w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold text-xs transition cursor-pointer"
         >
-          この資料をPDFとして保存 📄
+          <span class="lang-ja">この資料をPDFとして保存 📄</span>
+          <span class="lang-en hidden">Save Deck as PDF 📄</span>
         </button>
       </div>
 
@@ -449,5 +657,48 @@ Stellar民は一度触ってみて損なし👇<br>
 
   </div>
 
+  <!-- SCRIPT FOR BILINGUAL SWITCHING -->
+  <script>
+    function setLanguage(lang) {
+      const isEn = (lang === 'en');
+      
+      // Toggle visibility of language elements
+      document.querySelectorAll('.lang-ja').forEach(el => el.classList.toggle('hidden', isEn));
+      document.querySelectorAll('.lang-en').forEach(el => el.classList.toggle('hidden', !isEn));
+
+      // Update button styling
+      const btnJa = document.getElementById('btn-lang-ja');
+      const btnEn = document.getElementById('btn-lang-en');
+
+      if (btnJa && btnEn) {
+        if (isEn) {
+          btnEn.className = 'px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black shadow transition cursor-pointer';
+          btnJa.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition cursor-pointer';
+        } else {
+          btnJa.className = 'px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 font-black shadow transition cursor-pointer';
+          btnEn.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition cursor-pointer';
+        }
+      }
+
+      document.documentElement.lang = isEn ? 'en' : 'ja';
+
+      try {
+        localStorage.setItem('starpocket_deck_lang', isEn ? 'en' : 'ja');
+      } catch (e) {}
+    }
+
+    // Auto-initialize from URL query (?lang=en) or localStorage or browser settings
+    (function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryLang = urlParams.get('lang');
+      let savedLang = null;
+      try {
+        savedLang = localStorage.getItem('starpocket_deck_lang');
+      } catch (e) {}
+      
+      const defaultLang = queryLang || savedLang || (navigator.language && navigator.language.startsWith('en') ? 'en' : 'ja');
+      setLanguage(defaultLang === 'en' ? 'en' : 'ja');
+    })();
+  </script>
 </body>
 </html>
