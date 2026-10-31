@@ -4184,21 +4184,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* 🛡️ PUBLIC GOODS MANIFESTO CARD */}
-            <div className="bg-gradient-to-r from-slate-900/90 via-[#101728] to-slate-900/90 rounded-2xl p-4 border border-cyan-500/30 shadow-lg text-center relative overflow-hidden">
-              <div className="flex items-center justify-center gap-2 mb-1.5">
-                <ShieldCheck className="w-4 h-4 text-cyan-400" />
-                <span className="font-extrabold text-xs text-cyan-200">
-                  {lang === 'ja' ? '広告ゼロ ＆ 完全手数料無料の公共財' : 'Zero Ads & Zero-Fee Public Goods'}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs mx-auto">
-                {lang === 'ja'
-                  ? 'StarPocketはユーザーから手数料や広告収入を一切取らず、Stellar公式（SCF）グラントで運営される純粋な公共財です。'
-                  : 'StarPocket operates as a 100% non-profit public goods wallet supported by Stellar Community Grants.'}
-              </p>
-            </div>
-
             {/* VIRAL SHARE BUTTON */}
             <div>
               <button
@@ -5994,8 +5979,8 @@ export default function App() {
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
                   {lang === 'ja'
-                    ? '毎日ログインや「星広場（Reward）」で広告ボーナスを受け取るとSPが貯まります！貯めたSPで「ちびステラ VIPカード（150 SP）」や「星の金庫 APYブースト」と交換できるよ！'
-                    : 'Claim daily login & ad drops in "Reward" tab to earn SP! Redeem them for "Chibi Stella VIP Card (150 SP)" or Vault APY boosts!'}
+                    ? '毎日のカレンダーログインで星集めをするとSPが貯まります！貯めたSPで「ちびステラ VIPカード（150 SP）」や「星の金庫 APYブースト」と交換できるよ！'
+                    : 'Claim your daily calendar streak to earn SP! Redeem them for "Chibi Stella VIP Card (150 SP)" or Vault APY boosts!'}
                 </p>
               </div>
 
