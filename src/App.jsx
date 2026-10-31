@@ -293,21 +293,33 @@ const THEMES = {
   }
 };
 
-// VIP Card Face Layouts
+// 🎴 12 Curated VIP Card Face Layouts & Constellation Series
 const CARD_FACES = {
+  none: {
+    id: 'none',
+    name: '深宇宙ミニマル（標準仕様）',
+    nameEn: 'Cosmic Minimal Card',
+    icon: '💳',
+    tier: 'standard',
+    description: 'イラスト無しの研ぎ澄まされたシンプル＆クリーン仕様',
+    descriptionEn: 'Minimalist card layout without character art'
+  },
   stella: {
     id: 'stella',
     name: '限定VIP【宇宙浮遊ステラ】⭐',
     nameEn: 'VIP Card: Floating Stella',
     icon: '🪐',
-    description: 'ステラテックウェア＆ネオンパープル仕様',
-    descriptionEn: 'Techwear Stella with Neon Purple VIP styling'
+    tier: 'special',
+    description: '【初回入金特典】ステラテックウェア＆ネオンパープル仕様',
+    descriptionEn: 'First Funding Bonus: Techwear Stella with Neon Purple styling'
   },
   chibi: {
     id: 'chibi',
     name: '限定VIP【ちびステラ ＆ お星さま】🌟',
     nameEn: 'VIP Card: Chibi Stella & Star',
     icon: '🌟',
+    cost: 300,
+    tier: 'regular',
     description: 'マスコットちびステラ＆サイバーシアン仕様',
     descriptionEn: 'Mascot Chibi Stella with Cyber Cyan VIP styling'
   },
@@ -316,16 +328,98 @@ const CARD_FACES = {
     name: 'サイバー・シューティングスター 🌠',
     nameEn: 'Cyber Shooting Star',
     icon: '🌠',
+    cost: 300,
+    tier: 'regular',
     description: '流星群が疾走する近未来サイバー星空仕様',
     descriptionEn: 'Futuristic shooting stars streaking through a cyber cosmos'
   },
-  none: {
-    id: 'none',
-    name: 'スタンダード（イラストなし）',
-    nameEn: 'Standard Minimal Card',
-    icon: '💳',
-    description: 'イラスト無しのシンプル＆クリーン仕様',
-    descriptionEn: 'Minimalist card layout without character art'
+  cafe_passiflora: {
+    id: 'cafe_passiflora',
+    name: '喫茶トケイソウ ☕',
+    nameEn: 'Café Passiflora',
+    icon: '☕',
+    cost: 300,
+    tier: 'regular',
+    comingSoon: true,
+    description: '星屑サイフォンコーヒー香るレトロ喫茶仕様',
+    descriptionEn: 'Retro antique café with siphon stardust coffee'
+  },
+  retro_pixel: {
+    id: 'retro_pixel',
+    name: 'レトロ8ビット・ドット星空 👾',
+    nameEn: 'Retro 8-Bit Pixel Cosmos',
+    icon: '👾',
+    cost: 300,
+    tier: 'regular',
+    comingSoon: true,
+    description: 'ゲームボーイ風液晶ドット絵の宇宙船仕様',
+    descriptionEn: 'Game Boy green pixel art spacecraft and cosmos'
+  },
+  aurora_nebula: {
+    id: 'aurora_nebula',
+    name: '極光ネビュラ・オーロラ 🌌',
+    nameEn: 'Aurora Stellar Nebula',
+    icon: '🌌',
+    cost: 500,
+    tier: 'rare',
+    comingSoon: true,
+    description: '緑と紫の星雲ガスが揺らめく幻想天体仕様',
+    descriptionEn: 'Vibrant interstellar aurora gases'
+  },
+  eclipse_corona: {
+    id: 'eclipse_corona',
+    name: '皆既日食コロナ 🌑',
+    nameEn: 'Solar Eclipse Corona',
+    icon: '🌑',
+    cost: 500,
+    tier: 'rare',
+    comingSoon: true,
+    description: '漆黒の月の縁から金色の太陽コロナが放電する重厚ブラック',
+    descriptionEn: 'Deep black moon with golden solar corona discharge'
+  },
+  overtech_stella: {
+    id: 'overtech_stella',
+    name: 'ギーク・オーバーテック 🛠️',
+    nameEn: 'Geek Overtech Stella',
+    icon: '🛠️',
+    cost: 500,
+    tier: 'rare',
+    comingSoon: true,
+    description: '巨大レンチとホログラム設計図を展開するメカニック仕様',
+    descriptionEn: 'Mechanic Stella wielding holographic blueprints'
+  },
+  cyber_soroban: {
+    id: 'cyber_soroban',
+    name: 'サイバーパンク・Soroban ⚡',
+    nameEn: 'Cyberpunk Soroban',
+    icon: '⚡',
+    cost: 500,
+    tier: 'rare',
+    comingSoon: true,
+    description: 'Rustスマートコントラクトコードが走るハッカーネオン',
+    descriptionEn: 'Glowing Soroban Rust smart contract grid matrix'
+  },
+  apollo_blueprint: {
+    id: 'apollo_blueprint',
+    name: 'アポロ宇宙船・ブループリント 🚀',
+    nameEn: 'Apollo Spacecraft Blueprint',
+    icon: '🚀',
+    cost: 500,
+    tier: 'rare',
+    comingSoon: true,
+    description: 'クラシックな青焼き設計図風の宇宙船テクニカルスケッチ',
+    descriptionEn: 'Classic cyan technical blueprint of spacecraft'
+  },
+  zodiac_core: {
+    id: 'zodiac_core',
+    name: '黄道十二星座・コア 👑',
+    nameEn: 'Zodiac Constellation Core',
+    icon: '👑',
+    cost: 800,
+    tier: 'premium',
+    comingSoon: true,
+    description: '12星座の星図が立体黄金ラインで結ばれる最高峰VIPカード',
+    descriptionEn: 'Mythic 3D golden constellation chart for 31-day masters'
   }
 };
 
@@ -4120,14 +4214,14 @@ export default function App() {
                     id: 'chibi_skin', 
                     name: lang === 'ja' ? 'ちびステラスキン ⭐' : 'Chibi Stella Skin ⭐', 
                     desc: lang === 'ja' ? 'お星さまを抱っこしたちびステラが背景でふわふわ浮遊！' : 'Chibi Stella hugging a star floats softly in your background!', 
-                    cost: 150, 
+                    cost: 300, 
                     icon: '🌟' 
                   },
                   { 
                     id: 'shooting_star_skin', 
                     name: lang === 'ja' ? 'サイバー流星スキン 🌠' : 'Cyber Shooting Star 🌠', 
                     desc: lang === 'ja' ? '宇宙の星屑と流星が駆け抜けるサイバーカード券面！' : 'Cosmic stardust & meteor trails on your card face!', 
-                    cost: 150, 
+                    cost: 300, 
                     icon: '🌠' 
                   },
                   { 
@@ -4136,6 +4230,30 @@ export default function App() {
                     desc: t('perkStreakShieldDesc'), 
                     cost: 200, 
                     icon: '🛡️' 
+                  },
+                  { 
+                    id: 'cafe_passiflora_skin', 
+                    name: lang === 'ja' ? '喫茶トケイソウ ☕' : 'Café Passiflora ☕', 
+                    desc: lang === 'ja' ? '星屑サイフォンコーヒー香るアンティークレトロ券面！' : 'Antique café with stardust siphon coffee!', 
+                    cost: 300, 
+                    icon: '☕',
+                    comingSoon: true 
+                  },
+                  { 
+                    id: 'aurora_nebula_skin', 
+                    name: lang === 'ja' ? '極光ネビュラ 🌌' : 'Aurora Nebula 🌌', 
+                    desc: lang === 'ja' ? '緑と紫の星雲ガスが揺らめく深宇宙オーロラ券面！' : 'Vibrant green & purple deep space aurora!', 
+                    cost: 500, 
+                    icon: '🌌',
+                    comingSoon: true 
+                  },
+                  { 
+                    id: 'zodiac_core_skin', 
+                    name: lang === 'ja' ? '十二星座コア 👑' : 'Zodiac Core 👑', 
+                    desc: lang === 'ja' ? '立体星図が輝く最高峰VIPカード！完走チケットでも即解放！' : 'Mythic 3D golden zodiac chart for streak masters!', 
+                    cost: 800, 
+                    icon: '👑',
+                    comingSoon: true 
                   },
                 ].map((item) => {
                   const unlocked = gamification.perks?.includes(item.id);
@@ -4184,6 +4302,19 @@ export default function App() {
                     </div>
                   );
                 })}
+              </div>
+
+              {/* 🤝 Community Requests & Partner Collabs Note */}
+              <div className="mt-2.5 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">🤝</span>
+                  <span className="text-slate-300 font-medium">
+                    {lang === 'ja' ? '新券面リクエスト ＆ パートナーコラボ受付中！' : 'Card face requests & partner collabs welcome!'}
+                  </span>
+                </div>
+                <span className="text-[9px] font-bold text-amber-300 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/30">
+                  {lang === 'ja' ? '随時追加' : 'Expanding'}
+                </span>
               </div>
             </div>
 

@@ -410,9 +410,12 @@ app.post('/api/gamification/redeem', (req, res) => {
   }
 
   const PERK_CATALOG = {
-    chibi_skin: { name: '限定スキン【ちびステラ ＆ お星さま ⭐】', cost: 150 },
-    shooting_star_skin: { name: '限定スキン【サイバー流星 🌠】', cost: 150 },
-    streak_shield: { name: 'ログインストリーク保護シールド 🛡️', cost: 200 }
+    chibi_skin: { name: '限定スキン【ちびステラ ＆ お星さま ⭐】', cost: 300 },
+    shooting_star_skin: { name: '限定スキン【サイバー流星 🌠】', cost: 300 },
+    streak_shield: { name: 'ログインストリーク保護シールド 🛡️', cost: 200 },
+    cafe_passiflora_skin: { name: '喫茶トケイソウ ☕', cost: 300, comingSoon: true },
+    aurora_nebula_skin: { name: '極光ネビュラ 🌌', cost: 500, comingSoon: true },
+    zodiac_core_skin: { name: '十二星座コア 👑', cost: 800, comingSoon: true }
   };
 
   const perk = PERK_CATALOG[perkId];
@@ -421,7 +424,7 @@ app.post('/api/gamification/redeem', (req, res) => {
   }
 
   if (perk.comingSoon) {
-    return res.status(400).json({ error: 'このアイテムはStarPet機能の公開まで準備中です 🍭' });
+    return res.status(400).json({ error: 'このアイテムはアップデート・コラボによる順次公開まで準備中です ✨' });
   }
 
   const data = getUserGamification(address);
