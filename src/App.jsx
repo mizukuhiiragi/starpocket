@@ -3205,9 +3205,18 @@ export default function App() {
                   </div>
                   <p className="text-[9px] text-slate-400 mt-1.5 text-right font-mono">
                     {lang === 'ja' 
-                      ? `あと ${(Math.max(0, ACTIVATION_THRESHOLD - parseFloat(balance || 0))).toFixed(4)} XLM の入金で有効化完了` 
-                      : `${(Math.max(0, ACTIVATION_THRESHOLD - parseFloat(balance || 0))).toFixed(4)} XLM more to activate`}
+                      ? (parseFloat(balance || 0) === 0 
+                          ? '初回は一括で 5.0000 XLM 以上の送金が必要です' 
+                          : `あと ${(Math.max(0, ACTIVATION_THRESHOLD - parseFloat(balance || 0))).toFixed(4)} XLM の入金で有効化完了`)
+                      : (parseFloat(balance || 0) === 0
+                          ? 'Single deposit of 5+ XLM required'
+                          : `${(Math.max(0, ACTIVATION_THRESHOLD - parseFloat(balance || 0))).toFixed(4)} XLM more to activate`)}
                   </p>
+                  {parseFloat(balance || 0) === 0 && (
+                    <div className="mt-2 pt-1.5 border-t border-slate-800 text-[10px] text-amber-300 font-bold flex items-center gap-1">
+                      <span>⚠️ {lang === 'ja' ? '※ 初回は必ず一度に（一括で）5 XLM 以上を送金してください' : 'Note: First deposit must be 5+ XLM in a single transaction'}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Stella’s Friendly Explanation */}
@@ -3218,8 +3227,8 @@ export default function App() {
                       {lang === 'ja' ? '🌟 ステラからの豆知識: ' : '🌟 Stella’s Note: '}
                     </span>
                     {lang === 'ja' 
-                      ? 'Stellarネットワークでは口座開設（ベースリザーブ 1 XLM）や、USDC・yXLMを保管する枠（各0.5 XLM）が必要です。StarPocketでは 5 XLM の入金でお財布が正式に目覚め、スワップや星の金庫（年利5%）が全解放されます！'
-                      : 'Stellar requires a base reserve (1 XLM) and 0.5 XLM per asset trustline. Depositing 5 XLM fully activates your StarPocket, unlocking Swap & Vault!'}
+                      ? 'Stellarネットワークでは、最初の送金で口座開設（createAccount）を行う仕様のため、1 XLM 未満の少額な分割送金はブロックチェーン側で拒否されます。そのため、初回は必ず一括で 5 XLM 以上を送金してください！5 XLM が着金するとスワップや星の金庫（年利5%）が全解放されます！'
+                      : 'Stellar requires the first transaction to create the account on-chain. Small partial transfers (< 1 XLM) will be rejected by the network. Please send 5+ XLM in a single transaction!'}
                   </div>
                 </div>
 
@@ -3303,10 +3312,10 @@ export default function App() {
                       <QrCode className="w-4 h-4 text-cyan-400 shrink-0" />
                       <div className="text-left">
                         <p className="font-bold text-white text-[11px]">
-                          {lang === 'ja' ? '📥 外部ウォレットや取引所から送金' : '📥 Deposit from External Wallet / Exchange'}
+                          {lang === 'ja' ? '📥 外部ウォレットや取引所から一括送金' : '📥 Deposit 5+ XLM from External Wallet / Exchange'}
                         </p>
                         <p className="text-[9px] text-slate-400">
-                          {lang === 'ja' ? 'アドレス表示・QRコードから 5 XLM 入金' : 'Show QR code & address to receive 5 XLM'}
+                          {lang === 'ja' ? '初回は一括で 5 XLM 以上を送金（分割送金は不可）' : 'Single transaction of 5+ XLM required (no partials)'}
                         </p>
                       </div>
                     </div>
@@ -4249,6 +4258,15 @@ export default function App() {
             <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 break-all font-mono text-[11px] text-slate-300 text-center mb-3">
               {activeAddress}
             </div>
+
+            {!isWalletActivated && (
+              <div className="p-2.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-[10px] text-amber-200 text-center mb-3 leading-relaxed">
+                <span className="font-bold text-amber-300 block mb-0.5">⚠️ 初回入金時の重要なお願い</span>
+                {lang === 'ja'
+                  ? 'Stellarの仕様上、未登録ウォレットへの初回送金で口座開設（createAccount）を行うため、必ず一度に（一括で）5 XLM 以上を送金してください。（1 XLM 未満の分割送金はネットワークに拒否されます）'
+                  : 'Stellar requires the first transfer to create your account on-chain. Please deposit at least 5 XLM in a single transaction (no partials).'}
+              </div>
+            )}
 
             <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 text-[10px] text-slate-400 text-center mb-4 flex items-center justify-center gap-1.5 font-mono">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
