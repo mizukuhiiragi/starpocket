@@ -605,10 +605,11 @@ export default function App() {
   const [importError, setImportError] = useState('');
   const [importLoading, setImportLoading] = useState(false);
 
-  // 🔑 Settings Backup & Import Modals
+  // 🔑 Settings Backup & Import & Create Modals
   const [showBackupModal, setShowBackupModal] = useState(false);
   const [showSecretInBackup, setShowSecretInBackup] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showCreateWalletModal, setShowCreateWalletModal] = useState(false);
 
   // 💡 Vault / yXLM Tutorial Modal
   const [showVaultTutorialModal, setShowVaultTutorialModal] = useState(false);
@@ -925,12 +926,16 @@ export default function App() {
   };
 
   // 🧭 Wallet Creation & Import Handlers
-  const handleStartCreateWallet = () => {
+  const handleStartCreateWallet = (isFromModal = false) => {
     try {
       const mnemonic = generateNewMnemonic();
       setNewMnemonicWords(mnemonic.split(' '));
       setMnemonicConfirmed(false);
-      setOnboardingView('create');
+      if (isFromModal) {
+        setShowCreateWalletModal(true);
+      } else {
+        setOnboardingView('create');
+      }
       if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
       }
@@ -939,7 +944,7 @@ export default function App() {
     }
   };
 
-  const handleFinishCreateWallet = () => {
+  const handleFinishCreateWallet = (isFromModal = false) => {
     if (!mnemonicConfirmed || newMnemonicWords.length === 0) return;
     try {
       const mnemonicStr = newMnemonicWords.join(' ');
@@ -959,7 +964,13 @@ export default function App() {
       setWalletSecret(activeWallet.secret);
       setWalletMnemonic(mnemonicStr);
       setHasWallet(true);
-      setOnboardingView('welcome');
+      fetchAll(res.publicKey);
+
+      if (isFromModal) {
+        setShowCreateWalletModal(false);
+      } else {
+        setOnboardingView('welcome');
+      }
 
       if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
@@ -4904,7 +4915,7 @@ export default function App() {
               <button
                 onClick={() => {
                   setShowWalletSwitchModal(false);
-                  handleStartCreateWallet();
+                  handleStartCreateWallet(true);
                 }}
                 className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 transition cursor-pointer shadow-md shadow-amber-500/20 active:scale-[0.99]"
               >
@@ -5383,6 +5394,104 @@ export default function App() {
                 </div>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* ✨ IN-APP CREATE NEW WALLET (12 WORDS) MODAL */}
+      {/* ========================================================= */}
+      {showCreateWalletModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[#121626] border border-amber-400/50 rounded-3xl p-5 max-w-sm w-full shadow-2xl relative text-left">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-amber-400" />
+                <h3 className="font-extrabold text-sm text-white">
+                  {lang === 'ja' ? '✨ 新しいお財布を追加 (12単語)' : '✨ Add New Wallet (12 Words)'}
+                </h3>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowCreateWalletModal(false);
+                  setMnemonicConfirmed(false);
+                }}
+                className="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 mb-3 leading-relaxed">
+              {lang === 'ja'
+                ? 'この12単語は新しく追加するお財布のマスターキーです。順番通りに紙に手書きでメモしてください。'
+                : 'These 12 words are the recovery phrase for your new wallet. Please write them down on paper.'}
+            </p>
+
+            {/* Mnemonic Grid */}
+            <div className="grid grid-cols-3 gap-2 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 shadow-inner mb-3">
+              {newMnemonicWords.map((word, idx) => (
+                <div key={idx} className="bg-slate-900/90 border border-slate-800/80 rounded-xl px-2 py-1.5 flex items-center gap-1.5 shadow-sm">
+                  <span className="text-[9px] font-mono font-bold text-slate-500 w-4 text-right">
+                    {String(idx + 1).padStart(2, '0')}
+                  </span>
+                  <span className="text-xs font-bold font-mono text-amber-200 truncate select-none">
+                    {word}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Security Notice: No Clipboard Copy (Anti-Spyware) */}
+            <div className="py-2.5 px-3 rounded-xl bg-slate-950/70 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2 mb-3">
+              <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="text-[11px] leading-tight text-slate-300">
+                {lang === 'ja'
+                  ? '🛡️ クリップボード盗難防止のためコピー機能はありません。必ず紙に手書きしてください。'
+                  : '🛡️ Clipboard copy is disabled for security against malware. Please write down on paper.'}
+              </span>
+            </div>
+
+            {/* Confirmation Checkbox */}
+            <label className="flex items-start gap-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 cursor-pointer select-none mb-3">
+              <input 
+                type="checkbox"
+                checked={mnemonicConfirmed}
+                onChange={(e) => setMnemonicConfirmed(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer accent-amber-500"
+              />
+              <span className="text-[11px] text-amber-200 leading-snug">
+                {lang === 'ja'
+                  ? '12単語を安全な場所にメモしました。（紛失すると復元できません）'
+                  : 'I have backed up these 12 words in a safe place.'}
+              </span>
+            </label>
+
+            {/* Finish & Add Button */}
+            <div className="space-y-2">
+              <button
+                onClick={() => handleFinishCreateWallet(true)}
+                disabled={!mnemonicConfirmed}
+                className={`w-full py-3 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition shadow-lg ${
+                  mnemonicConfirmed
+                    ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 cursor-pointer shadow-amber-500/30'
+                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                }`}
+              >
+                <Sparkles className="w-4 h-4 fill-current" />
+                <span>{lang === 'ja' ? 'このお財布を追加して切り替える！' : 'Add & Switch to This Wallet!'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowCreateWalletModal(false);
+                  setMnemonicConfirmed(false);
+                }}
+                className="w-full py-2 text-center text-xs font-bold text-slate-400 hover:text-slate-200 transition cursor-pointer"
+              >
+                {t('btnClose')}
+              </button>
+            </div>
           </div>
         </div>
       )}
