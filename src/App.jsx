@@ -2058,13 +2058,37 @@ export default function App() {
     setFundingFriendbot(true);
     setFriendbotMsg('');
     try {
-      const res = await fetch('/api/fund-friendbot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: activeAddress })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Friendbot request failed');
+      let funded = false;
+
+      // 1. Direct official Stellar Friendbot (CORS supported, 100% resilient)
+      try {
+        const directResp = await fetch(`https://friendbot.stellar.org?addr=${activeAddress}`);
+        const directData = await directResp.json();
+        if (directResp.ok || directData.hash) {
+          funded = true;
+        }
+      } catch (directErr) {
+        console.warn('Direct friendbot fetch failed, falling back to backend endpoint:', directErr);
+      }
+
+      // 2. Fallback: Backend proxy API endpoint
+      if (!funded) {
+        const res = await fetch('/api/fund-friendbot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: activeAddress })
+        });
+        const text = await res.text();
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error(lang === 'ja' ? `サーバー応答エラー (HTTP ${res.status})` : `Server error (HTTP ${res.status})`);
+        }
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Friendbot request failed');
+        }
+      }
 
       if (window.Telegram?.WebApp?.HapticFeedback) {
         window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
