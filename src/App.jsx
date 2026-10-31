@@ -807,9 +807,6 @@ export default function App() {
   const [claimHistory, setClaimHistory] = useState([]);
   
   // Modals
-  const [showAdModal, setShowAdModal] = useState(false);
-  const [adTimer, setAdTimer] = useState(5);
-  const [adCompleted, setAdCompleted] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [fundingFriendbot, setFundingFriendbot] = useState(false);
@@ -1502,7 +1499,7 @@ export default function App() {
     if (isNaN(num) || num <= 0) return '0.0000';
     if (from === to) return num.toFixed(4);
     const rate = SWAP_RATES[`${from}_${to}`] || 1.0;
-    const net = num * (1 - 0.003); // 0.3% protocol fee
+    const net = num; // 0% fee (Direct Stellar DEX / Public Good)
     return (net * rate).toFixed(4);
   };
 
@@ -1722,134 +1719,7 @@ export default function App() {
     }
   };
 
-  // Trigger Ad Modal / AdsGram
-  const handleStartDailyBonus = () => {
-    if (userStatus.remainingToday <= 0) {
-      setClaimError(t('allClaimedToday'));
-      return;
-    }
-    if (cooldownSec > 0) {
-      setClaimError(lang === 'ja' ? 'クールダウン中です。次の星までお待ちください。' : 'Cooldown active. Please wait until the next drop.');
-      return;
-    }
 
-    setClaimError('');
-    setClaimSuccess(null);
-
-    if (window.Adsgram && window.Adsgram.init) {
-      try {
-        const AdController = window.Adsgram.init({ blockId: "int-0000" });
-        AdController.show().then((result) => {
-          if (result.done) executeClaim();
-        }).catch((err) => {
-          openSimulatedModal();
-        });
-        return;
-      } catch (e) {
-        openSimulatedModal();
-      }
-    }
-
-    openSimulatedModal();
-  };
-
-  const openSimulatedModal = () => {
-    setAdTimer(5);
-    setAdCompleted(false);
-    setShowAdModal(true);
-
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-      window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
-    }
-  };
-
-  useEffect(() => {
-    let timer = null;
-    if (showAdModal && adTimer > 0) {
-      timer = setTimeout(() => setAdTimer(adTimer - 1), 1000);
-    } else if (showAdModal && adTimer === 0) {
-      setAdCompleted(true);
-    }
-    return () => clearTimeout(timer);
-  }, [showAdModal, adTimer]);
-
-  const executeClaim = async () => {
-    setClaiming(true);
-    setClaimError('');
-
-    try {
-      let localCount = userStatus.claimsToday || 0;
-      const jstFormatter = new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' });
-      const today = jstFormatter.format(new Date()).replace(/\//g, '-');
-      try {
-        const raw = localStorage.getItem(`starpocket_claim_${activeAddress}`);
-        if (raw) {
-          const rec = JSON.parse(raw);
-          if (rec.dateStr === today) localCount = Math.max(localCount, rec.count || 0);
-        }
-      } catch (e) {}
-
-      const res = await fetch('/api/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          destination: activeAddress,
-          adWatched: true,
-          clientClaimCount: localCount,
-          lang: lang
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Claim failed');
-
-      setClaimSuccess(data);
-      setShowAdModal(false);
-
-      if (data.status) {
-        setUserStatus(data.status);
-        setCooldownSec(data.status.cooldownRemainingSec || 0);
-
-        try {
-          localStorage.setItem(`starpocket_claim_${activeAddress}`, JSON.stringify({
-            dateStr: today,
-            count: data.status.claimsToday,
-            lastClaimTime: Date.now()
-          }));
-        } catch (e) {}
-      }
-      if (data.starPoints) {
-        setGamification(prev => ({ ...prev, starPoints: data.starPoints }));
-      }
-
-      if (window.Telegram?.WebApp?.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-      }
-
-      setClaimHistory(prev => [
-        {
-          id: Date.now(),
-          amount: data.amount,
-          txHash: data.txHash,
-          time: new Date().toLocaleTimeString(),
-          url: data.explorerUrl
-        },
-        ...prev
-      ]);
-
-      setTimeout(() => {
-        fetchAll(activeAddress);
-      }, 1200);
-
-    } catch (err) {
-      setClaimError(err.message);
-      if (window.Telegram?.WebApp?.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.notificationOccurred('error');
-      }
-    } finally {
-      setClaiming(false);
-    }
-  };
 
   // Process scanned text (SEP-0007 / Stellar payment URI, plain address, etc.)
   const processScannedQrData = (text) => {
@@ -5083,77 +4953,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* 🎥 REWARDED AD MODAL (AdsGram Simulator) */}
-      {/* ========================================================= */}
-      {showAdModal && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#131728] border border-cyan-500/30 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
-            
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                {t('sponsoredByAdsgram')}
-              </span>
-              <div className="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800">
-                {adTimer > 0 ? `${adTimer}s` : 'OK'}
-              </div>
-            </div>
 
-            <div className="relative aspect-video bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 rounded-xl overflow-hidden border border-slate-800 flex flex-col items-center justify-center p-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center mb-2 animate-pulse">
-                <Layers className="w-6 h-6 text-cyan-400" />
-              </div>
-              <p className="font-extrabold text-sm text-white">{t('sponsorHeadline')}</p>
-              <p className="text-[11px] text-slate-400 mt-1 max-w-[200px]">
-                {t('sponsorSubtext')}
-              </p>
-
-              <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-800">
-                <div 
-                  className="h-full bg-gradient-to-r from-amber-400 to-cyan-400 transition-all duration-1000 ease-linear"
-                  style={{ width: `${((5 - adTimer) / 5) * 100}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-2">
-              <button
-                onClick={executeClaim}
-                disabled={!adCompleted || claiming}
-                className={`w-full py-3.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition shadow-lg ${
-                  adCompleted
-                    ? 'cta-button text-slate-950 cursor-pointer animate-bounce'
-                    : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                }`}
-              >
-                {claiming ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                    <span>Processing...</span>
-                  </>
-                ) : adCompleted ? (
-                  <>
-                    <Star className="w-4 h-4 fill-slate-950 text-slate-950" />
-                    <span>{t('btnClaimToPocket')}</span>
-                  </>
-                ) : (
-                  <span>{t('playingVideo')} ({adTimer}s)...</span>
-                )}
-              </button>
-
-              {!claiming && (
-                <button
-                  onClick={() => setShowAdModal(false)}
-                  className="w-full py-2 text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer"
-                >
-                  {t('btnClose')}
-                </button>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
 
       {/* ========================================================= */}
       {/* ⚙️ UNIFIED SETTINGS, THEME & PROFILE DRAWER */}

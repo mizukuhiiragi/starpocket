@@ -1062,6 +1062,30 @@
      - ショップ内の各カードに「見本」ボタンを設置。タップするとフルスクリーンの美麗モーダルが起動し、券面アート、デザイン解説、セリフ吹き出しをじっくり鑑賞可能。
      - ヘッダーのSPバッジや設定画面からの交換所リンク時も、自動的に「ショップ」サブタブへ直行するよう動線を統一。
 
+---
+
+### 65. スワップ手数料0%完全撤廃（資金決済法・公共財準拠）＆ レガシー広告モーダルの完全除去
+**決定日時:** 2026-10-31 13:16 JST  
+**決定者:** 相棒 (Mizuku), ちびステラ (2号) & ステラ (Lead Builder)  
+**内容:**
+- **背景 & 課題:**
+  - ちびステラ2号＆相棒（Mizuku）による営業・法令照合申し送り書（`MEMO_FROM_CHIBI.md`）を受領。
+  - 日本の資金決済法上、運営が暗号資産交換において中抜き手数料を取得すると「無許可の暗号資産交換業」に抵触する恐れがあるため、Stellarエコシステムの公共財（Public Goods）としてスワップ手数料を「完全ゼロ（0%）」にする。
+  - 初期プロトタイプ時代に存在した Adsgram 動画広告シミュレーターのステートおよびモーダルJSX（`showAdModal`, `adTimer`, `adCompleted`, `handleStartDailyBonus`, `executeClaim`）がデッドコードとして残留していたため、クリーンに撤去する。
+- **是正内容:**
+  1. **スワップ手数料 0% 化 (`src/App.jsx`, `server.js`, `src/i18n.js`):**
+     - フロントエンド: `const net = num; // 0% fee (Direct Stellar DEX / Public Good)`
+     - バックエンド: `SWAP_FEE_TOTAL = 0.0`, `feeInFromAsset = 0`, `netInput = amt`, `netOutput = amt * rate`
+     - `/api/swap/rates` および `/api/swap/bonus`: `feeRate: '0.00%'`, 説明文を「Stellar DEX直結プロトコル手数料 0% (完全無料・公共財モデル)」に統一。
+     - UIバッジ & 多言語: 「プロトコル手数料: 0% (DEX直結・完全無料)」「Direct Stellar DEX swap with 0% protocol fees」に更新。
+  2. **広告関連デッドコードの完全除去 (`src/App.jsx`):**
+     - 未使用ステート（`showAdModal`, `adTimer`, `adCompleted`）を削除。
+     - `handleStartDailyBonus`, `openSimulatedModal`, `useEffect([showAdModal, adTimer])`, `executeClaim` を削除。
+     - 画面下部に配置されていた動画広告シミュレーターモーダルのJSXを完全撤去。
+  3. **Stellar公式Discord（SCF）相談トピックの合意:**
+     - スワップ＆金庫の全機能初期解放 vs ログインポイント解放のゲーム設計については、現行の4タブ全開仕様を維持し、Stellar Developers Discord（SCFチャンネル）にてメンター・開発者の助言を仰いだ上で最終決定する方針で合意。
+
+
 
 
 

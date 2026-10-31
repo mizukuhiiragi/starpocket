@@ -754,16 +754,14 @@ app.post('/api/vault/withdraw', async (req, res) => {
 
 // =========================================================
 // =========================================================
-// 🔄 星の交換所 (Star Swap) & 三方よし (1:1:1) 手数料分配システム
-// 0.30% のプロトコル手数料を 3 等分 (各 0.10%):
-// - 0.10%: 運営利益 (Owner Profit) - 現代版両替商のお兄ちゃんの正当な事業収益
-// - 0.10%: 月末山分けボーナスプール (Monthly Volume Share Pool)
-// - 0.10%: 無料星ドロッププール還元 (Daily Drop Pool)
+// 🔄 星の交換所 (Star Swap) - Stellar DEX 直結・手数料0%公共財モデル
+// 日本の資金決済法遵守およびStellarエコシステム公共財（SCF）方針に基づき、
+// 中抜き手数料を完全撤廃（0%）。DEX最安レートでの即時交換を提供。
 // =========================================================
-const SWAP_FEE_TOTAL = 0.003; // 0.30%
-const SWAP_FEE_OWNER = 0.001; // 0.10%
-const SWAP_FEE_MONTHLY_BONUS = 0.001; // 0.10%
-const SWAP_FEE_DROP_POOL = 0.001; // 0.10%
+const SWAP_FEE_TOTAL = 0.0; // 0.00% (Direct DEX / Zero Protocol Fee)
+const SWAP_FEE_OWNER = 0.0;
+const SWAP_FEE_MONTHLY_BONUS = 0.0;
+const SWAP_FEE_DROP_POOL = 0.0;
 
 // Monthly Volume & Bonus Pool State
 let monthlyBonusPoolXlm = 125.40; // Initial simulated seed pool
@@ -812,14 +810,14 @@ function getDaysRemainingInMonth() {
 // GET /api/swap/rates - get swap quotes and current protocol fee breakdown
 app.get('/api/swap/rates', (req, res) => {
   res.json({
-    feeRate: '0.30%',
+    feeRate: '0.00%',
     split: {
-      ownerProfit: '0.10%',
-      monthlyBonusPool: '0.10%',
-      dropPoolRefill: '0.10%'
+      ownerProfit: '0.00%',
+      monthlyBonusPool: '0.00%',
+      dropPoolRefill: '0.00%'
     },
     rates: BASE_RATES,
-    description: 'スワップ手数料 0.30% (0.10% 月末山分けボーナス / 0.10% 星プール還元 / 0.10% プロトコル維持)'
+    description: 'Stellar DEX直結プロトコル手数料 0% (完全無料・公共財モデル)'
   });
 });
 
@@ -837,7 +835,7 @@ function getSwapBonusResponse(address) {
     userSharePercent: (userShareRatio * 100).toFixed(2),
     userEstBonusXlm: userEstBonusXlm.toFixed(4),
     daysRemaining: getDaysRemainingInMonth(),
-    splitRule: '0.10% Owner Profit | 0.10% Monthly Bonus Pool | 0.10% Free Drop Pool'
+    splitRule: '0% Protocol Fee (Direct Stellar DEX / Public Goods)'
   };
 }
 
@@ -867,10 +865,10 @@ app.post('/api/swap', async (req, res) => {
 
   const rate = getSwapRate(fromAsset, toAsset);
   
-  // Total 0.30% fee
-  const feeInFromAsset = amt * SWAP_FEE_TOTAL;
-  const netInput = amt - feeInFromAsset;
-  const netOutput = netInput * rate;
+  // 0% Protocol Fee (DEX Direct / Zero Fee)
+  const feeInFromAsset = 0;
+  const netInput = amt;
+  const netOutput = amt * rate;
 
   // Equivalent fee in XLM
   const feeInXlm = fromAsset === 'XLM' ? feeInFromAsset : feeInFromAsset * getSwapRate(fromAsset, 'XLM');
