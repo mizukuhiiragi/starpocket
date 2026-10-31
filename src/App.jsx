@@ -4082,7 +4082,7 @@ export default function App() {
                         )}
                         {isMilestone && (
                           <span className="absolute -top-1 -right-1 text-[8px] leading-none">
-                            {day === 31 ? '🎫' : day === 14 ? '🍭' : '⭐'}
+                            {day === 31 ? '🎫' : '⭐'}
                           </span>
                         )}
                       </div>

@@ -120,7 +120,7 @@ export const translations = {
     checkInBtn: "Check-in (+10 SP)",
     starPointsBadge: "Star Points",
     ticket31Banner: "🎫 31-Day Complete Select Ticket: Day 31 Milestone!",
-    ticket31Desc: "Complete 31 days to unlock your choice of APY Booster, Pet Candy, or DEX Discount!",
+    ticket31Desc: "Complete all 31 days to choose your reward: Vault APY Booster, 50% DEX Fee Discount, or Limited VIP Card Skins!",
     perksTitle: "⭐ Star Points Perks Exchange",
     perksSubtitle: "Spend your Star Points for exclusive perks & boosters",
     btnRedeem: "Redeem",
@@ -134,8 +134,6 @@ export const translations = {
     perkBoostTicketDesc: "Guarantees 2x rewards (0.10 XLM + 40 SP) on your next drop claim!",
     perkStreakShield: "Streak Shield 🛡️",
     perkStreakShieldDesc: "Protects your check-in streak from breaking if you miss a day!",
-    perkPetCandy: "StarPet Cosmic Candy 🍭",
-    perkPetCandyDesc: "Exclusive pet treat (Under preparation for StarPet release) 🍭",
     perkComingSoon: "Coming Soon",
 
     // Footer
@@ -263,7 +261,7 @@ export const translations = {
     checkInBtn: "本日のスタンプを押す (+10 SP)",
     starPointsBadge: "星ポイント",
     ticket31Banner: "🎫 31日完走セレクトチケット：目指せ31日コンプリート！",
-    ticket31Desc: "31日間連続ログインで、金利ブーストや限定ペットおやつ、スワップ割引から選べる権利をプレゼント！",
+    ticket31Desc: "31日間連続ログインで、金庫の金利ブーストやスワップ手数料割引、限定VIPスキンなどからお好きな豪華特典をプレゼント！",
     perksTitle: "⭐ 星ポイント特典交換所",
     perksSubtitle: "貯めた星ポイント（SP）を使って限定特典を解放しよう！",
     btnRedeem: "交換する",
@@ -277,8 +275,6 @@ export const translations = {
     perkBoostTicketDesc: "次のFree Dropをいつでも確定2倍（0.10 XLM + 40 SP）にする！",
     perkStreakShield: "ストリーク保護シールド 🛡️",
     perkStreakShieldDesc: "ログインを1日忘れても連続記録をキープ！",
-    perkPetCandy: "StarPet 彗星キャンディ 🍭",
-    perkPetCandyDesc: "StarPet機能の正式リリースまで準備中です 🍭",
     perkComingSoon: "準備中",
 
     // Footer
