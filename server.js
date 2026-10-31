@@ -594,8 +594,59 @@ app.get('/api/activity/:address', async (req, res) => {
   }
 });
 
-// 星の金庫 (Star Vault) State & Endpoints
-// Holds user deposits for yXLM (5.0% APY) & yUSDC (5.0% APY)
+// =========================================================
+// 🏦 星の金庫 (Star Vault) State & Endpoints
+// UltraCapital / UltraStellar の実オフィシャルリアルタイムAPYを自動取得・連動
+// =========================================================
+let liveVaultApy = {
+  yXLM: 0.016, // 1.6% (デフォルト / フォールバック)
+  yUSDC: 0.050, // 5.0% (デフォルト / フォールバック)
+  lastFetched: 0,
+  source: 'UltraCapital (ultracapital.xyz)'
+};
+
+async function fetchLiveUltraCapitalApy() {
+  // キャッシュ有効期間: 1時間
+  if (Date.now() - liveVaultApy.lastFetched < 60 * 60 * 1000) return;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch('https://ultracapital.xyz/assets', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; StarPocket/1.0)' },
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return;
+    const html = await res.text();
+
+    // yXLM APY 抽出 (<p>1.6% <span>APY</span></p> ... with yXLM asset)
+    const yxlmMatch = html.match(/<div class="crypto-percent">\s*<p>([\d.]+)%\s*<span>APY<\/span><\/p>\s*<\/div>\s*<div class="token">\s*with yXLM/i);
+    if (yxlmMatch && yxlmMatch[1]) {
+      const val = parseFloat(yxlmMatch[1]);
+      if (!isNaN(val) && val > 0 && val < 50) {
+        liveVaultApy.yXLM = val / 100;
+      }
+    }
+
+    // yUSDC APY 抽出 (USD Coin ... <p>5% <span>APY</span>)
+    const yusdcMatch = html.match(/USD Coin<\/span>\s*<\/div>\s*<div class="crypto-percent">\s*<p>([\d.]+)%\s*<span>APY<\/span>/i);
+    if (yusdcMatch && yusdcMatch[1]) {
+      const val = parseFloat(yusdcMatch[1]);
+      if (!isNaN(val) && val > 0 && val < 50) {
+        liveVaultApy.yUSDC = val / 100;
+      }
+    }
+
+    liveVaultApy.lastFetched = Date.now();
+    console.log(`[UltraCapital] Live APYs synced: yXLM=${(liveVaultApy.yXLM * 100).toFixed(1)}%, yUSDC=${(liveVaultApy.yUSDC * 100).toFixed(1)}%`);
+  } catch (err) {
+    console.warn('[UltraCapital] Could not fetch live APY, using cached:', err.message);
+  }
+}
+
+// 起動時に初回取得
+fetchLiveUltraCapitalApy();
+
 function getOrCreateVault(address) {
   let v = starVaults.get(address);
   if (!v) {
@@ -609,13 +660,12 @@ function getOrCreateVault(address) {
     };
     starVaults.set(address, v);
   } else {
-    // Compound yield since last check (5.0% APY compounded continuously)
+    // Compound yield since last check (Dynamic APY continuously compounded)
     const now = Date.now();
     const elapsedYears = (now - v.lastYieldCalculated) / (1000 * 60 * 60 * 24 * 365);
     if (elapsedYears > 0 && (v.yXLM > 0 || v.yUSDC > 0)) {
-      const yieldRate = 0.05; // 5% APY
-      const xlmGain = v.yXLM * yieldRate * elapsedYears;
-      const usdcGain = v.yUSDC * yieldRate * elapsedYears;
+      const xlmGain = v.yXLM * liveVaultApy.yXLM * elapsedYears;
+      const usdcGain = v.yUSDC * liveVaultApy.yUSDC * elapsedYears;
       v.yXLM += xlmGain;
       v.yUSDC += usdcGain;
       v.totalEarnedXLM += xlmGain;
@@ -626,12 +676,28 @@ function getOrCreateVault(address) {
   return v;
 }
 
+// GET /api/vault/rates - get current live APYs
+app.get('/api/vault/rates', async (req, res) => {
+  await fetchLiveUltraCapitalApy();
+  res.json({
+    yXLM: (liveVaultApy.yXLM * 100).toFixed(1) + '%',
+    yUSDC: (liveVaultApy.yUSDC * 100).toFixed(1) + '%',
+    rates: {
+      yXLM: liveVaultApy.yXLM,
+      yUSDC: liveVaultApy.yUSDC
+    },
+    source: liveVaultApy.source,
+    lastUpdated: new Date(liveVaultApy.lastFetched).toISOString()
+  });
+});
+
 // GET /api/vault/:address - get vault balances & yield stats
-app.get('/api/vault/:address', (req, res) => {
+app.get('/api/vault/:address', async (req, res) => {
   const { address } = req.params;
   if (!address || !StellarSdk.StrKey.isValidEd25519PublicKey(address)) {
     return res.status(400).json({ error: 'Invalid Stellar Public Key' });
   }
+  await fetchLiveUltraCapitalApy();
   const vault = getOrCreateVault(address);
   res.json({
     address,
@@ -640,10 +706,10 @@ app.get('/api/vault/:address', (req, res) => {
     yUSDC: vault.yUSDC.toFixed(4),
     totalEarnedXLM: vault.totalEarnedXLM.toFixed(6),
     totalEarnedUSDC: vault.totalEarnedUSDC.toFixed(6),
-    apyXLM: '5.0%',
-    apyUSDC: '5.0%',
-    dailyEstXLM: (vault.yXLM * 0.05 / 365).toFixed(5),
-    dailyEstUSDC: (vault.yUSDC * 0.05 / 365).toFixed(5)
+    apyXLM: (liveVaultApy.yXLM * 100).toFixed(1) + '%',
+    apyUSDC: (liveVaultApy.yUSDC * 100).toFixed(1) + '%',
+    dailyEstXLM: (vault.yXLM * liveVaultApy.yXLM / 365).toFixed(5),
+    dailyEstUSDC: (vault.yUSDC * liveVaultApy.yUSDC / 365).toFixed(5)
   });
 });
 
@@ -665,7 +731,7 @@ app.post('/api/vault/deposit', async (req, res) => {
     savePersistedData();
     return res.json({
       success: true,
-      message: `Deposited ${amt} XLM into Star Vault! ✨ (Now earning 5.0% APY as yXLM)`,
+      message: `Deposited ${amt} XLM into Star Vault! ✨ (Now earning ${(liveVaultApy.yXLM * 100).toFixed(1)}% APY as yXLM)`,
       vault
     });
   } else if (asset === 'USDC' || asset === 'yUSDC') {
@@ -678,7 +744,7 @@ app.post('/api/vault/deposit', async (req, res) => {
     savePersistedData();
     return res.json({
       success: true,
-      message: `Deposited ${amt} USDC into Star Vault! 💵 (Now earning 5.0% APY as yUSDC)`,
+      message: `Deposited ${amt} USDC into Star Vault! 💵 (Now earning ${(liveVaultApy.yUSDC * 100).toFixed(1)}% APY as yUSDC)`,
       vault,
       usdcBalance: getUserUsdc(address).toFixed(4)
     });

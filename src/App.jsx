@@ -3440,7 +3440,7 @@ export default function App() {
                     <div>
                       <div className="flex items-center gap-1.5">
                         <p className="font-bold text-xs text-amber-200 group-hover:text-amber-100 transition-colors">yXLM (Yield Lumens)</p>
-                        <span className="text-[8px] bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded font-bold">1.6% APY</span>
+                        <span className="text-[8px] bg-amber-400/20 text-amber-300 px-1.5 py-0.2 rounded font-bold">{vaultInfo.apyXLM || '1.6%'} APY</span>
                       </div>
                       <p className="text-[9px] text-slate-400 font-mono">1 yXLM ≈ 1.016 XLM <span className="text-emerald-400 font-bold">{t('compoundingDaily')}</span></p>
                     </div>
@@ -3470,7 +3470,7 @@ export default function App() {
                     <div>
                       <div className="flex items-center gap-1.5">
                         <p className="font-bold text-xs text-cyan-200 group-hover:text-cyan-100 transition-colors">yUSDC (Yield Dollar)</p>
-                        <span className="text-[8px] bg-cyan-400/20 text-cyan-300 px-1.5 py-0.2 rounded font-bold">5.0% APY</span>
+                        <span className="text-[8px] bg-cyan-400/20 text-cyan-300 px-1.5 py-0.2 rounded font-bold">{vaultInfo.apyUSDC || '5.0%'} APY</span>
                       </div>
                       <p className="text-[9px] text-slate-400 font-mono">1 yUSDC ≈ $1.05 <span className="text-emerald-400 font-bold">{t('compoundingDaily')}</span></p>
                     </div>
@@ -4769,7 +4769,7 @@ export default function App() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-sm text-white flex items-center gap-1.5">
                 <Lock className="w-4 h-4 text-cyan-400" />
-                {t('modalDepositTitle')} ({vaultActionAsset === 'XLM' ? '1.6%' : '5.0%'} APY)
+                {t('modalDepositTitle')} ({vaultActionAsset === 'XLM' ? (vaultInfo.apyXLM || '1.6%') : (vaultInfo.apyUSDC || '5.0%')} APY)
               </h3>
               <button onClick={() => setShowVaultDepositModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
@@ -4835,12 +4835,12 @@ export default function App() {
               <div className="bg-cyan-950/30 p-2.5 rounded-lg border border-cyan-800/40 text-[11px] text-cyan-300 space-y-1">
                 <div className="flex justify-between">
                   <span>{t('annualYieldLabel')}</span>
-                  <span className="font-bold">{vaultActionAsset === 'XLM' ? '1.6%' : '5.0%'} APY</span>
+                  <span className="font-bold">{vaultActionAsset === 'XLM' ? (vaultInfo.apyXLM || '1.6%') : (vaultInfo.apyUSDC || '5.0%')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>{t('projectedDailyReturn')}</span>
                   <span className="font-mono font-bold">
-                    +{((parseFloat(vaultAmount) || 0) * (vaultActionAsset === 'XLM' ? 0.016 : 0.05) / 365).toFixed(5)} {vaultActionAsset}/d
+                    +{((parseFloat(vaultAmount) || 0) * (vaultActionAsset === 'XLM' ? (parseFloat(vaultInfo.apyXLM) || 1.6) / 100 : (parseFloat(vaultInfo.apyUSDC) || 5.0) / 100) / 365).toFixed(5)} {vaultActionAsset}/d
                   </span>
                 </div>
               </div>
