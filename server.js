@@ -410,12 +410,17 @@ app.post('/api/gamification/redeem', (req, res) => {
   }
 
   const PERK_CATALOG = {
-    chibi_skin: { name: '限定スキン【ちびステラ ＆ お星さま ⭐】', cost: 300 },
-    shooting_star_skin: { name: '限定スキン【サイバー流星 🌠】', cost: 300 },
     streak_shield: { name: 'ログインストリーク保護シールド 🛡️', cost: 200 },
+    chibi_skin: { name: '限定VIP【ちびステラ ＆ お星さま】🌟', cost: 300 },
+    shooting_star_skin: { name: 'サイバー・シューティングスター 🌠', cost: 300 },
     lunar_moonlight_skin: { name: 'シルバー・ルナームーン 🌕', cost: 300, comingSoon: true },
-    aurora_nebula_skin: { name: '極光ネビュラ 🌌', cost: 500, comingSoon: true },
-    zodiac_core_skin: { name: '十二星座コア 👑', cost: 800, comingSoon: true }
+    retro_pixel_skin: { name: 'レトロ8ビット・ドット星空 👾', cost: 300, comingSoon: true },
+    aurora_nebula_skin: { name: '極光ネビュラ・オーロラ 🌌', cost: 500, comingSoon: true },
+    eclipse_corona_skin: { name: '皆既日食コロナ 🌑', cost: 500, comingSoon: true },
+    overtech_stella_skin: { name: 'ギーク・オーバーテック 🛠️', cost: 500, comingSoon: true },
+    cyber_soroban_skin: { name: 'サイバーパンク・Soroban ⚡', cost: 500, comingSoon: true },
+    apollo_blueprint_skin: { name: 'アポロ宇宙船・ブループリント 🚀', cost: 500, comingSoon: true },
+    zodiac_core_skin: { name: '黄道十二星座・コア 👑', cost: 800, comingSoon: true }
   };
 
   const perk = PERK_CATALOG[perkId];

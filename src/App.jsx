@@ -4233,56 +4233,79 @@ export default function App() {
               </div>
               <p className="text-[10px] text-slate-400 mb-3">{t('perksSubtitle')}</p>
 
+              {/* 🪐 Special First Deposit Bonus Card */}
+              <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-purple-950/50 via-slate-900/60 to-purple-950/40 border border-purple-500/30 flex items-center justify-between text-xs shadow-md">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-400/40 flex items-center justify-center text-lg shrink-0 shadow-sm">
+                    🪐
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-white text-[11px] flex items-center gap-1.5">
+                      <span>{lang === 'ja' ? '限定VIP【宇宙浮遊ステラ】⭐' : 'VIP Card: Floating Stella ⭐'}</span>
+                      <span className="text-[9px] bg-purple-400/20 text-purple-300 border border-purple-400/40 px-1.5 py-0.2 rounded font-bold">
+                        {lang === 'ja' ? '初回入金特典' : 'Deposit Bonus'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-purple-200/80 font-mono mt-0.5">
+                      {isStellaUnlocked 
+                        ? (lang === 'ja' ? '🎉 初回チャージ達成で解放済み！' : '🎉 Unlocked via First Deposit!')
+                        : (lang === 'ja' ? 'ウォレットにXLMをチャージすると無料アンロック！' : 'Fund wallet with XLM to unlock free!')}
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0">
+                  {isStellaUnlocked ? (
+                    currentCardFace === 'stella' ? (
+                      <span className="text-[9px] font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-500/30">
+                        {lang === 'ja' ? '適用中' : 'Active'}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCardFace('stella')}
+                        className="text-[9px] font-bold px-2.5 py-1 rounded-lg bg-cyan-400/20 hover:bg-cyan-400/30 text-cyan-300 border border-cyan-400/40 cursor-pointer transition active:scale-95"
+                      >
+                        {lang === 'ja' ? '適用' : 'Equip'}
+                      </button>
+                    )
+                  ) : (
+                    <span className="text-[9px] font-bold text-amber-300 bg-slate-900 px-2 py-0.5 rounded-full border border-slate-700 flex items-center gap-1">
+                      <Lock className="w-2.5 h-2.5 text-amber-400" />
+                      <span>FREE</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { 
-                    id: 'chibi_skin', 
-                    name: lang === 'ja' ? 'ちびステラスキン ⭐' : 'Chibi Stella Skin ⭐', 
-                    desc: lang === 'ja' ? 'お星さまを抱っこしたちびステラが背景でふわふわ浮遊！' : 'Chibi Stella hugging a star floats softly in your background!', 
-                    cost: 300, 
-                    icon: '🌟' 
-                  },
-                  { 
-                    id: 'shooting_star_skin', 
-                    name: lang === 'ja' ? 'サイバー流星スキン 🌠' : 'Cyber Shooting Star 🌠', 
-                    desc: lang === 'ja' ? '宇宙の星屑と流星が駆け抜けるサイバーカード券面！' : 'Cosmic stardust & meteor trails on your card face!', 
-                    cost: 300, 
-                    icon: '🌠' 
-                  },
                   { 
                     id: 'streak_shield', 
                     name: t('perkStreakShield'), 
                     desc: t('perkStreakShieldDesc'), 
                     cost: 200, 
-                    icon: '🛡️' 
+                    icon: '🛡️',
+                    tier: 'item'
                   },
-                  { 
-                    id: 'lunar_moonlight_skin', 
-                    name: lang === 'ja' ? 'ルナームーン 🌕' : 'Lunar Moonlight 🌕', 
-                    desc: lang === 'ja' ? '静寂の月面クレーターと白銀の月光が輝くシルバー券面！' : 'Tranquil lunar craters with radiant silver moonlight!', 
-                    cost: 300, 
-                    icon: '🌕',
-                    comingSoon: true 
-                  },
-                  { 
-                    id: 'aurora_nebula_skin', 
-                    name: lang === 'ja' ? '極光ネビュラ 🌌' : 'Aurora Nebula 🌌', 
-                    desc: lang === 'ja' ? '緑と紫の星雲ガスが揺らめく深宇宙オーロラ券面！' : 'Vibrant green & purple deep space aurora!', 
-                    cost: 500, 
-                    icon: '🌌',
-                    comingSoon: true 
-                  },
-                  { 
-                    id: 'zodiac_core_skin', 
-                    name: lang === 'ja' ? '十二星座コア 👑' : 'Zodiac Core 👑', 
-                    desc: lang === 'ja' ? '立体星図が輝く最高峰VIPカード！完走チケットでも即解放！' : 'Mythic 3D golden zodiac chart for streak masters!', 
-                    cost: 800, 
-                    icon: '👑',
-                    comingSoon: true 
-                  },
+                  ...Object.values(CARD_FACES)
+                    .filter(face => face.id !== 'none' && face.id !== 'stella')
+                    .map(face => ({
+                      id: `${face.id}_skin`,
+                      faceId: face.id,
+                      name: lang === 'ja' ? face.name : face.nameEn,
+                      desc: lang === 'ja' ? face.description : face.descriptionEn,
+                      cost: face.cost,
+                      icon: face.icon,
+                      tier: face.tier,
+                      comingSoon: Boolean(face.comingSoon)
+                    }))
                 ].map((item) => {
-                  const unlocked = gamification.perks?.includes(item.id);
+                  const unlocked = item.faceId 
+                    ? isCardFaceUnlocked(item.faceId)
+                    : Boolean(gamification.perks?.includes(item.id));
+                  const isCardActive = item.faceId && currentCardFace === item.faceId;
                   const canAfford = (gamification.starPoints || 0) >= item.cost;
+
                   return (
                     <div 
                       key={item.id} 
@@ -4294,29 +4317,53 @@ export default function App() {
                     >
                       <div>
                         <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-sm">{item.icon}</span>
-                          <span className={`text-[11px] font-extrabold truncate ${item.comingSoon ? 'text-slate-400' : 'text-white'}`}>{item.name}</span>
+                          <span className="text-sm shrink-0">{item.icon}</span>
+                          <span className={`text-[11px] font-extrabold truncate ${item.comingSoon ? 'text-slate-400' : 'text-white'}`}>
+                            {item.name}
+                          </span>
                         </div>
-                        <p className="text-[9px] text-slate-400 leading-tight mb-2 line-clamp-2">{item.desc}</p>
+                        <p className="text-[9px] text-slate-400 leading-tight mb-2 line-clamp-2">
+                          {item.desc}
+                        </p>
                       </div>
+
                       <div className="flex items-center justify-between pt-1 border-t border-slate-800/60">
-                        <span className="text-[10px] font-black font-mono text-amber-300">{item.cost} SP</span>
+                        <span className="text-[10px] font-black font-mono text-amber-300">
+                          {item.cost} SP
+                        </span>
+
                         {item.comingSoon ? (
                           <span className="text-[9px] font-bold text-slate-400 bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700/60 flex items-center gap-0.5">
-                            <Lock className="w-2.5 h-2.5 text-slate-400" />
+                            <Clock className="w-2.5 h-2.5 text-slate-400" />
                             {t('perkComingSoon')}
                           </span>
                         ) : unlocked ? (
-                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                            {t('redeemedBadge')}
-                          </span>
+                          item.faceId ? (
+                            isCardActive ? (
+                              <span className="text-[9px] font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                                {lang === 'ja' ? '適用中' : 'Active'}
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectCardFace(item.faceId)}
+                                className="text-[9px] font-bold px-2 py-0.5 rounded bg-cyan-400/20 hover:bg-cyan-400/30 text-cyan-300 border border-cyan-400/40 cursor-pointer transition active:scale-95"
+                              >
+                                {lang === 'ja' ? '適用' : 'Equip'}
+                              </button>
+                            )
+                          ) : (
+                            <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                              {t('redeemedBadge')}
+                            </span>
+                          )
                         ) : (
                           <button
                             onClick={() => handleRedeemPerk(item.id)}
                             disabled={!canAfford || redeemLoading === item.id}
                             className={`text-[9px] font-bold px-2 py-0.5 rounded transition ${
                               canAfford 
-                                ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 active:scale-95 cursor-pointer' 
+                                ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 active:scale-95 cursor-pointer shadow-sm' 
                                 : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                             }`}
                           >
