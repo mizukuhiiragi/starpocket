@@ -379,11 +379,14 @@ app.post('/api/gamification/checkin', (req, res) => {
     bonusMsg += ' 🎉 7-Day Streak Bonus: +50 SP!';
   } else if (data.streak === 14) {
     earnedSp += 80;
-    bonusMsg += ' 🍭 14-Day Streak Bonus: Cosmic Pet Candy unlocked!';
+    bonusMsg += ' 🎉 14-Day Streak Bonus: +80 SP!';
+  } else if (data.streak === 21) {
+    earnedSp += 100;
+    bonusMsg += ' 🎉 21-Day Streak Bonus: +100 SP!';
   } else if (data.streak >= 31) {
     earnedSp += 200;
     data.hasCompleted31 = true;
-    bonusMsg += ' 🎫 31-Day Streak Completed: Select Ticket unlocked!';
+    bonusMsg += ' 🎫 31-Day Streak Completed: +200 SP & 31日完走セレクトチケット！';
   }
 
   data.starPoints = (data.starPoints || 0) + earnedSp;
@@ -408,11 +411,8 @@ app.post('/api/gamification/redeem', (req, res) => {
 
   const PERK_CATALOG = {
     chibi_skin: { name: '限定スキン【ちびステラ ＆ お星さま ⭐】', cost: 150 },
-    vault_boost: { name: '星の金庫 +1.0% APYブースト (30日)', cost: 200 },
-    swap_discount: { name: 'Star Swap 手数料50%OFFチケット', cost: 150 },
-    boost_ticket: { name: '星のダブルブーストチケット 🚀', cost: 120 },
-    streak_shield: { name: 'ログインストリーク保護シールド 🛡️', cost: 200 },
-    pet_candy: { name: 'StarPet 彗星キャンディ 🍭', cost: 80, comingSoon: true }
+    shooting_star_skin: { name: '限定スキン【サイバー流星 🌠】', cost: 150 },
+    streak_shield: { name: 'ログインストリーク保護シールド 🛡️', cost: 200 }
   };
 
   const perk = PERK_CATALOG[perkId];

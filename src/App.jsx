@@ -5982,8 +5982,8 @@ export default function App() {
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
                   {lang === 'ja'
-                    ? '毎日のカレンダーログインで星集めをするとSPが貯まります！貯めたSPで「ちびステラ VIPカード（150 SP）」や「星の金庫 APYブースト」と交換できるよ！'
-                    : 'Claim your daily calendar streak to earn SP! Redeem them for "Chibi Stella VIP Card (150 SP)" or Vault APY boosts!'}
+                    ? '毎日のカレンダーログインで星集めをするとSPが貯まります！貯めたSPで「ちびステラ VIPカード（150 SP）」や「サイバー流星スキン」などの限定特典と交換できるよ！'
+                    : 'Claim your daily calendar streak to earn SP! Redeem them for "Chibi Stella VIP Card (150 SP)" or "Cyber Shooting Star" skins!'}
                 </p>
               </div>
 
