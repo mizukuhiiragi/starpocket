@@ -48,7 +48,9 @@ import {
   Calendar,
   ScanLine,
   Camera,
-  Upload
+  Upload,
+  ShieldAlert,
+  CreditCard
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import jsQR from 'jsqr';
@@ -620,6 +622,14 @@ export default function App() {
   const [assetList, setAssetList] = useState([]);
   const [isNewAccount, setIsNewAccount] = useState(false);
   const [loadingBalance, setLoadingBalance] = useState(false);
+
+  // 🌟 5 XLM Activation Gate States
+  const ACTIVATION_THRESHOLD = 5.0;
+  const isWalletActivated = !isNewAccount && parseFloat(balance || 0) >= ACTIVATION_THRESHOLD;
+  const [internalActivating, setInternalActivating] = useState(false);
+  const [internalActivateMsg, setInternalActivateMsg] = useState('');
+  const [selectedFundingWalletId, setSelectedFundingWalletId] = useState('');
+  const fundingWallets = wallets.filter(w => w.id !== activeWalletId && w.secret);
   
   // Star Swap State
   const [swapFrom, setSwapFrom] = useState('XLM');
@@ -1966,15 +1976,36 @@ export default function App() {
         memoObj = Memo.text('StarPocket');
       }
 
+      // Check if destination exists on ledger; if not, use createAccount
+      let destExists = true;
+      try {
+        await stellarServer.loadAccount(sendDest);
+      } catch (e) {
+        destExists = false;
+      }
+
+      if (!destExists && amt < 1.0) {
+        throw new Error(lang === 'ja' 
+          ? '未有効化のアドレスに送金する場合、アカウント作成のため最低 1.0 XLM が必要です' 
+          : 'Destination is not activated; minimum 1.0 XLM required to create it on Stellar');
+      }
+
+      const sendOp = destExists
+        ? Operation.payment({
+            destination: sendDest,
+            asset: Asset.native(),
+            amount: amt.toFixed(7)
+          })
+        : Operation.createAccount({
+            destination: sendDest,
+            startingBalance: amt.toFixed(7)
+          });
+
       const tx = new TransactionBuilder(senderAcc, {
         fee: '100',
         networkPassphrase: Networks.TESTNET
       })
-      .addOperation(Operation.payment({
-        destination: sendDest,
-        asset: Asset.native(),
-        amount: amt.toFixed(7)
-      }))
+      .addOperation(sendOp)
       .addMemo(memoObj)
       .setTimeout(30)
       .build();
@@ -2046,6 +2077,73 @@ export default function App() {
       setFriendbotMsg(`❌ ${err.message}`);
     } finally {
       setFundingFriendbot(false);
+    }
+  };
+
+  // 🌟 Internal Wallet 5 XLM Activation Transfer
+  const handleInternalActivate = async (senderWallet) => {
+    if (!senderWallet || !senderWallet.secret) {
+      setInternalActivateMsg(lang === 'ja' ? '❌ 送金元のお財布が選択されていません' : '❌ Source wallet not selected');
+      return;
+    }
+    setInternalActivating(true);
+    setInternalActivateMsg('');
+    try {
+      const senderKeypair = Keypair.fromSecret(senderWallet.secret);
+      const senderAcc = await stellarServer.loadAccount(senderKeypair.publicKey());
+      
+      const nativeBalObj = senderAcc.balances.find(b => b.asset_type === 'native');
+      const senderBal = parseFloat(nativeBalObj?.balance || 0);
+      if (senderBal < 5.1) {
+        throw new Error(lang === 'ja' 
+          ? `${senderWallet.name} の残高が不足しています (必要: 5.1 XLM以上, 現在: ${senderBal.toFixed(2)} XLM)`
+          : `Insufficient funds in ${senderWallet.name} (Requires 5.1+ XLM, current: ${senderBal.toFixed(2)} XLM)`
+        );
+      }
+
+      let destExists = true;
+      try {
+        await stellarServer.loadAccount(activeAddress);
+      } catch (e) {
+        destExists = false;
+      }
+
+      const op = destExists
+        ? Operation.payment({
+            destination: activeAddress,
+            asset: Asset.native(),
+            amount: '5.0000000'
+          })
+        : Operation.createAccount({
+            destination: activeAddress,
+            startingBalance: '5.0000000'
+          });
+
+      const tx = new TransactionBuilder(senderAcc, {
+        fee: '100',
+        networkPassphrase: Networks.TESTNET
+      })
+      .addOperation(op)
+      .addMemo(Memo.text('StarPocket Activate'))
+      .setTimeout(30)
+      .build();
+
+      tx.sign(senderKeypair);
+      await stellarServer.submitTransaction(tx);
+
+      if (window.Telegram?.WebApp?.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+      }
+
+      setInternalActivateMsg(lang === 'ja' ? `🎉 ${senderWallet.name} から 5 XLM を送金し、有効化しました！` : `🎉 5 XLM sent from ${senderWallet.name}! Activated!`);
+      setTimeout(() => {
+        fetchAll(activeAddress);
+        setInternalActivateMsg('');
+      }, 1500);
+    } catch (err) {
+      setInternalActivateMsg(`❌ ${err.message}`);
+    } finally {
+      setInternalActivating(false);
     }
   };
 
@@ -2981,6 +3079,17 @@ export default function App() {
                         <span>METEOR VIP</span>
                       </button>
                     )}
+
+                    {/* Activation Status Badge */}
+                    {!isWalletActivated ? (
+                      <span className="flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold animate-pulse">
+                        ⚡ {lang === 'ja' ? '有効化待ち (要5 XLM)' : 'Activation Needed (5 XLM)'}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold">
+                        ✨ {lang === 'ja' ? '有効化済' : 'Active'}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -3023,10 +3132,20 @@ export default function App() {
                     {t('btnReceive')}
                   </button>
                   <button
-                    onClick={() => setShowSendModal(true)}
-                    className="py-2 px-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 flex items-center justify-center gap-1 text-[11px] font-bold text-slate-200 transition cursor-pointer active:scale-95 shadow-sm"
+                    onClick={() => {
+                      if (!isWalletActivated) {
+                        alert(lang === 'ja' ? '⚠️ お財布の有効化（5 XLM）が完了するまで送金機能は利用できません。' : '⚠️ Please activate your wallet with 5 XLM before sending.');
+                        return;
+                      }
+                      setShowSendModal(true);
+                    }}
+                    className={`py-2 px-2 rounded-xl border flex items-center justify-center gap-1 text-[11px] font-bold transition cursor-pointer active:scale-95 shadow-sm ${
+                      !isWalletActivated 
+                        ? 'bg-slate-900/60 border-slate-800 text-slate-500 hover:text-slate-400' 
+                        : 'bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-200'
+                    }`}
                   >
-                    <ArrowUpRight className="w-3.5 h-3.5 text-amber-400" />
+                    <ArrowUpRight className={`w-3.5 h-3.5 ${!isWalletActivated ? 'text-slate-500' : 'text-amber-400'}`} />
                     {t('btnSend')}
                   </button>
                   <button
@@ -3039,6 +3158,176 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* ========================================================= */}
+            {/* 🌟 5 XLM WALLET ACTIVATION GATE */}
+            {/* ========================================================= */}
+            {!isWalletActivated && (
+              <div className="bg-gradient-to-br from-[#1c1833] via-[#12162a] to-[#0d1020] border-2 border-amber-400/50 rounded-2xl p-4 shadow-2xl relative overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="absolute top-0 right-0 w-36 h-36 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
+
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2 mb-3 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-amber-300 shrink-0 shadow-sm">
+                      <ShieldAlert className="w-5 h-5 text-amber-400 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm text-white">
+                        {lang === 'ja' ? 'お財布の有効化（5 XLM）が必要です' : 'Wallet Activation Required (5 XLM)'}
+                      </h3>
+                      <p className="text-[10px] text-amber-300/90 font-medium">
+                        {lang === 'ja' ? '台帳登録・アセット保管・Botスパム防止のため' : 'Stellar reserve, trustlines & anti-spam'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-mono font-bold bg-amber-400/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full shrink-0">
+                    {lang === 'ja' ? '要アクティベート' : 'Inactive'}
+                  </span>
+                </div>
+
+                {/* Activation Progress Bar */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 mb-3 relative z-10">
+                  <div className="flex items-center justify-between text-[11px] mb-1.5 font-mono">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Coins className="w-3.5 h-3.5 text-amber-400" />
+                      {lang === 'ja' ? '現在の残高 / 必要残高' : 'Balance / Required'}
+                    </span>
+                    <span className="font-bold text-amber-300">
+                      {balance} <span className="text-slate-400 font-normal">/ {ACTIVATION_THRESHOLD.toFixed(4)} XLM</span>
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-950 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                    <div 
+                      className="bg-gradient-to-r from-amber-500 to-yellow-300 h-full rounded-full transition-all duration-500 shadow-sm shadow-amber-400/50"
+                      style={{ width: `${Math.min(100, Math.max(4, (parseFloat(balance || 0) / ACTIVATION_THRESHOLD) * 100))}%` }}
+                    />
+                  </div>
+                  <p className="text-[9px] text-slate-400 mt-1.5 text-right font-mono">
+                    {lang === 'ja' 
+                      ? `あと ${(Math.max(0, ACTIVATION_THRESHOLD - parseFloat(balance || 0))).toFixed(4)} XLM の入金で有効化完了` 
+                      : `${(Math.max(0, ACTIVATION_THRESHOLD - parseFloat(balance || 0))).toFixed(4)} XLM more to activate`}
+                  </p>
+                </div>
+
+                {/* Stella’s Friendly Explanation */}
+                <div className="bg-purple-950/40 border border-purple-400/30 rounded-xl p-2.5 mb-3.5 relative z-10 flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-purple-300 shrink-0 mt-0.5" />
+                  <div className="text-[10px] text-purple-200/90 leading-relaxed">
+                    <span className="font-bold text-purple-300">
+                      {lang === 'ja' ? '🌟 ステラからの豆知識: ' : '🌟 Stella’s Note: '}
+                    </span>
+                    {lang === 'ja' 
+                      ? 'Stellarネットワークでは口座開設（ベースリザーブ 1 XLM）や、USDC・yXLMを保管する枠（各0.5 XLM）が必要です。StarPocketでは 5 XLM の入金でお財布が正式に目覚め、スワップや星の金庫（年利5%）が全解放されます！'
+                      : 'Stellar requires a base reserve (1 XLM) and 0.5 XLM per asset trustline. Depositing 5 XLM fully activates your StarPocket, unlocking Swap & Vault!'}
+                  </div>
+                </div>
+
+                {/* 3 Activation Routes */}
+                <div className="space-y-2 relative z-10">
+                  <div className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+                    {lang === 'ja' ? '有効化の方法を選択してください' : 'Choose Activation Route'}
+                  </div>
+
+                  {/* Route 1: Testnet Friendbot Instant Charge */}
+                  <button
+                    type="button"
+                    disabled={fundingFriendbot}
+                    onClick={handleFriendbotFund}
+                    className="w-full bg-gradient-to-r from-amber-500 hover:from-amber-400 to-yellow-400 hover:to-yellow-300 text-slate-950 font-bold p-3 rounded-xl flex items-center justify-between text-xs transition cursor-pointer active:scale-[0.98] shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-slate-950 fill-slate-950 shrink-0" />
+                      <div className="text-left">
+                        <p className="leading-tight font-black">
+                          {fundingFriendbot 
+                            ? (lang === 'ja' ? 'Friendbotと通信中...' : 'Activating via Friendbot...') 
+                            : (lang === 'ja' ? '🧪 1タップで有効化 (無料 10,000 XLM)' : '🧪 1-Tap Activate (Free 10k XLM)')}
+                        </p>
+                        <p className="text-[9px] text-slate-800 font-medium">
+                          {lang === 'ja' ? 'Stellar公式Friendbotから即座にチャージ' : 'Instant free funding from Stellar Testnet Friendbot'}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-950 shrink-0" />
+                  </button>
+
+                  {/* Route 2: Internal Transfer from another wallet (if available) */}
+                  {fundingWallets.length > 0 && (
+                    <div className="bg-slate-900/90 border border-cyan-500/30 rounded-xl p-2.5">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-bold text-cyan-300 flex items-center gap-1">
+                          <CreditCard className="w-3 h-3 text-cyan-400" />
+                          {lang === 'ja' ? '別のお財布から 5 XLM 送金して有効化' : 'Activate from another in-app wallet'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <select
+                          value={selectedFundingWalletId || fundingWallets[0]?.id}
+                          onChange={(e) => setSelectedFundingWalletId(e.target.value)}
+                          className="bg-slate-950 border border-slate-800 rounded-lg text-[10px] font-mono text-white px-2 py-1.5 flex-1 focus:outline-none focus:border-cyan-400"
+                        >
+                          {fundingWallets.map(w => (
+                            <option key={w.id} value={w.id}>
+                              {w.name} ({w.publicKey.slice(0, 4)}...{w.publicKey.slice(-4)})
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          disabled={internalActivating}
+                          onClick={() => {
+                            const targetW = fundingWallets.find(w => w.id === (selectedFundingWalletId || fundingWallets[0]?.id)) || fundingWallets[0];
+                            handleInternalActivate(targetW);
+                          }}
+                          className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-[10px] flex items-center gap-1 shrink-0 cursor-pointer transition active:scale-95 disabled:opacity-50"
+                        >
+                          {internalActivating ? '...' : (lang === 'ja' ? '5 XLM 送金' : 'Send 5 XLM')}
+                        </button>
+                      </div>
+                      {internalActivateMsg && (
+                        <p className="text-[9px] mt-1.5 text-center font-mono text-cyan-300">
+                          {internalActivateMsg}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Route 3: External Deposit */}
+                  <button
+                    type="button"
+                    onClick={() => setShowReceiveModal(true)}
+                    className="w-full bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between text-xs transition cursor-pointer text-slate-300 active:scale-[0.98]"
+                  >
+                    <div className="flex items-center gap-2">
+                      <QrCode className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <div className="text-left">
+                        <p className="font-bold text-white text-[11px]">
+                          {lang === 'ja' ? '📥 外部ウォレットや取引所から送金' : '📥 Deposit from External Wallet / Exchange'}
+                        </p>
+                        <p className="text-[9px] text-slate-400">
+                          {lang === 'ja' ? 'アドレス表示・QRコードから 5 XLM 入金' : 'Show QR code & address to receive 5 XLM'}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </button>
+
+                  {/* Refresh balance button */}
+                  <div className="pt-1 flex items-center justify-center">
+                    <button
+                      type="button"
+                      disabled={loadingBalance}
+                      onClick={() => fetchAll(activeAddress)}
+                      className="text-[10px] text-slate-400 hover:text-amber-300 flex items-center gap-1 font-mono cursor-pointer transition active:scale-95 py-1 px-3 rounded-lg hover:bg-slate-800/50"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${loadingBalance ? 'animate-spin text-amber-400' : ''}`} />
+                      <span>{lang === 'ja' ? '残高を再確認する' : 'Check Balance Again'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* MULTI-ASSET PORTFOLIO LIST */}
             <div className="glass-panel rounded-2xl p-4 border border-slate-800">
@@ -3311,6 +3600,33 @@ export default function App() {
         {/* 🔄 TAB 2: STAR SWAP (星の交換所) */}
         {/* ========================================================= */}
         {activeTab === 'swap' && (
+          !isWalletActivated ? (
+            <div className="bg-gradient-to-br from-[#121627] via-[#0d1020] to-[#070914] border border-amber-500/30 rounded-2xl p-6 text-center space-y-3.5 shadow-2xl animate-in fade-in duration-200">
+              <div className="w-14 h-14 rounded-2xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center mx-auto text-amber-400 shadow-lg shadow-amber-400/10">
+                <Lock className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-extrabold text-base text-white">
+                  {lang === 'ja' ? 'お財布の有効化（5 XLM）が必要です' : 'Wallet Activation Required (5 XLM)'}
+                </h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                  {lang === 'ja' 
+                    ? 'Stellar DEXによるスワップ（交換所）をご利用いただくには、まずウォレットに 5 XLM を入金してアクティベートしてください。' 
+                    : 'To access Star Swap on Stellar DEX, please activate your wallet with at least 5 XLM.'}
+                </p>
+              </div>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('wallet')}
+                  className="bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 hover:to-yellow-200 text-slate-950 font-black text-xs px-5 py-2.5 rounded-xl inline-flex items-center gap-2 shadow-lg shadow-amber-400/20 cursor-pointer active:scale-95 transition"
+                >
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>{lang === 'ja' ? 'お財布タブで有効化する' : 'Go to Pocket & Activate'}</span>
+                </button>
+              </div>
+            </div>
+          ) : (
           <div className="space-y-3.5 animate-in fade-in duration-200">
             <div className="bg-gradient-to-br from-[#11192e] via-[#0d1424] to-[#080d18] rounded-2xl p-5 border border-emerald-400/30 relative overflow-hidden shadow-2xl">
               <div className="flex items-center justify-between mb-3">
@@ -3474,12 +3790,40 @@ export default function App() {
               </form>
             </div>
           </div>
+          )
         )}
 
         {/* ========================================================= */}
         {/* 🏦 TAB 3: STAR VAULT */}
         {/* ========================================================= */}
         {activeTab === 'vault' && (
+          !isWalletActivated ? (
+            <div className="bg-gradient-to-br from-[#121627] via-[#0d1020] to-[#070914] border border-cyan-500/30 rounded-2xl p-6 text-center space-y-3.5 shadow-2xl animate-in fade-in duration-200">
+              <div className="w-14 h-14 rounded-2xl bg-cyan-400/10 border border-cyan-400/30 flex items-center justify-center mx-auto text-cyan-400 shadow-lg shadow-cyan-400/10">
+                <Lock className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-extrabold text-base text-white">
+                  {lang === 'ja' ? '星の金庫（年利5%）は有効化後に解放されます' : 'Star Vault (5% APY) Unlocks Upon Activation'}
+                </h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                  {lang === 'ja' 
+                    ? '毎日自動で星（複利配当）が増える星の金庫を利用するには、まずウォレットに 5 XLM を入金してアクティベートしてください。' 
+                    : 'To deposit into the 5% APY compounding yield vault, please activate your wallet with 5 XLM first.'}
+                </p>
+              </div>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('wallet')}
+                  className="bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 hover:to-yellow-200 text-slate-950 font-black text-xs px-5 py-2.5 rounded-xl inline-flex items-center gap-2 shadow-lg shadow-amber-400/20 cursor-pointer active:scale-95 transition"
+                >
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>{lang === 'ja' ? 'お財布タブで有効化する' : 'Go to Pocket & Activate'}</span>
+                </button>
+              </div>
+            </div>
+          ) : (
           <div className="space-y-3.5 animate-in fade-in duration-200">
             {/* VAULT HERO CARD */}
             <div className="bg-gradient-to-br from-[#121c38] via-[#0d162a] to-[#080d1a] rounded-2xl p-5 border border-cyan-400/30 relative overflow-hidden shadow-2xl">
@@ -3627,6 +3971,7 @@ export default function App() {
               </ul>
             </div>
           </div>
+          )
         )}
 
         {/* ========================================================= */}
