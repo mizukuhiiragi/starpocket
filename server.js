@@ -413,7 +413,7 @@ app.post('/api/gamification/redeem', (req, res) => {
     chibi_skin: { name: '限定スキン【ちびステラ ＆ お星さま ⭐】', cost: 300 },
     shooting_star_skin: { name: '限定スキン【サイバー流星 🌠】', cost: 300 },
     streak_shield: { name: 'ログインストリーク保護シールド 🛡️', cost: 200 },
-    cafe_passiflora_skin: { name: '喫茶トケイソウ ☕', cost: 300, comingSoon: true },
+    lunar_moonlight_skin: { name: 'シルバー・ルナームーン 🌕', cost: 300, comingSoon: true },
     aurora_nebula_skin: { name: '極光ネビュラ 🌌', cost: 500, comingSoon: true },
     zodiac_core_skin: { name: '十二星座コア 👑', cost: 800, comingSoon: true }
   };

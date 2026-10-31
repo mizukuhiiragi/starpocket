@@ -333,16 +333,16 @@ const CARD_FACES = {
     description: '流星群が疾走する近未来サイバー星空仕様',
     descriptionEn: 'Futuristic shooting stars streaking through a cyber cosmos'
   },
-  cafe_passiflora: {
-    id: 'cafe_passiflora',
-    name: '喫茶トケイソウ ☕',
-    nameEn: 'Café Passiflora',
-    icon: '☕',
+  lunar_moonlight: {
+    id: 'lunar_moonlight',
+    name: 'シルバー・ルナームーン 🌕',
+    nameEn: 'Silver Lunar Moonlight',
+    icon: '🌕',
     cost: 300,
     tier: 'regular',
     comingSoon: true,
-    description: '星屑サイフォンコーヒー香るレトロ喫茶仕様',
-    descriptionEn: 'Retro antique café with siphon stardust coffee'
+    description: '静寂の月面クレーターと白銀の月光が輝くシルバー仕様',
+    descriptionEn: 'Tranquil lunar craters with radiant silver moonlight styling'
   },
   retro_pixel: {
     id: 'retro_pixel',
@@ -4232,11 +4232,11 @@ export default function App() {
                     icon: '🛡️' 
                   },
                   { 
-                    id: 'cafe_passiflora_skin', 
-                    name: lang === 'ja' ? '喫茶トケイソウ ☕' : 'Café Passiflora ☕', 
-                    desc: lang === 'ja' ? '星屑サイフォンコーヒー香るアンティークレトロ券面！' : 'Antique café with stardust siphon coffee!', 
+                    id: 'lunar_moonlight_skin', 
+                    name: lang === 'ja' ? 'ルナームーン 🌕' : 'Lunar Moonlight 🌕', 
+                    desc: lang === 'ja' ? '静寂の月面クレーターと白銀の月光が輝くシルバー券面！' : 'Tranquil lunar craters with radiant silver moonlight!', 
                     cost: 300, 
-                    icon: '☕',
+                    icon: '🌕',
                     comingSoon: true 
                   },
                   { 
