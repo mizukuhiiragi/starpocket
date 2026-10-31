@@ -2770,11 +2770,11 @@ export default function App() {
   }
 
   return (
-    <div className={`min-h-screen ${skin.bgClass} text-slate-100 flex flex-col justify-between max-w-md mx-auto relative px-4 py-4 font-sans select-none transition-colors duration-500`}>
+    <div className={`min-h-screen ${skin.bgClass} text-slate-100 flex flex-col justify-between w-full max-w-md mx-auto relative px-4 py-4 font-sans select-none transition-colors duration-500`}>
       
       {/* Background ambient light */}
-      <div className={`fixed top-[-80px] left-[-80px] w-72 h-72 ${skin.glow1} rounded-full blur-3xl pointer-events-none transition-all duration-700`} />
-      <div className={`fixed bottom-[-80px] right-[-80px] w-72 h-72 ${skin.glow2} rounded-full blur-3xl pointer-events-none transition-all duration-700`} />
+      <div className={`fixed top-[-80px] left-[-80px] w-72 h-72 ${skin.glow1} rounded-full blur-3xl pointer-events-none transition-all duration-700 z-0`} />
+      <div className={`fixed bottom-[-80px] right-[-80px] w-72 h-72 ${skin.glow2} rounded-full blur-3xl pointer-events-none transition-all duration-700 z-0`} />
 
       {/* Ambient background aura (Clean deep cosmos for 100% text readability) */}
       {(currentCardFace === 'stella' || currentCardFace === 'chibi') && (
@@ -2784,12 +2784,15 @@ export default function App() {
       )}
 
       {/* TOP HEADER */}
-      <header className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+      <header className="relative z-10 isolate gpu-layer flex items-center justify-between pb-3 border-b border-slate-800/80">
         <div className="flex items-center gap-2.5">
           <StarPocketLogo size={38} />
           <div>
             <div className="flex items-center gap-1.5">
-              <h1 className={`font-extrabold text-lg tracking-tight bg-gradient-to-r ${skin.headerText} bg-clip-text text-transparent`}>
+              <h1 
+                className={`font-extrabold text-lg tracking-tight bg-gradient-to-r ${skin.headerText} bg-clip-text text-transparent`}
+                style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: '#fbbf24' }}
+              >
                 {t('appName')}
               </h1>
               <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
@@ -2835,7 +2838,7 @@ export default function App() {
       </header>
 
       {/* 👛 ACTIVE WALLET SELECTOR BAR */}
-      <div className="flex items-center justify-between mt-2 px-0.5">
+      <div className="relative z-10 isolate gpu-layer flex items-center justify-between mt-2 px-0.5">
         <button
           onClick={() => {
             setShowWalletSwitchModal(true);
@@ -2861,7 +2864,7 @@ export default function App() {
       </div>
 
       {/* NAVIGATION PILL TABS (4 TABS) */}
-      <div className="grid grid-cols-4 gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800/80 my-2.5">
+      <div className="relative z-10 isolate gpu-layer grid grid-cols-4 gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800/80 my-2.5">
         <button
           onClick={() => setActiveTab('wallet')}
           className={`py-2 rounded-lg text-[11px] font-bold transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
@@ -2916,7 +2919,7 @@ export default function App() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="space-y-3.5 my-auto pb-3 min-h-[460px] touch-pan-y"
+        className="relative z-10 isolate gpu-layer space-y-3.5 my-auto pb-3 min-h-[460px] touch-pan-y"
       >
         
         {/* ========================================================= */}
@@ -4231,7 +4234,7 @@ export default function App() {
       </main>
 
       {/* FOOTER */}
-      <footer className="pt-2 border-t border-slate-800/80 text-center text-[9px] text-slate-500 space-y-1">
+      <footer className="relative z-10 isolate gpu-layer pt-2 border-t border-slate-800/80 text-center text-[9px] text-slate-500 space-y-1">
         <p>{t('footerNote1')}</p>
         <p>{t('footerNote2')}</p>
       </footer>
