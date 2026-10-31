@@ -619,12 +619,28 @@ export default function App() {
     }
   };
 
+  const isCardFaceUnlocked = (faceId) => {
+    if (!faceId || faceId === 'none') return true;
+    if (faceId === 'stella') return Boolean(isStellaUnlocked);
+    const item = CARD_FACES[faceId];
+    if (!item || item.comingSoon) return false;
+    const perkKey = `${faceId}_skin`;
+    const isPerkUnlocked = gamification?.perks?.includes(perkKey) || (faceId === 'chibi' && gamification?.perks?.includes('chibi_skin'));
+    const isLocalUnlocked = localStorage.getItem(`starpocket_skin_${faceId}_unlocked`) === 'true';
+    return Boolean(isPerkUnlocked || isLocalUnlocked);
+  };
+
   const handleSelectCardFace = (cardFaceId) => {
+    if (!isCardFaceUnlocked(cardFaceId)) {
+      console.warn(`Card face ${cardFaceId} is locked.`);
+      return false;
+    }
     setCurrentCardFace(cardFaceId);
     localStorage.setItem('starpocket_card_face', cardFaceId);
     if (window.Telegram?.WebApp?.HapticFeedback) {
       window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
     }
+    return true;
   };
 
   const handleSelectSkin = (id) => {
@@ -956,6 +972,15 @@ export default function App() {
   const [checkinLoading, setCheckinLoading] = useState(false);
   const [redeemLoading, setRedeemLoading] = useState(null);
   const [gamificationNotice, setGamificationNotice] = useState(null);
+
+  // Validate currentCardFace is unlocked; if locked, revert to safe unlocked face
+  useEffect(() => {
+    if (currentCardFace !== 'none' && !isCardFaceUnlocked(currentCardFace)) {
+      const fallbackFace = isStellaUnlocked ? 'stella' : 'none';
+      setCurrentCardFace(fallbackFace);
+      localStorage.setItem('starpocket_card_face', fallbackFace);
+    }
+  }, [gamification?.perks, isStellaUnlocked]);
 
   // Initialize Telegram WebApp & Wallet
   useEffect(() => {
@@ -1313,6 +1338,12 @@ export default function App() {
         if (perkId === 'chibi_skin') {
           localStorage.setItem('starpocket_skin_chibi_unlocked', 'true');
           handleSelectCardFace('chibi');
+        } else if (perkId.endsWith('_skin')) {
+          const skinFace = perkId.replace(/_skin$/, '');
+          if (CARD_FACES[skinFace]) {
+            localStorage.setItem(`starpocket_skin_${skinFace}_unlocked`, 'true');
+            handleSelectCardFace(skinFace);
+          }
         } else if (perkId === 'cyber_skin') {
           handleSelectTheme('cyber');
         }
@@ -5092,46 +5123,73 @@ export default function App() {
               <div className="space-y-1.5 mt-1">
                 {Object.values(CARD_FACES).map((item) => {
                   const isActive = currentCardFace === item.id;
-                  const isLocked = (item.id === 'stella' && !isStellaUnlocked) ||
-                    (item.id === 'chibi' && !gamification.perks?.includes('chibi_skin') && localStorage.getItem('starpocket_skin_chibi_unlocked') !== 'true');
+                  const isUnlocked = isCardFaceUnlocked(item.id);
+                  const isLocked = !isUnlocked;
+                  const isComingSoon = Boolean(item.comingSoon);
+
                   return (
                     <button
                       key={item.id}
                       onClick={() => {
+                        if (isComingSoon) {
+                          alert(lang === 'ja'
+                            ? `🚀「${item.name}」は今後のアップデートまたはコラボで順次公開予定です！お楽しみに✨`
+                            : `🚀 "${item.nameEn}" is coming soon in upcoming updates or collaborations! Stay tuned✨`
+                          );
+                          return;
+                        }
                         if (isLocked) {
                           if (item.id === 'stella') {
                             alert(lang === 'ja' ? '⭐ ウォレットにXLMをチャージすると自動解放されます！' : '⭐ Fund your wallet with XLM to unlock!');
-                          } else if (item.id === 'chibi') {
-                            alert(lang === 'ja' ? '🌟 星広場（Reward）で 150 SP と交換すると解放されます！' : '🌟 Redeem for 150 SP in the Reward tab to unlock!');
+                          } else {
+                            const wantToShop = confirm(lang === 'ja'
+                              ? `🌟「${item.name}」は星広場（特典交換所）で ${item.cost} SP で交換できます。\n星広場へ移動しますか？`
+                              : `🌟 "${item.nameEn}" can be redeemed for ${item.cost} SP in the Star Shop.\nWould you like to visit Star Shop now?`
+                            );
+                            if (wantToShop) {
+                              setShowSettingsModal(false);
+                              setActiveTab('reward');
+                            }
                           }
                           return;
                         }
                         handleSelectCardFace(item.id);
                       }}
                       className={`w-full p-2 rounded-xl flex items-center justify-between transition text-left border ${
-                        isLocked 
-                          ? 'bg-slate-950/40 border-slate-800/80 opacity-75 cursor-pointer hover:border-slate-700' 
-                          : isActive 
-                            ? 'bg-slate-900 border-cyan-400 shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400 cursor-pointer' 
-                            : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60 cursor-pointer'
+                        isComingSoon
+                          ? 'bg-slate-950/30 border-slate-800/50 opacity-60 cursor-pointer hover:border-slate-700'
+                          : isLocked 
+                            ? 'bg-slate-950/40 border-slate-800/80 opacity-75 cursor-pointer hover:border-slate-700' 
+                            : isActive 
+                              ? 'bg-slate-900 border-cyan-400 shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400 cursor-pointer' 
+                              : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60 cursor-pointer'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-sm shadow-sm shrink-0 relative">
                           {item.icon}
-                          {isLocked && (
-                            <div className="absolute -bottom-1 -right-1 bg-slate-900 border border-slate-700 rounded-full p-0.5 shadow-sm">
+                          {isComingSoon ? (
+                            <div className="absolute -bottom-1 -right-1 bg-slate-900 border border-slate-700 rounded-full p-0.5 shadow-sm" title="準備中">
+                              <Clock className="w-2.5 h-2.5 text-slate-400" />
+                            </div>
+                          ) : isLocked ? (
+                            <div className="absolute -bottom-1 -right-1 bg-slate-900 border border-slate-700 rounded-full p-0.5 shadow-sm" title="未解放">
                               <Lock className="w-2.5 h-2.5 text-amber-400" />
                             </div>
-                          )}
+                          ) : null}
                         </div>
                         <div>
                           <div className="text-xs font-bold text-white flex items-center gap-1.5">
                             <span>{lang === 'ja' ? item.name : item.nameEn}</span>
-                            {isLocked ? (
-                              <span className="text-[9px] font-bold text-slate-400 bg-slate-800 px-1.5 py-0.2 rounded-full border border-slate-700 flex items-center gap-0.5">
+                            {isComingSoon ? (
+                              <span className="text-[9px] font-bold text-slate-400 bg-slate-800/90 px-1.5 py-0.2 rounded-full border border-slate-700 flex items-center gap-0.5">
+                                <Clock className="w-2.5 h-2.5 text-slate-400" />
+                                {lang === 'ja' ? '準備中' : 'Coming Soon'}
+                              </span>
+                            ) : isLocked ? (
+                              <span className="text-[9px] font-bold text-amber-300 bg-amber-500/15 px-1.5 py-0.2 rounded-full border border-amber-500/30 flex items-center gap-0.5">
                                 <Lock className="w-2.5 h-2.5 text-amber-400" />
-                                {lang === 'ja' ? '未解放' : 'Locked'}
+                                {item.cost ? `${item.cost} SP` : (lang === 'ja' ? '未解放' : 'Locked')}
                               </span>
                             ) : isActive ? (
                               <span className="text-[9px] font-bold text-cyan-300 bg-cyan-400/20 px-1.5 py-0.2 rounded-full border border-cyan-400/40">
@@ -5140,18 +5198,20 @@ export default function App() {
                             ) : null}
                           </div>
                           <div className="text-[10px] text-slate-400 font-mono">
-                            {isLocked
-                              ? (item.id === 'stella'
-                                  ? (lang === 'ja' ? '🔒 ウォレットにXLMをチャージして解放' : '🔒 Fund wallet with XLM to unlock')
-                                  : (lang === 'ja' ? '🔒 星広場で 150 SP と交換して解放' : '🔒 Exchange 150 SP in Star Shop'))
-                              : (lang === 'ja' ? item.description : item.descriptionEn)
+                            {isComingSoon
+                              ? (lang === 'ja' ? `⏳ 近日公開予定 (${item.cost} SP / 準備中)` : `⏳ Coming Soon (${item.cost} SP)`)
+                              : isLocked
+                                ? (item.id === 'stella'
+                                    ? (lang === 'ja' ? '🔒 ウォレットにXLMをチャージして解放' : '🔒 Fund wallet with XLM to unlock')
+                                    : (lang === 'ja' ? `🔒 星広場で ${item.cost} SP と交換して解放` : `🔒 Exchange ${item.cost} SP in Star Shop`))
+                                : (lang === 'ja' ? item.description : item.descriptionEn)
                             }
                           </div>
                         </div>
                       </div>
 
                       <div className="shrink-0 flex items-center gap-2">
-                        {(item.id === 'stella' || item.id === 'chibi') && (
+                        {(item.id === 'stella' || item.id === 'chibi' || item.id === 'shooting_star') && (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -5164,13 +5224,13 @@ export default function App() {
                               }
                             }}
                             className="py-1 px-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/35 border border-purple-400/40 text-[10px] font-bold text-cyan-300 hover:text-white flex items-center gap-1 cursor-pointer transition shadow-sm"
-                            title={lang === 'ja' ? '全身イラストを鑑賞' : 'View Full Illustration'}
+                            title={lang === 'ja' ? 'イラストを鑑賞' : 'View Illustration'}
                           >
                             <Eye className="w-3 h-3 text-cyan-300" />
-                            <span>{lang === 'ja' ? '全身' : 'View'}</span>
+                            <span>{lang === 'ja' ? '鑑賞' : 'View'}</span>
                           </button>
                         )}
-                        {!isLocked && (
+                        {!isLocked && !isComingSoon && (
                           isActive ? (
                             <CheckCircle2 className="w-4 h-4 text-cyan-400" />
                           ) : (
@@ -6113,8 +6173,8 @@ export default function App() {
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
                   {lang === 'ja'
-                    ? '毎日のカレンダーログインで星集めをするとSPが貯まります！貯めたSPで「ちびステラ VIPカード（150 SP）」や「サイバー流星スキン」などの限定特典と交換できるよ！'
-                    : 'Claim your daily calendar streak to earn SP! Redeem them for "Chibi Stella VIP Card (150 SP)" or "Cyber Shooting Star" skins!'}
+                    ? '毎日のカレンダーログインで星集めをするとSPが貯まります！貯めたSPで「ちびステラ VIPカード（300 SP）」や「サイバー流星スキン（300 SP）」などの限定特典と交換できるよ！'
+                    : 'Claim your daily calendar streak to earn SP! Redeem them for "Chibi Stella VIP Card (300 SP)" or "Cyber Shooting Star (300 SP)" skins!'}
                 </p>
               </div>
 
@@ -6945,8 +7005,8 @@ export default function App() {
             {/* Apply Card Face Button (if not currently active) */}
             {currentCardFace !== showcaseSkin && (
               (() => {
-                const isSkinLocked = (showcaseSkin === 'stella' && !isStellaUnlocked) ||
-                  (showcaseSkin === 'chibi' && !gamification.perks?.includes('chibi_skin') && localStorage.getItem('starpocket_skin_chibi_unlocked') !== 'true');
+                const isSkinLocked = !isCardFaceUnlocked(showcaseSkin);
+                const targetFace = CARD_FACES[showcaseSkin];
                 if (isSkinLocked) {
                   return (
                     <button
@@ -6954,8 +7014,14 @@ export default function App() {
                         setShowcaseModal(false);
                         if (showcaseSkin === 'stella') {
                           alert(lang === 'ja' ? '⭐ ウォレットにXLMをチャージすると解放されます！' : '⭐ Fund your wallet with XLM to unlock!');
-                        } else if (showcaseSkin === 'chibi') {
-                          setActiveTab('reward');
+                        } else {
+                          const wantToShop = confirm(lang === 'ja'
+                            ? `🌟「${targetFace?.name || showcaseSkin}」は星広場（特典交換所）で ${targetFace?.cost || 300} SP で交換できます。\n星広場へ移動しますか？`
+                            : `🌟 "${targetFace?.nameEn || showcaseSkin}" can be unlocked for ${targetFace?.cost || 300} SP in the Star Shop.\nWould you like to visit Star Shop now?`
+                          );
+                          if (wantToShop) {
+                            setActiveTab('reward');
+                          }
                         }
                       }}
                       className="text-[11px] font-bold text-slate-300 bg-slate-800/80 border border-slate-700 hover:border-amber-400/50 px-3 py-1 rounded-full cursor-pointer transition active:scale-95 flex items-center gap-1.5"
@@ -6964,7 +7030,7 @@ export default function App() {
                       <span>
                         {showcaseSkin === 'stella'
                           ? (lang === 'ja' ? '🔒 XLMチャージでアンロック' : '🔒 Fund XLM to unlock')
-                          : (lang === 'ja' ? '🔒 星広場で150 SPと交換' : '🔒 Redeem for 150 SP')}
+                          : (lang === 'ja' ? `🔒 星広場で ${targetFace?.cost || 300} SPと交換` : `🔒 Redeem for ${targetFace?.cost || 300} SP`)}
                       </span>
                     </button>
                   );
