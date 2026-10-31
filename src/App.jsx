@@ -2762,7 +2762,7 @@ export default function App() {
         {/* Footer info */}
         <div className="text-center pt-3 z-10">
           <p className="text-[10px] text-slate-400 font-medium">
-            StarPocket • Public Goods on Stellar Testnet • 100% Non-Custodial
+            StarPocket 🪐 Powered by Stellar Network • Non-Custodial
           </p>
         </div>
       </div>

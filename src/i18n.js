@@ -139,8 +139,8 @@ export const translations = {
     perkComingSoon: "Coming Soon",
 
     // Footer
-    footerNote1: "Built for Stellar Community Fund (SCF) & Telegram Ecosystem",
-    footerNote2: "StarPocket: Non-custodial Smart Wallet & Yield Vault"
+    footerNote1: "StarPocket 🪐 Powered by Stellar Network",
+    footerNote2: "Non-custodial Smart Wallet & Yield Vault"
   },
   ja: {
     appName: "StarPocket",
@@ -282,7 +282,7 @@ export const translations = {
     perkComingSoon: "準備中",
 
     // Footer
-    footerNote1: "喫茶トケイソウ ☕ × Stellar Community Fund (SCF) 応募プロジェクト",
-    footerNote2: "StarPocket: Non-custodial Smart Wallet & Yield Vault"
+    footerNote1: "StarPocket 🪐 Powered by Stellar Network",
+    footerNote2: "非カストディアル星空スマートウォレット"
   }
 };
